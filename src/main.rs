@@ -1,13 +1,14 @@
 use openmls::prelude::{tls_codec::*, *};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
+use colored::*;
 
 pub use convo::ConvoManager;
 pub mod convo;
 pub mod utils;
 
 fn main() {
-    println!("\nHello, world!\n");
+    println!("\n<------ Hello, world! ------->\n");
 
     // create alice and bob:
     let mut alice = ConvoManager::init("alice".to_string());
@@ -16,22 +17,57 @@ fn main() {
 
     // alice creates a new group and invites bob:
     alice.create_new_group(group_name.clone());
-    let (welcome, ratchet_tree) = alice.create_invite(group_name.clone(), bob.get_key_package());
+    let (fanned, welcome, ratchet_tree) = alice.create_invite(group_name.clone(), bob.get_key_package());
     bob.process_invite(group_name.clone(), welcome, ratchet_tree);
 
+    println!("<------ Alice creates a new group and invites Bob! ------->");
+
+
     // bob sends a message to alice:
-    let message_from_bob = "Hello, alice!".to_string();
-    println!("Bob: {}", message_from_bob);
-    let serialized_message = bob.create_message(group_name.clone(), message_from_bob);
-    let mls_message_in = alice.process_incoming_message(serialized_message, group_name.clone());
-    println!("Alice decrypted: {}", mls_message_in);
+    let message_text = "Hello, alice!".to_string();
+    println!("{}", format!("Bob: {}", message_text).blue());
+    let serialized_message = bob.create_message(group_name.clone(), message_text);
+    let mls_message_in = alice.process_incoming_message(group_name.clone(), serialized_message).unwrap();
+    println!("{}", format!("Alice decrypted: {}", mls_message_in).green());
 
     // alice sends a message to bob:
-    let message_from_alice = "Hello, bob!".to_string();
-    println!("Alice: {}", message_from_alice);
-    let serialized_message = alice.create_message(group_name.clone(), message_from_alice);
-    let mls_message_in = bob.process_incoming_message(serialized_message, group_name.clone());
-    println!("Bob decrypted: {}", mls_message_in);
+    let message_text = "Hello, bob!".to_string();
+    println!("{}", format!("Alice: {}", message_text).red());
+    let serialized_message = alice.create_message(group_name.clone(), message_text);
+    let mls_message_in = bob.process_incoming_message(group_name.clone(), serialized_message).unwrap();
+    println!("{}", format!("Bob decrypted: {}", mls_message_in).green());
+
+    // charlie is created:
+    let mut charlie = ConvoManager::init("charlie".to_string());
+    // and bob invites charlie:
+    let (fanned, welcome, ratchet_tree) = bob.create_invite(group_name.clone(), charlie.get_key_package());
+    
+    // charlie + everyone* (not actually everyone, but I think log(n) people in the tree?)
+    // must process the invite before any new messages can be decrypted
+    // (excluding bob since he created the invite)
+    charlie.process_invite(group_name.clone(), welcome.clone(), ratchet_tree.clone());
+    // println!("charlie processed invite");
+    // everyone* else must processes the fanned commit like a normal message
+    alice.process_incoming_message(group_name.clone(), fanned.clone());
+    // println!("alice processed fanned commit");
+
+    println!("<------ Charlie enters the group! ------->");
+
+
+    // charlie, now in the group, sends a message:
+    let message_text = "Hello, everyone!".to_string();
+    println!("{}", format!("Charlie: {}", message_text).yellow());
+    let serialized_message = charlie.create_message(group_name.clone(), message_text);
+
+    // alice decrypts the message:
+    let mls_message_in = alice.process_incoming_message(group_name.clone(), serialized_message.clone()).unwrap();
+    println!("{}", format!("Alice decrypted: {}", mls_message_in).green());
+
+    // bob decrypts the message:
+    let mls_message_in = bob.process_incoming_message(group_name.clone(), serialized_message.clone()).unwrap();
+    println!("{}", format!("Bob decrypted: {}", mls_message_in).green());
+
+
 
     // // Define ciphersuite ...
     // let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -155,5 +191,5 @@ fn main() {
     //     );
     // }
 
-    println!("\nGoodbye, world!\n");
+    println!("\n<------ Goodbye, world! ------->\n");
 }

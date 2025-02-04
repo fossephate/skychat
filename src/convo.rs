@@ -11,7 +11,6 @@ pub struct GroupWrapper {
     mls_group: MlsGroup,
 }
 
-
 // impl Deref for Group {
 //     type Target = MlsGroup;
 //     fn deref(&self) -> &Self::Target {
@@ -127,7 +126,7 @@ impl ConvoManager {
         &mut self,
         group_name: String,
         key_package: KeyPackageBundle,
-    ) -> (Vec<u8>, Vec<u8>) {
+    ) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
         let group = self.groups.get_mut(&group_name).unwrap();
         let mls_group = &mut group.mls_group;
         let (mls_message_out, welcome_out, group_info) = mls_group
@@ -150,7 +149,10 @@ impl ConvoManager {
             .export_ratchet_tree()
             .tls_serialize_detached()
             .expect("Error serializing ratchet tree");
-        (serialized_welcome, ratchet_tree)
+        let fanned = mls_message_out
+            .tls_serialize_detached()
+            .expect("Error serializing fanned");
+        (fanned, serialized_welcome, ratchet_tree)
     }
 
     pub fn create_message(&mut self, group_name: String, message: String) -> Vec<u8> {
@@ -164,9 +166,9 @@ impl ConvoManager {
 
     pub fn process_incoming_message(
         &mut self,
-        serialized_message: Vec<u8>,
         group_name: String,
-    ) -> String {
+        serialized_message: Vec<u8>,
+    ) -> Option<String> {
         let group = self.groups.get_mut(&group_name).unwrap();
         let mls_group = &mut group.mls_group;
 
@@ -188,25 +190,15 @@ impl ConvoManager {
             ProcessedMessageContent::ExternalJoinProposalMessage(_) => {
                 panic!("Unexpected external join proposal")
             }
-            ProcessedMessageContent::StagedCommitMessage(_) => {
-                panic!("Unexpected staged commit message")
+            ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
+                group.mls_group.merge_staged_commit(&self.provider, *staged_commit).expect("error merging staged commit");
+                return None;
             }
         };
 
         let message = String::from_utf8(application_message.into_bytes()).unwrap();
         // println!("Processed message: {}", message);
-        message
-
-        // if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        //     processed_message.into_content()
-        // {
-        //     // Check the message
-        //     // assert_eq!(application_message.into_bytes(), b"Hi, I'm Alice!");
-        //     println!(
-        //         "Processed message: {}",
-        //         String::from_utf8(application_message.into_bytes()).unwrap()
-        //     );
-        // }
+        Some(message)
     }
 
     // pub fn send_message_to_group(
