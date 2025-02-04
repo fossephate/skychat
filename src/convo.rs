@@ -191,7 +191,10 @@ impl ConvoManager {
                 panic!("Unexpected external join proposal")
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                group.mls_group.merge_staged_commit(&self.provider, *staged_commit).expect("error merging staged commit");
+                group
+                    .mls_group
+                    .merge_staged_commit(&self.provider, *staged_commit)
+                    .expect("error merging staged commit");
                 return None;
             }
         };
@@ -199,6 +202,48 @@ impl ConvoManager {
         let message = String::from_utf8(application_message.into_bytes()).unwrap();
         // println!("Processed message: {}", message);
         Some(message)
+    }
+
+    pub fn kick_member(
+        &mut self,
+        group_name: String,
+        key_package: KeyPackageBundle,
+    ) -> (Vec<u8>, Option<Vec<u8>>) {
+        let group = self.groups.get_mut(&group_name).unwrap();
+        let mls_group = &mut group.mls_group;
+
+        let mut member_index: LeafNodeIndex = LeafNodeIndex::new(0);
+        // let members = mls_group.members();
+        // members.for_each(|m| {
+        //     // if m.key_package() == key_package.key_package() {
+        //     // }
+        //     // TODO: get the member index where key_package matches
+        //     // member_index = m.index;
+        // });
+
+        // remove the member:
+        let (mls_message_out, welcome_option, _group_info) = mls_group
+            .remove_members(&self.provider, &self.signer, &[member_index])
+            .expect("error kicking member");
+
+        // merge the pending commit:
+        mls_group
+            .merge_pending_commit(&self.provider)
+            .expect("error merging pending commit");
+
+        // serialize the message & welcome (if it exists)
+        let fanned = mls_message_out
+            .tls_serialize_detached()
+            .expect("Error serializing message");
+
+        if let Some(welcome) = welcome_option {
+            let serialized_welcome = welcome
+                .tls_serialize_detached()
+                .expect("Error serializing welcome");
+            return (fanned, Some(serialized_welcome));
+        }
+
+        (fanned, None)
     }
 
     // pub fn send_message_to_group(
