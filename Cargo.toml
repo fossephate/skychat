@@ -1,0 +1,10 @@
+[package]
+name = "skychat"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+openmls = "0.6.0"
+openmls_basic_credential = "0.3.0"
+openmls_rust_crypto = "0.3.0"
+rand = "0.9.0"
