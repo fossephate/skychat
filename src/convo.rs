@@ -35,6 +35,17 @@ pub struct ConvoManager {
     groups: HashMap<String, GroupWrapper>,
 }
 
+pub struct ProcessedResults {
+    pub message: Option<String>,
+    pub welcome: Option<Vec<u8>>,
+}
+
+pub struct GroupInvite {
+    pub fanned: Vec<u8>,
+    pub welcome: Vec<u8>,
+    pub ratchet_tree: Option<Vec<u8>>,
+}
+
 impl ConvoManager {
     pub fn init(name: String) -> Self {
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -65,7 +76,12 @@ impl ConvoManager {
         key_package
     }
 
-    pub fn process_invite(&mut self, group_name: String, welcome: Vec<u8>, ratchet_tree: Vec<u8>) {
+    pub fn process_invite(
+        &mut self,
+        group_name: String,
+        welcome: Vec<u8>,
+        ratchet_tree: Option<Vec<u8>>,
+    ) {
         // bob can now de-serialize the message as an [`MlsMessageIn`] ...
         let mls_message_in = MlsMessageIn::tls_deserialize(&mut welcome.as_slice())
             .expect("An unexpected error occurred.");
@@ -77,9 +93,19 @@ impl ConvoManager {
             _ => unreachable!("Unexpected message type."),
         };
 
-        let ratchet_tree_deserialized =
-            RatchetTreeIn::tls_deserialize(&mut ratchet_tree.as_slice())
-                .expect("Error deserializing ratchet tree");
+        // let ratchet_tree_deserialized =
+        //     RatchetTreeIn::tls_deserialize(&mut ratchet_tree.as_slice())
+        //         .expect("Error deserializing ratchet tree");
+
+        let mut ratchet_tree_deserialized: Option<RatchetTreeIn> = None;
+
+        // if we have a ratchet tree:
+        if let Some(ratchet_tree) = ratchet_tree {
+            ratchet_tree_deserialized = Some(
+                RatchetTreeIn::tls_deserialize(&mut ratchet_tree.as_slice())
+                    .expect("Error deserializing ratchet tree"),
+            );
+        }
 
         // Now bob can build a staged join for the group in order to inspect the welcome
         let bob_staged_join = StagedWelcome::new_from_welcome(
@@ -88,7 +114,7 @@ impl ConvoManager {
             welcome,
             // The public tree is need and transferred out of band.
             // It is also possible to use the [`RatchetTreeExtension`]
-            Some(ratchet_tree_deserialized),
+            ratchet_tree_deserialized,
         )
         .expect("Error creating a staged join from Welcome");
 
@@ -126,7 +152,7 @@ impl ConvoManager {
         &mut self,
         group_name: String,
         key_package: KeyPackageBundle,
-    ) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+    ) -> GroupInvite {
         let group = self.groups.get_mut(&group_name).unwrap();
         let mls_group = &mut group.mls_group;
         let (mls_message_out, welcome_out, group_info) = mls_group
@@ -152,7 +178,11 @@ impl ConvoManager {
         let fanned = mls_message_out
             .tls_serialize_detached()
             .expect("Error serializing fanned");
-        (fanned, serialized_welcome, ratchet_tree)
+        GroupInvite {
+            fanned,
+            welcome: serialized_welcome,
+            ratchet_tree: Some(ratchet_tree),
+        }
     }
 
     pub fn create_message(&mut self, group_name: String, message: String) -> Vec<u8> {
@@ -168,7 +198,7 @@ impl ConvoManager {
         &mut self,
         group_name: String,
         serialized_message: Vec<u8>,
-    ) -> Option<String> {
+    ) -> ProcessedResults {
         let group = self.groups.get_mut(&group_name).unwrap();
         let mls_group = &mut group.mls_group;
 
@@ -184,24 +214,56 @@ impl ConvoManager {
             .expect("Could not process message.");
 
         let processed_content = processed_message.into_content();
-        let application_message = match processed_content {
-            ProcessedMessageContent::ApplicationMessage(msg) => msg,
+        let processed_results = match processed_content {
+            ProcessedMessageContent::ApplicationMessage(msg) => {
+                let message = String::from_utf8(msg.into_bytes()).unwrap();
+                ProcessedResults {
+                    message: Some(message),
+                    welcome: None,
+                }
+            }
             ProcessedMessageContent::ProposalMessage(_) => panic!("Unexpected proposal message"),
-            ProcessedMessageContent::ExternalJoinProposalMessage(_) => {
-                panic!("Unexpected external join proposal")
+            ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
+                mls_group
+                    .store_pending_proposal(self.provider.storage(), *proposal)
+                    .unwrap();
+
+                let (_commit, welcome, _group_info) = mls_group
+                    .commit_to_pending_proposals(&self.provider, &self.signer)
+                    .expect("Could not commit");
+                // assert_eq!(alice_group.members().count(), 1);
+                mls_group
+                    .merge_pending_commit(&self.provider)
+                    .expect("Could not merge commit");
+                // assert_eq!(alice_group.members().count(), 2);
+
+
+                // let welcome2: MlsMessageIn = welcome.expect("Welcome was not returned");
+
+                // serialize the welcome:
+                let serialized_welcome = welcome
+                    .tls_serialize_detached()
+                    .expect("Error serializing welcome");
+
+                println!("WELCOME CREATED");
+                ProcessedResults {
+                    message: None,
+                    welcome: Some(serialized_welcome),
+                }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 group
                     .mls_group
                     .merge_staged_commit(&self.provider, *staged_commit)
                     .expect("error merging staged commit");
-                return None;
+                ProcessedResults {
+                    message: None,
+                    welcome: None,
+                }
             }
         };
 
-        let message = String::from_utf8(application_message.into_bytes()).unwrap();
-        // println!("Processed message: {}", message);
-        Some(message)
+        processed_results
     }
 
     pub fn kick_member(
@@ -244,6 +306,37 @@ impl ConvoManager {
         }
 
         (fanned, None)
+    }
+
+    pub fn get_joinable_info(&mut self, group_name: String) -> (GroupEpoch, GroupId) {
+        let group = self.groups.get_mut(&group_name).unwrap();
+        let mls_group = &mut group.mls_group;
+
+        let epoch = mls_group.epoch();
+        let group_id = mls_group.group_id();
+
+        (epoch.clone(), group_id.clone())
+    }
+
+    pub fn request_join(&mut self, group_id: GroupId, epoch: GroupEpoch) -> Vec<u8> {
+        // let group = self.groups.get_mut(&group_name).unwrap();
+        // let mls_group = &mut group.mls_group;
+
+        // let epoch = mls_group.epoch();
+        let proposal =
+            JoinProposal::new::<<OpenMlsRustCrypto as OpenMlsProvider>::StorageProvider>(
+                self.get_key_package().key_package().clone(),
+                group_id.clone(),
+                epoch.clone(),
+                &self.signer,
+            )
+            .expect("Could not create external Add proposal");
+
+        let serialized_proposal = proposal
+            .tls_serialize_detached()
+            .expect("Error serializing proposal");
+
+        serialized_proposal
     }
 
     // pub fn send_message_to_group(

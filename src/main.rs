@@ -13,47 +13,55 @@ fn main() {
     // create alice and bob:
     let mut alice = ConvoManager::init("alice".to_string());
     let mut bob = ConvoManager::init("bob".to_string());
-    let group_name = "alice_group".to_string();
+    let gn = "alice_group".to_string();
 
     // alice creates a new group and invites bob:
-    alice.create_new_group(group_name.clone());
-    let (fanned, welcome, ratchet_tree) =
-        alice.create_invite(group_name.clone(), bob.get_key_package());
-    bob.process_invite(group_name.clone(), welcome, ratchet_tree);
+    alice.create_new_group(gn.clone());
+    let group_invite = alice.create_invite(gn.clone(), bob.get_key_package());
+    bob.process_invite(
+        gn.clone(),
+        group_invite.welcome,
+        group_invite.ratchet_tree,
+    );
 
     println!("<------ Alice creates a new group and invites Bob! ------->");
 
     // bob sends a message to alice:
     let message_text = "Hello, alice!".to_string();
     println!("{}", format!("Bob: {}", message_text).blue());
-    let serialized_message = bob.create_message(group_name.clone(), message_text);
-    let decrypted_msg = alice
-        .process_incoming_message(group_name.clone(), serialized_message)
-        .unwrap();
-    println!("{}", format!("Alice decrypted: {}", decrypted_msg).green());
+    let serialized_message = bob.create_message(gn.clone(), message_text);
+    let processed_results = alice.process_incoming_message(gn.clone(), serialized_message);
+    println!(
+        "{}",
+        format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
+    );
 
     // alice sends a message to bob:
     let message_text = "Hello, bob!".to_string();
     println!("{}", format!("Alice: {}", message_text).red());
-    let serialized_message = alice.create_message(group_name.clone(), message_text);
-    let decrypted_msg = bob
-        .process_incoming_message(group_name.clone(), serialized_message)
-        .unwrap();
-    println!("{}", format!("Bob decrypted: {}", decrypted_msg).green());
+    let serialized_message = alice.create_message(gn.clone(), message_text);
+    let processed_results = bob.process_incoming_message(gn.clone(), serialized_message);
+    println!(
+        "{}",
+        format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
+    );
 
     // charlie is created:
     let mut charlie = ConvoManager::init("charlie".to_string());
     // and bob invites charlie:
-    let (fanned, welcome, ratchet_tree) =
-        bob.create_invite(group_name.clone(), charlie.get_key_package());
+    let group_invite = bob.create_invite(gn.clone(), charlie.get_key_package());
 
     // charlie + everyone* (not actually everyone, but I think log(n) people in the tree?)
     // must process the invite before any new messages can be decrypted
     // (excluding bob since he created the invite)
-    charlie.process_invite(group_name.clone(), welcome.clone(), ratchet_tree.clone());
+    charlie.process_invite(
+        gn.clone(),
+        group_invite.welcome,
+        group_invite.ratchet_tree,
+    );
     // println!("charlie processed invite");
     // everyone* else must processes the fanned commit like a normal message
-    alice.process_incoming_message(group_name.clone(), fanned.clone());
+    alice.process_incoming_message(gn.clone(), group_invite.fanned);
     // println!("alice processed fanned commit");
 
     println!("<------ Charlie enters the group! ------->");
@@ -61,54 +69,80 @@ fn main() {
     // charlie, now in the group, sends a message:
     let message_text = "Hello, everyone!".to_string();
     println!("{}", format!("Charlie: {}", message_text).yellow());
-    let serialized_message = charlie.create_message(group_name.clone(), message_text);
+    let serialized_message = charlie.create_message(gn.clone(), message_text);
 
     // alice decrypts the message:
-    let decrypted_msg = alice
-        .process_incoming_message(group_name.clone(), serialized_message.clone())
-        .unwrap();
-    println!("{}", format!("Alice decrypted: {}", decrypted_msg).green());
+    let processed_results =
+        alice.process_incoming_message(gn.clone(), serialized_message.clone());
+    println!(
+        "{}",
+        format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
+    );
 
     // bob decrypts the message:
-    let decrypted_msg = bob
-        .process_incoming_message(group_name.clone(), serialized_message.clone())
-        .unwrap();
-    println!("{}", format!("Bob decrypted: {}", decrypted_msg).green());
+    let processed_results =
+        bob.process_incoming_message(gn.clone(), serialized_message.clone());
+    println!(
+        "{}",
+        format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
+    );
 
     // bob responds:
     let message_text = "Welcome, charlie!".to_string();
     println!("{}", format!("Bob: {}", message_text).blue());
-    let serialized_message = bob.create_message(group_name.clone(), message_text);
+    let serialized_message = bob.create_message(gn.clone(), message_text);
     // charlie and alice decrypt the message:
-    let decrypted_msg = alice
-        .process_incoming_message(group_name.clone(), serialized_message.clone())
-        .unwrap();
-    println!("{}", format!("Alice decrypted: {}", decrypted_msg).green());
-    let decrypted_msg = charlie
-        .process_incoming_message(group_name.clone(), serialized_message.clone())
-        .unwrap();
+    let processed_results =
+        alice.process_incoming_message(gn.clone(), serialized_message.clone());
     println!(
         "{}",
-        format!("Charlie decrypted: {}", decrypted_msg).green()
+        format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
+    );
+    let processed_results =
+        charlie.process_incoming_message(gn.clone(), serialized_message.clone());
+    println!(
+        "{}",
+        format!("Charlie decrypted: {}", processed_results.message.unwrap()).green()
     );
 
-    println!("<------ Charlie kicks Bob out of the group! ------->");
+    println!("<------ Charlie kicks Alice out of the group! ------->");
     // charlie kicks alice out of the group!:
-    let (fanned, welcome_option) = charlie.kick_member(group_name.clone(), bob.get_key_package());
+    let (fanned, welcome_option) = charlie.kick_member(gn.clone(), alice.get_key_package());
 
     // bob processes the fanned commit:
-    bob.process_incoming_message(group_name.clone(), fanned.clone());
+    bob.process_incoming_message(gn.clone(), fanned.clone());
 
     // charlie sends a message (to now just bob):
     let message_text = "Hello, (just) bob!".to_string();
     println!("{}", format!("Charlie: {}", message_text).yellow());
-    let serialized_message = charlie.create_message(group_name.clone(), message_text);
+    let serialized_message = charlie.create_message(gn.clone(), message_text);
 
     // bob decrypts the message:
-    let decrypted_msg = bob
-        .process_incoming_message(group_name.clone(), serialized_message.clone())
-        .unwrap();
-    println!("{}", format!("Bob decrypted: {}", decrypted_msg).green());
+    let processed_results =
+        bob.process_incoming_message(gn.clone(), serialized_message.clone());
+    println!(
+        "{}",
+        format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
+    );
+
+    // // david requests to join the group:
+    // let mut david = ConvoManager::init("david".to_string());
+    // println!("<------ David created! ------->");
+    // let (epoch, group_id) = charlie.get_joinable_info(gn.clone());
+    // let serialized_proposal = david.request_join(group_id, epoch);
+    // println!("<------ David requested to join the group! ------->");
+    // println!("<------ Bob allows David to join the group! ------->");
+    // let processed_results = bob.process_incoming_message(gn.clone(), serialized_proposal);
+
+    // println!("<------ David joins the group! ------->");
+    // david.process_invite(gn.clone(), processed_results.welcome.unwrap(), None);
+
+    // // david sends a message:
+    // let message_text = "Hello, (bob and charlie)!".to_string();
+    // println!("{}", format!("David: {}", message_text).purple());
+    // let serialized_message = david.create_message(gn.clone(), message_text);
+
+
 
     // // Define ciphersuite ...
     // let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
