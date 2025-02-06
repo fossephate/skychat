@@ -1,11 +1,16 @@
 use openmls::prelude::{tls_codec::*, *};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
+use std::io::Read;
 use std::{collections::HashMap, ops::Deref};
 
 use crate::utils::{generate_credential_with_key, generate_key_package};
 use openmls::prelude::{KeyPackage, TlsDeserialize, TlsSerialize};
 use openmls::prelude::{MlsMessageBodyIn, MlsMessageIn};
+
+type GroupId = Vec<u8>;
+type SerializedMessage = Vec<u8>;
+type SerializedProposal = Vec<u8>;
 
 
 pub struct RenderableMessage {
@@ -44,7 +49,7 @@ pub struct ConvoManager {
     ciphersuite: Ciphersuite,
     signer: SignatureKeyPair,
     credential_with_key: CredentialWithKey,
-    pub groups: HashMap<Vec<u8>, LocalGroup>,
+    pub groups: HashMap<GroupId, LocalGroup>,
 }
 
 pub struct ProcessedResults {
@@ -228,8 +233,8 @@ impl ConvoManager {
 
     pub fn process_incoming_message(
         &mut self,
-        group_id: Vec<u8>,
-        serialized_message: Vec<u8>,
+        group_id: GroupId,
+        serialized_message: SerializedMessage,
     ) -> ProcessedResults {
         let group = self.groups.get_mut(&group_id).unwrap();
         let mls_group = &mut group.mls_group;
@@ -300,9 +305,9 @@ impl ConvoManager {
 
     pub fn kick_member(
         &mut self,
-        group_id: Vec<u8>,
+        group_id: GroupId,
         serialized_key_package: Vec<u8>,
-    ) -> (Vec<u8>, Option<Vec<u8>>) {
+    ) -> (SerializedMessage, Option<Vec<u8>>) {
         let group = self.groups.get_mut(&group_id).unwrap();
         let mls_group = &mut group.mls_group;
 
@@ -358,10 +363,6 @@ impl ConvoManager {
     // }
 
     pub fn request_join(&mut self, group_id: GroupId, epoch: GroupEpoch) -> Vec<u8> {
-        // let group = self.groups.get_mut(&group_name).unwrap();
-        // let mls_group = &mut group.mls_group;
-
-        // let epoch = mls_group.epoch();
         let key_package_in = KeyPackageIn::tls_deserialize_exact(self.get_key_package())
             .expect("Error deserializing key package");
 
@@ -372,7 +373,7 @@ impl ConvoManager {
         let proposal =
             JoinProposal::new::<<OpenMlsRustCrypto as OpenMlsProvider>::StorageProvider>(
                 key_package,
-                group_id.clone(),
+                openmls::group::GroupId::from_slice(group_id.as_slice()),
                 epoch.clone(),
                 &self.signer,
             )

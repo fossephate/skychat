@@ -18,3 +18,4 @@ uuid = { version = "1.13.1", features = [
 ] }
 serde_json = { version = "1.0" }
 serde = { version = "1.0.217", features = ["derive"] }
+rocket = { version = "0.5.1", features = ["json"] }

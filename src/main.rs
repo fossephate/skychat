@@ -1,18 +1,26 @@
+// src/main.rs
+
+#[macro_use]
+extern crate rocket;
+
 use colored::*;
-use openmls::prelude::{tls_codec::*, *};
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_rust_crypto::OpenMlsRustCrypto;
 use rand::Rng;
-use std::collections::HashMap;
+use rocket::{fs::Options, Config};
+use std::sync::Mutex;
 
 pub mod convo;
 pub mod server;
+pub mod client;
+
 use convo::ConvoManager;
 use server::*;
+use client::*;
 pub mod utils;
+use std::env;
+pub mod web;
+use web::*;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn client() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n<------ Hello, world! ------->\n");
 
     // create alice and bob:
@@ -201,10 +209,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     println!("Group name: {:?}", group.name);
     // }
 
-
     // bob and alice can now send messages to each other:\
     println!("<!------ Bob sends a message to alice! ------->");
-    bobClient.send_message(group_id.clone(), "Hello, alice!".to_string()).await;
+    bobClient
+        .send_message(group_id.clone(), "Hello, alice!".to_string())
+        .await;
     // println!("<!------ Alice sends a message to bob! ------->");
     // aliceClient.send_message(group_id.clone(), "Hello, bob!".to_string()).await;
 
@@ -220,8 +229,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // bob's message list:
     let messages = bobClient.get_group_messages(group_id.clone());
     println!("Bob's message list: {:?}", messages);
-
-    
 
     // aliceClient.invite_user_to_group("bob".to_string(), "alice_group".to_string());
 
@@ -354,4 +361,59 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n<------ Goodbye, world! ------->\n");
     Ok(())
+}
+
+async fn server() {
+    println!("Launching Rocket server...");
+
+    // run on port 8080:
+    let config = Config {
+        port: 8080,
+        ..Config::default()
+    };
+
+    let server_state = ServerState {
+        convo_server: Mutex::new(ConvoServer::new()),
+    };
+    let rocket = rocket::custom(config)
+        .mount(
+            "/api",
+            rocket::routes![
+                connect,
+                list_users,
+                invite_user,
+                create_group,
+                get_new_messages,
+                accept_invite,
+                send_message
+            ],
+        )
+        .manage(rocket::tokio::sync::broadcast::channel::<tokio::net::windows::named_pipe::PipeMode>(1024).0)
+        .manage(server_state);
+
+    if let Err(e) = rocket.launch().await {
+        println!("Rocket server error: {}", e);
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    match args.get(1).map(|s| s.as_str()) {
+        Some("client") => {
+            println!("Starting client...");
+            client().await;
+        }
+        Some("server") => {
+            // Handle join command
+            println!("Starting server...");
+            server().await;
+        }
+        _ => {
+            println!("Usage:");
+            println!("  cargo run client");
+            println!("  cargo run server");
+        }
+    }
 }
