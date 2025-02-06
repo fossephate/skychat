@@ -140,3 +140,17 @@ pub async fn accept_invite(data: Json<AcceptInvite>, state: &State<ServerState>)
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     server.client_accept_invite(data.group_id.clone(), data.sender_id.clone());
 }
+
+// GET /group_info (json containing group_id and sender_id)
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetGroupInfo {
+    pub group_id: Vec<u8>,
+    pub sender_id: String,
+}
+#[post("/group_index", format = "json", data = "<data>")]
+pub async fn group_index(data: Json<GetGroupInfo>, state: &State<ServerState>) -> Json<u64> {
+    let server = state.convo_server.lock().expect("failed to lock server!");
+    // let messages = server.client_get_group_info(data.group_id.clone(), data.sender_id.clone());
+    let global_index = server.client_get_group_index(data.group_id.clone(), data.sender_id.clone());
+    Json(global_index)
+}

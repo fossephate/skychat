@@ -15,9 +15,9 @@ type SerializedMessage = Vec<u8>;
 type SerializedProposal = Vec<u8>;
 
 
-pub struct RenderableMessage {
-    pub message: String,
-    pub sender: String,
+pub struct MessageItem {
+    pub text: String,
+    pub sender_id: String,
     pub timestamp: u64,
 }
 
@@ -25,7 +25,7 @@ pub struct LocalGroup {
     pub name: String,
     pub global_index: u64,
     pub mls_group: MlsGroup,
-    pub decrypted: Vec<String>,
+    pub decrypted: Vec<MessageItem>,
 }
 
 // impl Deref for Group {
@@ -146,7 +146,7 @@ impl ConvoManager {
         .expect("Error creating a staged join from Welcome");
 
         // Finally, bob can create the group
-        let mut new_group = bob_staged_join
+        let new_group = bob_staged_join
             .into_group(&self.provider)
             .expect("Error creating the group from the staged join");
 
@@ -237,6 +237,8 @@ impl ConvoManager {
         &mut self,
         group_id: GroupId,
         serialized_message: SerializedMessage,
+        // default values for sender_id and sender_name are None
+        sender_id: Option<String>,
     ) -> ProcessedResults {
         let group = self.groups.get_mut(&group_id).unwrap();
         let mls_group = &mut group.mls_group;
@@ -255,10 +257,18 @@ impl ConvoManager {
         let processed_content = processed_message.into_content();
         let processed_results = match processed_content {
             ProcessedMessageContent::ApplicationMessage(msg) => {
-                let message = String::from_utf8(msg.into_bytes()).unwrap();
-                group.decrypted.push(message.clone());
+                let text = String::from_utf8(msg.into_bytes()).unwrap();
+                let timestamp = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                group.decrypted.push(MessageItem {
+                    text: text.clone(),
+                    sender_id: sender_id.unwrap_or("Unknown".to_string()),
+                    timestamp: timestamp,
+                });
                 ProcessedResults {
-                    message: Some(message),
+                    message: Some(text),
                     welcome: None,
                 }
             }

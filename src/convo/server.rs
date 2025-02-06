@@ -108,6 +108,11 @@ impl ConvoServer {
         self.users.values().cloned().collect()
     }
 
+    pub fn client_get_group_index(&self, group_id: Vec<u8>, sender_id: String) -> u64 {
+        let group = self.groups.get(&group_id).expect("Group not found");
+        group.global_index
+    }
+
     // pub fn client_get(&self, group_id: Vec<u8>) ->  {
 
     pub fn client_get_new_messages(
@@ -214,7 +219,7 @@ impl ConvoServer {
             group.global_index += 1;
             return Ok(());
         } else {
-            if (global_index > group.global_index) {
+            if global_index > group.global_index {
                 // TODO: send a message to the client that the message is out of order
                 return Err("Message is somehow too new!".to_string());
             } else {

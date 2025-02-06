@@ -29,7 +29,8 @@ async fn main() {
                 create_group,
                 get_new_messages,
                 accept_invite,
-                send_message
+                send_message,
+                group_index,
             ],
         )
         .manage(server_state);
