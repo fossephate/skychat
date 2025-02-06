@@ -1,10 +1,8 @@
-use crate::convo::ConvoManager;
-use openmls::{group::GroupId, prelude::KeyPackage};
-use reqwest;
+// src/convo/server.rs
+
+use crate::convo::manager::ConvoManager;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::collections::HashMap;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConvoUser {
@@ -205,7 +203,7 @@ impl ConvoServer {
     ) -> Result<(), String> {
         let group = self.groups.get_mut(&group_id).expect("Group not found");
 
-        if (global_index == group.global_index) {
+        if global_index == group.global_index {
             group.messages.push(ConvoMessage {
                 global_index: group.global_index,
                 sender_id: sender_id.clone(),

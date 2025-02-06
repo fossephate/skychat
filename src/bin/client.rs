@@ -1,28 +1,11 @@
-// src/main.rs
-
-#[macro_use]
-extern crate rocket;
+// src/bin/client.rs
 
 use colored::*;
 use rand::Rng;
-use rocket::{fs::Options, Config};
-use std::sync::Mutex;
+use skychat::client::ConvoClient;
+use skychat::manager::ConvoManager;
 
-pub mod convo;
-pub mod server;
-pub mod client;
-
-use convo::ConvoManager;
-use server::*;
-use client::*;
-pub mod utils;
-use std::env;
-pub mod web;
-use web::*;
-
-async fn client() -> Result<(), Box<dyn std::error::Error>> {
-    println!("\n<------ Hello, world! ------->\n");
-
+async fn manual_chat() {
     // create alice and bob:
     let mut alice = ConvoManager::init("alice".to_string());
     let mut bob = ConvoManager::init("bob".to_string());
@@ -142,6 +125,13 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     // let serialized_message = david.create_message(gn.clone(), message_text);
 
     // end of old code
+}
+
+async fn client() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n<------ Hello, world! ------->\n");
+
+    // make sure all our base functions still work:
+    manual_chat().await;
 
     // start a client:
     println!("\n\n<!------ Starting alice client and connecting to server... ------->");
@@ -363,57 +353,10 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn server() {
-    println!("Launching Rocket server...");
-
-    // run on port 8080:
-    let config = Config {
-        port: 8080,
-        ..Config::default()
-    };
-
-    let server_state = ServerState {
-        convo_server: Mutex::new(ConvoServer::new()),
-    };
-    let rocket = rocket::custom(config)
-        .mount(
-            "/api",
-            rocket::routes![
-                connect,
-                list_users,
-                invite_user,
-                create_group,
-                get_new_messages,
-                accept_invite,
-                send_message
-            ],
-        )
-        .manage(rocket::tokio::sync::broadcast::channel::<tokio::net::windows::named_pipe::PipeMode>(1024).0)
-        .manage(server_state);
-
-    if let Err(e) = rocket.launch().await {
-        println!("Rocket server error: {}", e);
-    }
-}
-
 #[tokio::main]
-async fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    match args.get(1).map(|s| s.as_str()) {
-        Some("client") => {
-            println!("Starting client...");
-            client().await;
-        }
-        Some("server") => {
-            // Handle join command
-            println!("Starting server...");
-            server().await;
-        }
-        _ => {
-            println!("Usage:");
-            println!("  cargo run client");
-            println!("  cargo run server");
-        }
-    }
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Starting client...");
+    // Move your client() function code here
+    client().await;
+    Ok(())
 }

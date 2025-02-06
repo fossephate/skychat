@@ -1,4 +1,6 @@
-use crate::{convo::ConvoManager, server::{ConvoInvite, ConvoMessage, ConvoUser}};
+// src/convo/client.rs
+
+use crate::convo::{manager::ConvoManager, server::{ConvoInvite, ConvoMessage, ConvoUser}};
 
 type GroupId = Vec<u8>;
 type SerializedMessage = Vec<u8>;
@@ -43,7 +45,7 @@ impl ConvoClient {
           .await;
   }
 
-  pub async fn get_group_id(&self, group_name: String) -> Vec<u8> {
+  pub async fn get_group_id(&self, group_name: String) -> GroupId {
       // get group where group.name == group_name:
       let (group_id, group) = self
           .manager

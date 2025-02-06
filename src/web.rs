@@ -2,12 +2,12 @@
 
 use std::sync::Mutex;
 
-use rocket::post;
+use rocket::{get, post};
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 
-use crate::server::{ConvoMessage, ConvoServer, ConvoUser};
+use crate::convo::server::{ConvoMessage, ConvoServer, ConvoUser};
 
 pub struct ServerState {
     pub convo_server: Mutex<ConvoServer>,
