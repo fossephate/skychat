@@ -22,9 +22,9 @@ rocket = { version = "0.5.1", features = ["json"] }
 
 
 [[bin]]
-name = "skychat-client"
+name = "client"
 path = "src/bin/client.rs"
 
 [[bin]]
-name = "skychat-server"
+name = "server"
 path = "src/bin/server.rs"
