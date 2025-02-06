@@ -9,3 +9,12 @@ openmls = "0.6.0"
 openmls_basic_credential = "0.3.0"
 openmls_rust_crypto = "0.3.0"
 rand = "0.9.0"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1.13.1", features = [
+    "v4",
+    "fast-rng",
+    "macro-diagnostics",
+] }
+serde_json = { version = "1.0" }
+serde = { version = "1.0.217", features = ["derive"] }
