@@ -127,16 +127,10 @@ impl ConvoServer {
         // get the user_specific_messages for the sender_id:
         let user_specific_messages = group.user_specific_messages.get(&sender_id);
 
-        // if (user_specific_messages.is_some()) {
-        //   // slice the messages and return messages >= index:
-        //   new_messages.into_iter().skip(index as usize).collect();
-        // }
-
         // slice the messages and return messages >= index:
         new_messages = messages.clone();
-        // add the user_specific_messages to the new_messages:
-        if user_specific_messages.is_some() {
-            new_messages.extend(user_specific_messages.unwrap().clone());
+        if let Some(specific_messages) = user_specific_messages {
+            new_messages.extend(specific_messages.iter().cloned());
         }
         // filter all messages with global_index >= index:
         new_messages = new_messages
