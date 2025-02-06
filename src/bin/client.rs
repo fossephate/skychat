@@ -2,8 +2,8 @@
 
 use colored::*;
 use rand::Rng;
-use skychat::client::ConvoClient;
-use skychat::manager::ConvoManager;
+use skychat::convo::client::ConvoClient;
+use skychat::convo::manager::ConvoManager;
 
 async fn manual_chat() {
     // create alice and bob:
