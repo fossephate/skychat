@@ -365,7 +365,7 @@ impl ConvoClient {
         &group.decrypted
     }
 
-    pub fn display_group_messages(&self, group_id: GroupId) {
+    pub fn display_group_messages(&self, group_id: GroupId) -> Vec<String>{
         let messages = self.get_group_messages(group_id);
         // println!("{}", format!("Group messages: {:?}", messages).green());
         // loop through all the messages and print them, color coding the sender:
@@ -388,6 +388,8 @@ impl ConvoClient {
             color_index += 1;
         }
 
+        let mut display_messages = Vec::new();
+
         for message in messages {
             let sender_name = self
                 .id_to_name
@@ -397,8 +399,12 @@ impl ConvoClient {
                 .get(&message.sender_id)
                 .expect("color not found");
 
+            display_messages.push(format!("{}: {}", sender_name.color(*color).bold(), message.text));
+
             // Use the color to format the sender name, leave message plain
-            println!("{}: {}", sender_name.color(*color).bold(), message.text);
+            // println!("{}: {}", sender_name.color(*color).bold(), message.text);
         }
+        
+        display_messages
     }
 }
