@@ -250,11 +250,22 @@ impl ConvoManager {
         let protocol_message: ProtocolMessage = mls_message
             .try_into_protocol_message()
             .expect("Expected a PublicMessage or a PrivateMessage");
-        let processed_message = mls_group
-            .process_message(&self.provider, protocol_message)
-            .expect("Could not process message.");
+        // let processed_message = mls_group
+        //     .process_message(&self.provider, protocol_message)
+        //     .expect("Could not process message.");
 
-        let processed_content = processed_message.into_content();
+        let processed_message = mls_group
+        .process_message(&self.provider, protocol_message);
+
+        if processed_message.is_err() {
+            // println!("Error processing message: {:?}", processed_message.err().unwrap());
+            return ProcessedResults {
+                message: None,
+                welcome: None,
+            };
+        }
+
+        let processed_content = processed_message.unwrap().into_content();
         let processed_results = match processed_content {
             ProcessedMessageContent::ApplicationMessage(msg) => {
                 let text = String::from_utf8(msg.into_bytes()).unwrap();

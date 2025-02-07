@@ -88,7 +88,7 @@ pub async fn create_group(data: Json<CreateGroup>, state: &State<ServerState>) {
 // returns Vec<ConvoMessage>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetMessages {
-    pub group_id: Vec<u8>, // the group to get messages from
+    pub group_id: Option<Vec<u8>>, // the group to get messages from
     pub sender_id: String, // the user requesting the messages
     pub index: u64,        // the index of the first message to get
 }
@@ -97,7 +97,7 @@ pub async fn get_new_messages(
     data: Json<GetMessages>,
     state: &State<ServerState>,
 ) -> Json<Vec<ConvoMessage>> {
-    let server = state.convo_server.lock().expect("failed to lock server!");
+    let mut server = state.convo_server.lock().expect("failed to lock server!");
     let messages = server.client_get_new_messages(
         data.group_id.clone(),
         data.sender_id.clone(),

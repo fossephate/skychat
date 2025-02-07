@@ -4,6 +4,8 @@ use crate::convo::manager::ConvoManager;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+type GroupId = Vec<u8>;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConvoUser {
     pub name: String,
@@ -36,7 +38,6 @@ pub struct ConvoGroup {
     pub global_index: u64,
     pub user_ids: Vec<String>,
     pub messages: Vec<ConvoMessage>,
-    pub user_specific_messages: HashMap<String, Vec<ConvoMessage>>,
 }
 
 pub struct ConvoServer {
@@ -44,6 +45,7 @@ pub struct ConvoServer {
     pub manager: ConvoManager,
     pub users: HashMap<String, ConvoUser>,
     pub groups: HashMap<Vec<u8>, ConvoGroup>,
+    pub user_specific_messages: HashMap<String, Vec<ConvoMessage>>,
 }
 
 impl ConvoServer {
@@ -52,6 +54,7 @@ impl ConvoServer {
             manager: ConvoManager::init("server".to_string()),
             users: HashMap::new(),
             groups: HashMap::new(),
+            user_specific_messages: HashMap::new(),
         }
     }
 
@@ -73,7 +76,6 @@ impl ConvoServer {
             global_index: 0,
             user_ids: vec![sender_id.clone()],
             messages: Vec::new(),
-            user_specific_messages: HashMap::new(),
         };
         self.groups.insert(group_id, group);
     }
@@ -84,7 +86,7 @@ impl ConvoServer {
 
         // delete the invite from the user_specific_messages for the sender_id:
         // TODO: just delete the most recent message or more specifically the invite!:
-        group.user_specific_messages.remove(&sender_id);
+        self.user_specific_messages.remove(&sender_id);
     }
 
     // function with client_ are callable by clients:
@@ -116,27 +118,34 @@ impl ConvoServer {
     // pub fn client_get(&self, group_id: Vec<u8>) ->  {
 
     pub fn client_get_new_messages(
-        &self,
-        group_id: Vec<u8>,
+        &mut self,
+        group_id: Option<GroupId>,
         sender_id: String,
         index: u64,
     ) -> Vec<ConvoMessage> {
-        let group = self.groups.get(&group_id);
-        if group.is_none() {
-            return Vec::new();
-        }
-        let group = group.unwrap();
-        let messages: Vec<ConvoMessage> = group.messages.clone();
+
         let mut new_messages: Vec<ConvoMessage> = Vec::new();
+        let mut existing_messages: Vec<ConvoMessage> = Vec::new();
+
+        if let Some(group_id) = group_id {
+            let group = self.groups.get(&group_id);
+            if group.is_some() {
+                existing_messages = group.unwrap().messages.clone();
+            }
+        }
 
         // get the user_specific_messages for the sender_id:
-        let user_specific_messages = group.user_specific_messages.get(&sender_id);
+        let user_specific_messages = self.user_specific_messages.get(&sender_id);
 
         // slice the messages and return messages >= index:
-        new_messages = messages.clone();
+        new_messages = existing_messages.clone();
         if let Some(specific_messages) = user_specific_messages {
             new_messages.extend(specific_messages.iter().cloned());
+            // delete all user_specific_messages for the sender_id since they should be processed:
+            // TODO: this should ideally be acknowledged by the client somehow before deleting:
+            self.user_specific_messages.remove(&sender_id);
         }
+
         // filter all messages with global_index >= index:
         new_messages = new_messages
             .into_iter()
@@ -148,9 +157,7 @@ impl ConvoServer {
         // add the user_specific_messages to the messages:
         // new_messages.extend(user_specific_messages);
 
-        // delete all user_specific_messages for the sender_id since they should be processed:
-        // TODO: unsafe! this should be acknowledged by the client before deleting, or the client should schedule deletion
-        // group.user_specific_messages.remove(&sender_id);
+
 
         new_messages
     }
@@ -170,16 +177,16 @@ impl ConvoServer {
 
         // update the group with the fanned out messages:
         // check if the user_id already has a user_specific_messages vector:
-        if !group
+        if !self
             .user_specific_messages
             .contains_key(&receiver_id.clone())
         {
-            group
+            self
                 .user_specific_messages
                 .insert(receiver_id.clone(), Vec::new());
         }
         // add the welcome_message to the user_specific_messages vector:
-        group
+        self
             .user_specific_messages
             .get_mut(&receiver_id)
             .unwrap()

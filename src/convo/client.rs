@@ -212,7 +212,7 @@ impl ConvoClient {
         // self.manager.process_incoming_message(group_id, serialized_message)
     }
 
-    pub async fn process_new_messages(&mut self, group_id: GroupId, messages: Vec<ConvoMessage>) {
+    pub async fn process_new_messages(&mut self, messages: Vec<ConvoMessage>, group_id: Option<GroupId>) {
         // add the messages to the manager
         // self.manager.add_messages(messages);
 
@@ -220,38 +220,45 @@ impl ConvoClient {
         for message in messages {
             // TODO: this auto accepts invites!:
             // if the message contains an invite, process it:
-            if message.invite.is_some() {
-                let invite = message.invite.unwrap();
-                self.process_invite(invite).await;
-            }
+            // if message.invite.is_some() {
+            //     let invite = message.invite.unwrap();
+            //     self.process_invite(invite).await;
+            // }
 
-            if message.message.is_some() {
+            if message.message.is_some() && group_id.is_some() {
+                let group_id = group_id.clone().unwrap();
                 let serialized_message = message.message.unwrap();
                 self.manager.process_incoming_message(
                     group_id.clone(),
                     serialized_message,
                     Some(message.sender_id.clone()),
                 );
+                let mut group = self.manager.groups.get_mut(&group_id.clone()).unwrap();
+                if message.global_index > group.global_index {
+                    group.global_index = message.global_index;
+                }
             }
         }
     }
 
-    pub async fn check_incoming_messages(&mut self, group_id: GroupId) {
+    pub async fn check_incoming_messages(&mut self, group_id: Option<GroupId>) -> Vec<ConvoMessage> {
         let address = self
             .server_address
             .as_ref()
             .expect("server address is not set");
 
         let mut index = 0;
-        if let Some(group) = self.manager.groups.get(&group_id) {
-            index = group.global_index;
+        if let Some(group_id) = group_id.clone() {
+            if let Some(group) = self.manager.groups.get(&group_id) {
+                index = group.global_index;
+            }
         }
 
         let client = reqwest::Client::new();
         let response = client
             .post(format!("{}/api/get_new_messages", address))
             .json(&serde_json::json!({
-              "group_id": group_id.clone(),
+              "group_id": Some(group_id.clone()),
               "sender_id": self.user_id.clone(),
               "index": index,
             }))
@@ -268,7 +275,8 @@ impl ConvoClient {
         // println!("Messages: {:?}", messages.len());
 
         // println!("Response: {:?}", messages);
-        self.process_new_messages(group_id, messages).await;
+        self.process_new_messages(messages.clone(), group_id).await;
+        messages
     }
 
     pub async fn get_group_index(&mut self, group_id: GroupId) -> u64 {
@@ -299,7 +307,7 @@ impl ConvoClient {
 
     pub async fn sync_group(&mut self, group_id: GroupId) {
         // get and process any incoming messages:
-        self.check_incoming_messages(group_id.clone()).await;
+        self.check_incoming_messages(Some(group_id.clone())).await;
 
         let group_index = self.get_group_index(group_id.clone()).await;
 
@@ -404,7 +412,7 @@ impl ConvoClient {
             // Use the color to format the sender name, leave message plain
             // println!("{}: {}", sender_name.color(*color).bold(), message.text);
         }
-        
+
         display_messages
     }
 }
