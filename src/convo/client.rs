@@ -215,25 +215,26 @@ impl ConvoClient {
     pub async fn process_new_messages(&mut self, messages: Vec<ConvoMessage>, group_id: Option<GroupId>) {
         // add the messages to the manager
         // self.manager.add_messages(messages);
+        let has_group_id = group_id.is_some();
 
         // loop through the messages and process them by type:
         for message in messages {
             // TODO: this auto accepts invites!:
             // if the message contains an invite, process it:
-            // if message.invite.is_some() {
-            //     let invite = message.invite.unwrap();
-            //     self.process_invite(invite).await;
-            // }
+            if message.invite.is_some() {
+                let invite = message.invite.unwrap();
+                self.process_invite(invite).await;
+            }
 
-            if message.message.is_some() && group_id.is_some() {
-                let group_id = group_id.clone().unwrap();
+            if message.message.is_some() && has_group_id {
+                let gid: Vec<u8> = group_id.clone().unwrap();
                 let serialized_message = message.message.unwrap();
                 self.manager.process_incoming_message(
-                    group_id.clone(),
+                    gid.clone(),
                     serialized_message,
                     Some(message.sender_id.clone()),
                 );
-                let mut group = self.manager.groups.get_mut(&group_id.clone()).unwrap();
+                let mut group = self.manager.groups.get_mut(&gid.clone()).unwrap();
                 if message.global_index > group.global_index {
                     group.global_index = message.global_index;
                 }
@@ -275,7 +276,7 @@ impl ConvoClient {
         // println!("Messages: {:?}", messages.len());
 
         // println!("Response: {:?}", messages);
-        self.process_new_messages(messages.clone(), group_id).await;
+        self.process_new_messages(messages.clone(), group_id.clone()).await;
         messages
     }
 

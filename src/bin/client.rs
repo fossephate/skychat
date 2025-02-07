@@ -302,7 +302,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
         .await;
 
     println!("<!------ Bob checks his incoming messages! ------->");
-    bobClient.check_incoming_messages(group_id.clone()).await;
+    bobClient.check_incoming_messages(Some(group_id.clone())).await;
 
     println!("<!------ Bob accepts the invite! ------->");
 
@@ -345,8 +345,8 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     // println!("<!------ Bob checks his messages! ------->");
     // bobClient.check_incoming_messages(group_id.clone()).await;
     println!("<!------ Alice & Bob check their messages! ------->\n");
-    aliceClient.check_incoming_messages(group_id.clone()).await;
-    bobClient.check_incoming_messages(group_id.clone()).await;
+    aliceClient.check_incoming_messages(Some(group_id.clone())).await;
+    bobClient.check_incoming_messages(Some(group_id.clone())).await;
 
     println!("<!------ Chat history from Alice's perspective! ------->\n");
 

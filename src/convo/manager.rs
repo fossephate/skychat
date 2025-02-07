@@ -15,12 +15,14 @@ type SerializedMessage = Vec<u8>;
 type SerializedProposal = Vec<u8>;
 
 
+#[derive(Debug)]
 pub struct MessageItem {
     pub text: String,
     pub sender_id: String,
     pub timestamp: u64,
 }
 
+#[derive(Debug)]
 pub struct LocalGroup {
     pub name: String,
     pub global_index: u64,
