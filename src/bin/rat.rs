@@ -392,7 +392,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         InputMode::Chatting => {
             if let Some(client) = &app.client {
                 if let Some(group_id) = &app.current_group_id {
-                    let message_strings = client.display_group_messages(group_id.clone());
+                    let message_strings = client.get_renderable_messages(group_id.clone());
                     let messages: Vec<ListItem> = message_strings
                         .iter()
                         .map(|m| ListItem::new(m.clone()))
@@ -448,7 +448,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Terminal setup
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 

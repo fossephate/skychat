@@ -153,6 +153,7 @@ impl ConvoClient {
               "receiver_id": receiver_id.clone(),
               "welcome_message": group_invite.welcome.clone(),
               "ratchet_tree": group_invite.ratchet_tree.clone(),
+              "fanned": group_invite.fanned.clone(),
             }))
             .send()
             .await;
@@ -215,18 +216,17 @@ impl ConvoClient {
     pub async fn process_new_messages(&mut self, messages: Vec<ConvoMessage>, group_id: Option<GroupId>) {
         // add the messages to the manager
         // self.manager.add_messages(messages);
-        let has_group_id = group_id.is_some();
 
         // loop through the messages and process them by type:
         for message in messages {
-            // TODO: this auto accepts invites!:
+            // // TODO: this auto accepts invites!:
             // if the message contains an invite, process it:
-            if message.invite.is_some() {
-                let invite = message.invite.unwrap();
-                self.process_invite(invite).await;
-            }
+            // if message.invite.is_some() {
+            //     let invite = message.invite.unwrap();
+            //     self.process_invite(invite).await;
+            // }
 
-            if message.message.is_some() && has_group_id {
+            if message.message.is_some() && group_id.is_some() {
                 let gid: Vec<u8> = group_id.clone().unwrap();
                 let serialized_message = message.message.unwrap();
                 self.manager.process_incoming_message(
@@ -273,9 +273,6 @@ impl ConvoClient {
             .await
             .expect("failed to parse response");
 
-        // println!("Messages: {:?}", messages.len());
-
-        // println!("Response: {:?}", messages);
         self.process_new_messages(messages.clone(), group_id.clone()).await;
         messages
     }
@@ -374,7 +371,7 @@ impl ConvoClient {
         &group.decrypted
     }
 
-    pub fn display_group_messages(&self, group_id: GroupId) -> Vec<String>{
+    pub fn get_renderable_messages(&self, group_id: GroupId) -> Vec<String>{
         let messages = self.get_group_messages(group_id);
         // println!("{}", format!("Group messages: {:?}", messages).green());
         // loop through all the messages and print them, color coding the sender:
@@ -411,7 +408,50 @@ impl ConvoClient {
             display_messages.push(format!("{}: {}", sender_name.color(*color).bold(), message.text));
 
             // Use the color to format the sender name, leave message plain
-            // println!("{}: {}", sender_name.color(*color).bold(), message.text);
+            println!("{}: {}", sender_name.color(*color).bold(), message.text);
+        }
+
+        display_messages
+    }
+
+    pub fn print_group_messages(&self, group_id: GroupId) -> Vec<String>{
+        let messages = self.get_group_messages(group_id);
+        // println!("{}", format!("Group messages: {:?}", messages).green());
+        // loop through all the messages and print them, color coding the sender:
+
+        // assign a color to each sender:
+        // assign a color to each sender:
+        let mut sender_colors = HashMap::new();
+        let mut color_index = 0;
+        let colors = [
+            Color::Red,
+            Color::Blue,
+            Color::Yellow,
+            Color::Magenta,
+            Color::Cyan,
+            Color::Green,
+        ];
+
+        for sender in self.id_to_name.keys() {
+            sender_colors.insert(sender.clone(), colors[color_index % colors.len()]);
+            color_index += 1;
+        }
+
+        let mut display_messages = Vec::new();
+
+        for message in messages {
+            let sender_name = self
+                .id_to_name
+                .get(&message.sender_id)
+                .expect("sender not found");
+            let color = sender_colors
+                .get(&message.sender_id)
+                .expect("color not found");
+
+            display_messages.push(format!("{}: {}", sender_name.color(*color).bold(), message.text));
+
+            // Use the color to format the sender name, leave message plain
+            println!("{}: {}", sender_name.color(*color).bold(), message.text);
         }
 
         display_messages

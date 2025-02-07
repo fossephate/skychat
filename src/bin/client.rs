@@ -302,7 +302,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
         .await;
 
     println!("<!------ Bob checks his incoming messages! ------->");
-    bobClient.check_incoming_messages(Some(group_id.clone())).await;
+    bobClient.check_incoming_messages(None).await;
 
     println!("<!------ Bob accepts the invite! ------->");
 
@@ -351,12 +351,54 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     println!("<!------ Chat history from Alice's perspective! ------->\n");
 
     // message history from alice's perspective:
-    aliceClient.display_group_messages(group_id.clone());
+    aliceClient.print_group_messages(group_id.clone());
 
     println!("\n<!------ Chat history from Bob's perspective! ------->\n");
 
     // message history from bob's perspective:
-    bobClient.display_group_messages(group_id.clone());
+    bobClient.print_group_messages(group_id.clone());
+
+    // create charlie:
+    println!("<!------ Creating charlie! ------->");
+    let charlie_name = format!("charlie_{}", rand::thread_rng().gen_range(0..1000000));
+    let mut charlieClient = ConvoClient::new(charlie_name.clone());
+    charlieClient.connect_to_server(server_address.clone()).await;
+
+    // alice calls list_users, notices charlie, and invites charlie to join the group
+    let users_list = aliceClient.list_users().await;
+    let users_list = charlieClient.list_users().await;
+
+    let charlie_user = users_list
+        .iter()
+        .find(|user| user.name == charlie_name.clone())
+        .expect("charlie not found!");
+
+    let charlie_user_id = charlie_user.user_id.clone();
+    let charlie_key_package = charlie_user.serialized_key_package.clone();
+
+    println!("<!------ Alice invites charlie to the group! ------->");
+    // invite charlie to the group:
+    aliceClient.invite_user_to_group(charlie_user_id.clone(), group_id.clone(), charlie_key_package.clone()).await;
+
+
+    println!("<!------ Charlie checks his messages! ------->");
+    charlieClient.check_incoming_messages(None).await;
+
+    // bob sends a message to charlie:
+    println!("<!------ Bob sends a message to charlie! ------->");
+    bobClient.send_message(group_id.clone(), "Welcome to the group, charlie!".to_string()).await;
+
+    println!("<!------ Charlie checks his messages! ------->");
+    charlieClient.check_incoming_messages(Some(group_id.clone())).await;
+
+
+    // display message lists:
+    println!("<!------ Alice's message list! ------->");
+    aliceClient.print_group_messages(group_id.clone());
+    println!("<!------ Bob's message list! ------->");
+    bobClient.print_group_messages(group_id.clone());
+    println!("<!------ Charlie's message list! ------->");
+    charlieClient.print_group_messages(group_id.clone());
 
     // alice's message list:
     // let messages = aliceClient.get_group_messages(group_id.clone());

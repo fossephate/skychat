@@ -115,6 +115,7 @@ pub struct InviteUser {
     pub receiver_id: String,      // the user to invite
     pub welcome_message: Vec<u8>, // the welcome message to send to the user
     pub ratchet_tree: Vec<u8>,    // the ratchet tree to send to the user
+    pub fanned: Option<Vec<u8>>, // the fanned commit to send to all other users in the group
 }
 
 #[post("/invite_user", format = "json", data = "<data>")]
@@ -126,6 +127,7 @@ pub async fn invite_user(data: Json<InviteUser>, state: &State<ServerState>) {
         data.receiver_id.clone(),
         data.welcome_message.clone(),
         data.ratchet_tree.clone(),
+        data.fanned.clone(),
     );
 }
 

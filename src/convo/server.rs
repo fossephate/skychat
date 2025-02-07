@@ -123,7 +123,6 @@ impl ConvoServer {
         sender_id: String,
         index: u64,
     ) -> Vec<ConvoMessage> {
-
         let mut new_messages: Vec<ConvoMessage> = Vec::new();
         let mut existing_messages: Vec<ConvoMessage> = Vec::new();
 
@@ -157,8 +156,6 @@ impl ConvoServer {
         // add the user_specific_messages to the messages:
         // new_messages.extend(user_specific_messages);
 
-
-
         new_messages
     }
 
@@ -170,24 +167,32 @@ impl ConvoServer {
         receiver_id: String,
         welcome_message: Vec<u8>,
         ratchet_tree: Vec<u8>,
+        fanned: Option<Vec<u8>>,
     ) {
-        // print all groups:
-        println!("Groups: {:?}", self.groups);
         let mut group = self.groups.get_mut(&group_id).expect("Group not found");
 
         // update the group with the fanned out messages:
+        if let Some(fanned) = fanned {
+            group.messages.push(ConvoMessage {
+                global_index: group.global_index,
+                sender_id: sender_id.clone(),
+                message: Some(fanned),
+                unix_timestamp: 0,
+                invite: None,
+            });
+            group.global_index += 1;
+        }
+
         // check if the user_id already has a user_specific_messages vector:
         if !self
             .user_specific_messages
             .contains_key(&receiver_id.clone())
         {
-            self
-                .user_specific_messages
+            self.user_specific_messages
                 .insert(receiver_id.clone(), Vec::new());
         }
         // add the welcome_message to the user_specific_messages vector:
-        self
-            .user_specific_messages
+        self.user_specific_messages
             .get_mut(&receiver_id)
             .unwrap()
             .push(ConvoMessage {
