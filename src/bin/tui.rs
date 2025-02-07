@@ -1,14 +1,13 @@
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rand::Rng;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Spans},
+    text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Tabs},
     Frame, Terminal,
 };
@@ -20,7 +19,7 @@ use std::{
 };
 
 use skychat::convo::client::ConvoClient;
-use skychat::convo::server::{ConvoInvite, ConvoMessage};
+use skychat::convo::server::ConvoMessage;
 
 type GroupId = Vec<u8>;
 
@@ -294,6 +293,15 @@ impl App {
                         return;
                     }
 
+                    if self.input.starts_with("/test") {
+                        self.client
+                            .as_mut()
+                            .unwrap()
+                            .manager
+                            .save_credentials("keys.json");
+                        return;
+                    }
+
                     if self.input.starts_with("/kick ") {
                         let user_name = self.input[5..].to_string();
                         let user = self
@@ -340,6 +348,11 @@ impl App {
         if let Some(client) = &mut self.client {
             for message in messages {
                 // do something with incoming messages
+                // if we're not in the group view, add it to the alerts!
+                if self.input_mode != InputMode::Chatting {
+                    let user_name = client.id_to_name.get(&message.sender_id).unwrap().clone();
+                    self.incoming_alert = Some(format!("New message from {}", user_name));
+                }
             }
         }
     }
@@ -467,7 +480,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     })
                     .collect();
 
-                // let our_user_name = app.client.as_ref().unwrap().name.clone();
+                let our_user_name = app.client.as_ref().unwrap().name.clone();
                 // let empty_list = List::new(vec![ListItem::new(format!(
                 //     "Users <You are: {}>",
                 //     our_user_name
@@ -477,7 +490,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 // f.render_widget(empty_list, chunks[1]);
 
                 let users_list = List::new(users)
-                    .block(Block::default().title("Users").borders(Borders::ALL))
+                    .block(
+                        Block::default()
+                            .title(format!("Global Users <You are: {}>", our_user_name))
+                            .borders(Borders::ALL),
+                    )
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
                 f.render_stateful_widget(users_list, chunks[2], &mut app.users_scroll);
@@ -601,10 +618,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                             ListItem::new(Line::from(spans))
                         })
                         .collect();
-                    // let messages: Vec<ListItem> = message_strings
-                    //     .iter()
-                    //     .map(|m| ListItem::new(m.clone()))
-                    //     .collect();
 
                     let our_user_name = client.name.clone();
                     let messages_list = List::new(messages).block(
@@ -682,7 +695,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::default();
-    let mut server_address: String = String::new();
     let mut last_update = Instant::now();
 
     loop {
@@ -713,6 +725,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                 TabMode::Groups => TabMode::Users,
                                 TabMode::Invites => TabMode::Groups,
                             };
+                            app.incoming_alert = None;
                         }
                         KeyCode::Right => {
                             app.tab_mode = match app.tab_mode {
@@ -720,6 +733,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                 TabMode::Groups => TabMode::Invites,
                                 TabMode::Invites => TabMode::Users,
                             };
+                            app.incoming_alert = None;
                         }
                         KeyCode::Up => match app.tab_mode {
                             TabMode::Users => {
@@ -764,8 +778,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         KeyCode::Enter => {
                             if !app.input.is_empty() {
                                 let mut client = ConvoClient::new(app.input.clone());
-                                let res =
-                                    client.connect_to_server(server_address.to_string()).await;
+                                let res = client
+                                    .connect_to_server(app.server_address.to_string())
+                                    .await;
 
                                 if res.is_ok() {
                                     app.client = Some(client);
@@ -795,7 +810,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     InputMode::EnterServerAddress => match key.code {
                         KeyCode::Enter => {
                             if !app.input.is_empty() {
-                                server_address = app.input.to_string();
+                                app.server_address = app.input.to_string();
                                 app.input.clear();
                                 app.input_mode = InputMode::ChooseUsername;
                             }
