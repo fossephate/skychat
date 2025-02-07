@@ -438,7 +438,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         // Update users and groups list every 5 seconds
-        if Instant::now().duration_since(last_update) >= Duration::from_secs(5) {
+        if Instant::now().duration_since(last_update) >= Duration::from_secs(2) {
             app.update_users().await;
             app.update_groups().await;
             app.check_messages().await;
