@@ -801,6 +801,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         }
                         KeyCode::Esc => {
                             app.input_mode = InputMode::Normal;
+                            app.input.clear();
                         }
                         _ => {}
                     },
@@ -816,6 +817,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         }
                         KeyCode::Esc => {
                             app.input_mode = InputMode::Normal;
+                            app.input.clear();
                         }
                         KeyCode::Up => {
                             app.scroll_messages(true);
@@ -838,6 +840,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         KeyCode::Esc => {
                             app.input_mode = InputMode::Normal;
                             app.invites_scroll.select(None);
+                            app.input.clear();
                         }
                         _ => {}
                     },
