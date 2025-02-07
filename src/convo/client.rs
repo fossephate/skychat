@@ -406,9 +406,6 @@ impl ConvoClient {
                 .expect("color not found");
 
             display_messages.push(format!("{}: {}", sender_name.color(*color).bold(), message.text));
-
-            // Use the color to format the sender name, leave message plain
-            println!("{}: {}", sender_name.color(*color).bold(), message.text);
         }
 
         display_messages
