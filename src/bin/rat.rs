@@ -56,17 +56,16 @@ struct App {
     input_mode: InputMode,
     tab_mode: TabMode,
     users: Vec<User>,
-    selected_user: Option<usize>,
-    selected_invite: Option<usize>,
-    selected_group: Option<usize>,
     messages: Vec<String>,
     pending_invites: Vec<PendingInvite>,
     groups: Vec<GroupInfo>,
     client: Option<ConvoClient>,
     current_group_id: Option<GroupId>,
-    last_update: Instant,
     incoming_alert: Option<String>,
     messages_scroll: ListState,
+    users_scroll: ListState,
+    groups_scroll: ListState,
+    invites_scroll: ListState,
 }
 
 struct PendingInvite {
@@ -84,22 +83,27 @@ impl Default for App {
     fn default() -> App {
         let mut messages_scroll = ListState::default();
         messages_scroll.select(Some(0));
+        let mut users_scroll = ListState::default();
+        users_scroll.select(Some(0));
+        let mut groups_scroll = ListState::default();
+        groups_scroll.select(Some(0));
+        let mut invites_scroll = ListState::default();
+        invites_scroll.select(Some(0));
         App {
             input: String::new(),
             input_mode: InputMode::EnterServerAddress,
             tab_mode: TabMode::Users,
             users: Vec::new(),
-            selected_user: None,
-            selected_invite: None,
-            selected_group: None,
             messages: Vec::new(),
             pending_invites: Vec::new(),
             groups: Vec::new(),
             client: None,
             current_group_id: None,
-            last_update: Instant::now(),
             incoming_alert: None,
             messages_scroll,
+            users_scroll,
+            groups_scroll,
+            invites_scroll,
         }
     }
 }
@@ -149,6 +153,64 @@ impl App {
         }
     }
 
+    fn scroll_users(&mut self, up: bool) {
+        let len = self.users.len();
+
+        let i = match self.users_scroll.selected() {
+            Some(i) => {
+                if up {
+                    i.saturating_sub(1)
+                } else {
+                    if i < len.clone().saturating_sub(1) {
+                        i + 1
+                    } else {
+                        i
+                    }
+                }
+            }
+            None => 0,
+        };
+        self.users_scroll.select(Some(i));
+    }
+
+    fn scroll_groups(&mut self, up: bool) {
+        let len = self.groups.len();
+        let i = match self.groups_scroll.selected() {
+            Some(i) => {
+                if up {
+                    i.saturating_sub(1)
+                } else {
+                    if i < len.clone().saturating_sub(1) {
+                        i + 1
+                    } else {
+                        i
+                    }
+                }
+            }
+            None => 0,
+        };
+        self.groups_scroll.select(Some(i));
+    }
+
+    fn scroll_invites(&mut self, up: bool) {
+        let len = self.pending_invites.len();
+        let i = match self.invites_scroll.selected() {
+            Some(i) => {
+                if up {
+                    i.saturating_sub(1)
+                } else {
+                    if i < len.clone().saturating_sub(1) {
+                        i + 1
+                    } else {
+                        i
+                    }
+                }
+            }
+            None => 0,
+        };
+        self.invites_scroll.select(Some(i));
+    }
+
     async fn update_users(&mut self) {
         if let Some(client) = &mut self.client {
             let users_list = client.list_users().await;
@@ -166,7 +228,7 @@ impl App {
 
     async fn create_group(&mut self) {
         if let Some(client) = &mut self.client {
-            if let Some(selected) = self.selected_user {
+            if let Some(selected) = self.users_scroll.selected() {
                 let user = &self.users[selected];
                 let group_name = format!("{}", self.input.clone());
 
@@ -222,9 +284,28 @@ impl App {
                         client
                             .invite_user_to_group(user_id, group_id.clone(), key_package.clone())
                             .await;
+
+                        client
+                            .send_message(
+                                group_id.clone(),
+                                format!(
+                                    "<{} invited {} to join the group!",
+                                    client.name, user_name
+                                ),
+                            )
+                            .await;
                         self.input.clear();
-                        self.scroll_to_bottom();
                         return;
+                    }
+
+                    if self.input.starts_with("/kick ") {
+                        let user_name = self.input[5..].to_string();
+                        let user = self
+                            .users
+                            .iter()
+                            .find(|user| user.name == user_name.clone())
+                            .expect("user not found!");
+                        // client.kick_user_from_group(user.user_id.clone(), group_id.clone()).await;
                     }
 
                     client
@@ -250,7 +331,7 @@ impl App {
     }
 
     async fn enter_group(&mut self) {
-        if let Some(selected) = self.selected_group {
+        if let Some(selected) = self.groups_scroll.selected() {
             if selected < self.groups.len() {
                 let group = &self.groups[selected];
                 self.current_group_id = Some(group.id.clone());
@@ -282,13 +363,13 @@ impl App {
 
     async fn accept_invite(&mut self) {
         if let Some(client) = &mut self.client {
-            if let Some(selected) = self.selected_invite {
+            if let Some(selected) = self.invites_scroll.selected() {
                 if selected < self.pending_invites.len() {
                     let invite = self.pending_invites.remove(selected);
                     client.process_invite(invite.invite).await;
                     self.input_mode = InputMode::Normal;
                     self.tab_mode = TabMode::Groups;
-                    self.selected_invite = None;
+                    self.invites_scroll.select(None);
                     self.update_groups().await;
                 }
             }
@@ -296,15 +377,15 @@ impl App {
     }
 
     async fn decline_invite(&mut self) {
-        if let Some(selected) = self.selected_invite {
+        if let Some(selected) = self.invites_scroll.selected() {
             if selected < self.pending_invites.len() {
                 self.pending_invites.remove(selected);
-                self.selected_invite = None;
+                self.invites_scroll.select(None);
                 self.input_mode = InputMode::Normal;
             }
         }
     }
-    
+
     fn scroll_to_bottom(&mut self) {
         if let Some(client) = &self.client {
             if let Some(group_id) = &self.current_group_id {
@@ -372,7 +453,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     .iter()
                     .enumerate()
                     .map(|(i, group)| {
-                        let style = if Some(i) == app.selected_group {
+                        let style = if Some(i) == app.groups_scroll.selected() {
                             Style::default().fg(Color::Yellow)
                         } else {
                             Style::default()
@@ -385,7 +466,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     .block(Block::default().title("Your Groups").borders(Borders::ALL))
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
-                f.render_widget(groups_list, chunks[2]);
+                f.render_stateful_widget(groups_list, chunks[2], &mut app.groups_scroll);
             }
             TabMode::Users => {
                 let users: Vec<ListItem> = app
@@ -393,7 +474,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     .iter()
                     .enumerate()
                     .map(|(i, user)| {
-                        let style = if Some(i) == app.selected_user {
+                        let style = if Some(i) == app.users_scroll.selected() {
                             Style::default().fg(Color::Yellow)
                         } else {
                             Style::default()
@@ -412,7 +493,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     )
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
-                f.render_widget(users_list, chunks[2]);
+                f.render_stateful_widget(users_list, chunks[2], &mut app.users_scroll);
             }
             TabMode::Invites => {
                 let invites: Vec<ListItem> = app
@@ -420,7 +501,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     .iter()
                     .enumerate()
                     .map(|(i, invite)| {
-                        let style = if Some(i) == app.selected_invite {
+                        let style = if Some(i) == app.invites_scroll.selected() {
                             Style::default().fg(Color::Yellow)
                         } else {
                             Style::default()
@@ -441,7 +522,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     )
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
-                f.render_widget(invites_list, chunks[2]);
+                f.render_stateful_widget(invites_list, chunks[2], &mut app.invites_scroll);
             }
         },
         InputMode::ChooseUsername => {
@@ -463,7 +544,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             f.render_widget(input, chunks[2]);
         }
         InputMode::CreatingGroup => {
-            let user_strings = vec![app.users[app.selected_user.unwrap()].name.clone()];
+            let user_strings = vec![app.users[app.users_scroll.selected().unwrap()].name.clone()];
             let users: Vec<ListItem> = user_strings
                 .iter()
                 .map(|u| ListItem::new(u.clone()))
@@ -489,7 +570,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     let our_user_name = client.name.clone();
                     let messages_list = List::new(messages).block(
                         Block::default()
-                            .title(format!("Messages <You are: {}>", our_user_name))
+                            .title(format!("Messages"))
                             .borders(Borders::ALL),
                     );
 
@@ -509,19 +590,25 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                         &mut app.messages_scroll,
                     );
                     f.render_widget(users_list.clone(), middle_chunks[1]);
+
+                    // in place of the tabs list, render You are: <your name>
+                    let title = format!("You are: {}", our_user_name);
+                    let title_widget = List::new(vec![ListItem::new(title.clone())])
+                        .block(Block::default().borders(Borders::ALL));
+                    f.render_widget(title_widget, chunks[0]);
                 }
             }
         }
         InputMode::AcceptingInvite => {
-            if let Some(selected) = app.selected_invite {
+            if let Some(selected) = app.invites_scroll.selected() {
                 if let Some(invite) = app.pending_invites.get(selected) {
                     let text = format!(
-                        "Accept invite to group {} from {}? (y/n)",
+                        "Accept invite to group {} from {}? (Y/n)",
                         invite.group_name, invite.sender_name
                     );
                     let prompt = Paragraph::new(text).block(
                         Block::default()
-                            .title("Accept Invite")
+                            .title("Processing Invite")
                             .borders(Borders::ALL),
                     );
                     f.render_widget(prompt, chunks[2]);
@@ -534,7 +621,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         InputMode::Normal => "Use Arrow keys / Enter to navigate, <Esc to exit>",
         InputMode::ChooseUsername => "Enter username",
         InputMode::Chatting => "Enter message <Esc to go back>",
-        InputMode::AcceptingInvite => "y to accept, n to decline <Esc to go back>",
+        InputMode::AcceptingInvite => "Press Y/n to accept/decline <Esc to go back>",
         InputMode::CreatingGroup => "Enter a name for the group! <Esc to go back>",
         InputMode::EnterServerAddress => "Enter server address",
     };
@@ -595,65 +682,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         }
                         KeyCode::Up => match app.tab_mode {
                             TabMode::Users => {
-                                if let Some(selected) = app.selected_user {
-                                    if selected > 0 {
-                                        app.selected_user = Some(selected - 1);
-                                    }
-                                } else {
-                                    app.selected_user = Some(0);
-                                }
+                                app.scroll_users(true);
                             }
                             TabMode::Groups => {
-                                if let Some(selected) = app.selected_group {
-                                    if selected > 0 {
-                                        app.selected_group = Some(selected - 1);
-                                    }
-                                } else {
-                                    app.selected_group = Some(0);
-                                }
+                                app.scroll_groups(true);
                             }
                             TabMode::Invites => {
-                                if let Some(selected) = app.selected_invite {
-                                    if selected > 0 {
-                                        app.selected_invite = Some(selected - 1);
-                                    }
-                                } else {
-                                    app.selected_invite = Some(0);
-                                }
+                                app.scroll_invites(true);
                             }
                         },
                         KeyCode::Down => match app.tab_mode {
                             TabMode::Users => {
-                                if let Some(selected) = app.selected_user {
-                                    if selected < app.users.len().saturating_sub(1) {
-                                        app.selected_user = Some(selected + 1);
-                                    }
-                                } else {
-                                    app.selected_user = Some(0);
-                                }
+                                app.scroll_users(false);
                             }
                             TabMode::Groups => {
-                                if let Some(selected) = app.selected_group {
-                                    if selected < app.groups.len().saturating_sub(1) {
-                                        app.selected_group = Some(selected + 1);
-                                    }
-                                } else {
-                                    app.selected_group = Some(0);
-                                }
+                                app.scroll_groups(false);
                             }
                             TabMode::Invites => {
-                                if let Some(selected) = app.selected_invite {
-                                    if selected < app.pending_invites.len().saturating_sub(1) {
-                                        app.selected_invite = Some(selected + 1);
-                                    }
-                                } else {
-                                    app.selected_invite = Some(0);
-                                }
+                                app.scroll_invites(false);
                             }
                         },
                         KeyCode::Enter => match app.tab_mode {
                             TabMode::Users => {
-                                if app.selected_user.is_some() {
+                                if app.users_scroll.selected().is_some() {
                                     app.input_mode = InputMode::CreatingGroup;
                                 }
                             }
@@ -661,7 +712,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                 app.enter_group().await;
                             }
                             TabMode::Invites => {
-                                if app.selected_invite.is_some() {
+                                if app.invites_scroll.selected().is_some() {
                                     app.input_mode = InputMode::AcceptingInvite;
                                 }
                             }
@@ -697,7 +748,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             app.input.pop();
                         }
                         KeyCode::Esc => {
-                            // exit the program
                             break;
                         }
                         _ => {}
@@ -717,7 +767,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             app.input.pop();
                         }
                         KeyCode::Esc => {
-                            // exit the program
                             break;
                         }
                         _ => {}
@@ -767,12 +816,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         KeyCode::Char('y') => {
                             app.accept_invite().await;
                         }
+                        KeyCode::Enter => {
+                            app.accept_invite().await;
+                        }
                         KeyCode::Char('n') => {
                             app.decline_invite().await;
                         }
                         KeyCode::Esc => {
                             app.input_mode = InputMode::Normal;
-                            app.selected_invite = None;
+                            app.invites_scroll.select(None);
                         }
                         _ => {}
                     },
