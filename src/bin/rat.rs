@@ -562,9 +562,18 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             if let Some(client) = &app.client {
                 if let Some(group_id) = &app.current_group_id {
                     let message_strings = client.get_renderable_messages(group_id.clone());
+                    // highlight the message that is selected:
                     let messages: Vec<ListItem> = message_strings
                         .iter()
-                        .map(|m| ListItem::new(m.clone()))
+                        .enumerate()
+                        .map(|(i, m)| {
+                            let style = if Some(i) == app.messages_scroll.selected() {
+                                Style::default().fg(Color::Yellow)
+                            } else {
+                                Style::default()
+                            };
+                            ListItem::new(m.clone()).style(style)
+                        })
                         .collect();
 
                     let our_user_name = client.name.clone();
