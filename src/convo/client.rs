@@ -415,4 +415,12 @@ impl ConvoClient {
 
         display_messages
     }
+
+    pub fn name_to_id(&self, user_name: String) -> String {
+        self.id_to_name
+            .iter()
+            .find(|(_, name)| **name == user_name)
+            .map(|(id, _)| id.clone())
+            .unwrap()
+    }
 }

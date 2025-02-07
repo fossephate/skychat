@@ -408,7 +408,7 @@ impl ConvoManager {
 
         serialized_proposal
     }
-
+    
     // pub fn send_message_to_group(
     //     message: String,
     //     public_group_state: PublicGroupState,

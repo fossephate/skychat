@@ -112,7 +112,7 @@ impl App {
         if let Some(client) = &mut self.client {
             if let Some(selected) = self.selected_user {
                 let user = &self.users[selected];
-                let group_name = format!("group_{}", self.input.clone());
+                let group_name = format!("{}", self.input.clone());
 
                 client.create_group(group_name.clone()).await;
                 let group_id = client.get_group_id(group_name).await;
@@ -146,6 +146,25 @@ impl App {
         if let Some(client) = &mut self.client {
             if let Some(group_id) = &self.current_group_id {
                 if !self.input.is_empty() {
+
+                    // check if the message is a /inv <user_name> command:
+                    if self.input.starts_with("/inv ") {
+                        let user_name = self.input[5..].to_string();
+                        // TODO: breaks if people have the same name!
+                        // let user_id = client.name_to_id(user_name);
+                        // let key_package = self.users.iter().find(|u| u.name == user_name).unwrap().key_package.clone();
+                        let user = self.users
+                        .iter()
+                        .find(|user| user.name == user_name.clone())
+                        .expect("user not found!");
+
+                        let key_package = user.key_package.clone();
+                        let user_id = user.user_id.clone();
+                        client.invite_user_to_group(user_id, group_id.clone(), key_package.clone()).await;
+                        self.input.clear();
+                        return;
+                    }
+
                     client
                         .send_message(group_id.clone(), self.input.clone())
                         .await;
