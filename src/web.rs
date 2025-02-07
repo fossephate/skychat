@@ -1,6 +1,6 @@
 // src/web.rs
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use rocket::{get, post};
 use rocket::serde::json::Json;
@@ -9,9 +9,20 @@ use rocket::State;
 
 use crate::convo::server::{ConvoMessage, ConvoServer, ConvoUser};
 
+
 pub struct ServerState {
-    pub convo_server: Mutex<ConvoServer>,
+    pub convo_server: Arc<Mutex<ConvoServer>>,
 }
+
+impl Clone for ServerState {
+    fn clone(&self) -> Self {
+        ServerState {
+            convo_server: Arc::clone(&self.convo_server),
+        }
+    }
+}
+
+
 
 // POST /api/connect (json containing name and user_id)
 

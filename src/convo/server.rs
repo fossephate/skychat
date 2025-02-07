@@ -2,8 +2,7 @@
 
 use crate::{convo::manager::ConvoManager, utils};
 use serde::{Deserialize, Serialize};
-use tokio::time::interval;
-use std::{collections::HashMap, sync::{Arc, Mutex}, time::Duration};
+use std::collections::HashMap;
 
 type GroupId = Vec<u8>;
 
@@ -51,30 +50,39 @@ pub struct ConvoServer {
 }
 
 impl ConvoServer {
-    pub fn new() -> Arc<Mutex<Self>> {
-        let server = Arc::new(Mutex::new(Self {
+    pub fn new() -> Self {
+        Self {
             manager: ConvoManager::init("server".to_string()),
             users: HashMap::new(),
             groups: HashMap::new(),
             user_specific_messages: HashMap::new(),
-        }));
+        }
+    }
 
-        // Clone Arc for the background task
-        let server_clone = Arc::clone(&server);
+    pub fn cleanup_inactive_users(&mut self) {
+        let current_time = utils::current_timestamp();
+        let timeout_threshold = 30; // 30 seconds timeout
 
-        // Spawn background cleanup task
-        tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(10));
+        // Collect user IDs to remove
+        let inactive_users: Vec<String> = self
+            .users
+            .iter()
+            .filter(|(_, user)| current_time - user.last_active > timeout_threshold)
+            .map(|(user_id, _)| user_id.clone())
+            .collect();
 
-            loop {
-                interval.tick().await;
-                if let Ok(mut server) = server_clone.lock() {
-                    server.cleanup_inactive_users();
-                }
-            }
-        });
+        // // Remove inactive users from all groups
+        // for group in self.groups.values_mut() {
+        //     group
+        //         .user_ids
+        //         .retain(|user_id| !inactive_users.contains(user_id));
+        // }
 
-        server
+        // Remove from users HashMap
+        for user_id in inactive_users {
+            self.users.remove(&user_id);
+            // self.user_specific_messages.remove(&user_id);
+        }
     }
 
     pub fn client_create_group(
@@ -106,35 +114,6 @@ impl ConvoServer {
         // delete the invite from the user_specific_messages for the sender_id:
         // TODO: just delete the most recent message or more specifically the invite!:
         self.user_specific_messages.remove(&sender_id);
-    }
-
-    // function with client_ are callable by clients:
-
-    // New function to clean up inactive users
-    pub fn cleanup_inactive_users(&mut self) {
-        let current_time = utils::current_timestamp();
-        let timeout_threshold = 30; // 30 seconds timeout
-
-        // Collect user IDs to remove
-        let inactive_users: Vec<String> = self
-            .users
-            .iter()
-            .filter(|(_, user)| current_time - user.last_active > timeout_threshold)
-            .map(|(user_id, _)| user_id.clone())
-            .collect();
-
-        // Remove inactive users from all groups
-        for group in self.groups.values_mut() {
-            group
-                .user_ids
-                .retain(|user_id| !inactive_users.contains(user_id));
-        }
-
-        // Remove from users HashMap
-        for user_id in inactive_users {
-            self.users.remove(&user_id);
-            self.user_specific_messages.remove(&user_id);
-        }
     }
 
     pub fn client_connect(
