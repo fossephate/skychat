@@ -74,6 +74,11 @@ struct PendingInvite {
     invite: ConvoInvite,
 }
 
+pub struct Settings {
+    pub name: String,
+    pub server_ip: String,
+}
+
 impl Default for App {
     fn default() -> App {
         App {
@@ -96,6 +101,23 @@ impl Default for App {
 }
 
 impl App {
+
+    async fn load_settings(&mut self, path: &str) {
+        // self.manager.load_credentials(path + "/keys.json");
+        // let settingsPath = path + "/settings.json";
+        // let settings: str = fs::read_to_string(settingsPath).unwrap();
+        // let settings: Settings = serde_json::from_str(&settings).unwrap();
+        // self.name = settings.name;
+        // self.server_ip = settings.server_ip;
+    }
+
+    async fn save_settings(&mut self, path: &str) {
+        // self.manager.save_credentials(path + "/keys.json");
+        // let settingsPath = path + "/settings.json";
+        // let settings: Settings = serde_json::from_str(&settings).unwrap();
+    }
+
+
     async fn update_users(&mut self) {
         if let Some(client) = &mut self.client {
             let users_list = client.list_users().await;

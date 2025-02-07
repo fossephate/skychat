@@ -1,9 +1,13 @@
 // src/convo/manager.rs
 
+use openmls::prelude::tls_codec::{Deserialize as _, Serialize as _};
 use openmls::prelude::{tls_codec::*, *};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
+use serde::{Deserialize, Serialize};
+use std::fs;
 use std::io::Read;
+use std::sync::RwLock;
 use std::{collections::HashMap, ops::Deref};
 
 use crate::utils::{generate_credential_with_key, generate_key_package};
@@ -14,8 +18,7 @@ type GroupId = Vec<u8>;
 type SerializedMessage = Vec<u8>;
 type SerializedProposal = Vec<u8>;
 
-
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MessageItem {
     pub text: String,
     pub sender_id: String,
@@ -67,9 +70,16 @@ pub struct GroupInvite {
     pub ratchet_tree: Option<Vec<u8>>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct SerializedCredentials {
+    pub signer: Vec<u8>,
+    pub credential_with_key: CredentialWithKey,
+    pub storage: RwLock<HashMap<Vec<u8>, Vec<u8>>>,
+}
+
 impl ConvoManager {
     pub fn init(name: String) -> Self {
-        let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        let ciphersuite = Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256;
         let provider = OpenMlsRustCrypto::default();
 
         let (credential_with_key, signer) = generate_credential_with_key(
@@ -85,6 +95,31 @@ impl ConvoManager {
             credential_with_key: credential_with_key,
             groups: HashMap::new(),
         }
+    }
+
+    pub fn save_credentials(
+        &self,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+
+        let storage = self.provider.storage();
+        let values = storage.values.read().unwrap();
+        let serialized = SerializedCredentials {
+            signer: self.signer.tls_serialize_detached().unwrap(),
+            credential_with_key: self.credential_with_key.clone(),
+            storage: RwLock::new(values.clone()),
+        };
+
+        let json = serde_json::to_string(&serialized)?;
+        fs::write(path, json)?;
+        Ok(())
+    }
+
+    pub fn load_credentials(&mut self, path: &str) {
+        let json = fs::read_to_string(path).unwrap();
+        let serialized: SerializedCredentials = serde_json::from_str(&json).expect("failed to deserialize");
+        self.signer = SignatureKeyPair::tls_deserialize_exact_bytes(serialized.signer.as_slice()).expect("failed to deserialize");
+        self.credential_with_key = serialized.credential_with_key;
     }
 
     pub fn get_key_package(&self) -> Vec<u8> {
@@ -159,7 +194,7 @@ impl ConvoManager {
             mls_group: new_group,
             decrypted: Vec::new(),
         };
-        
+
         let group_id = group.mls_group.group_id().to_vec();
 
         self.groups.insert(group_id.clone(), group);
@@ -256,8 +291,7 @@ impl ConvoManager {
         //     .process_message(&self.provider, protocol_message)
         //     .expect("Could not process message.");
 
-        let processed_message = mls_group
-        .process_message(&self.provider, protocol_message);
+        let processed_message = mls_group.process_message(&self.provider, protocol_message);
 
         if processed_message.is_err() {
             // println!("Error processing message: {:?}", processed_message.err().unwrap());
@@ -410,7 +444,7 @@ impl ConvoManager {
 
         serialized_proposal
     }
-    
+
     // pub fn send_message_to_group(
     //     message: String,
     //     public_group_state: PublicGroupState,
