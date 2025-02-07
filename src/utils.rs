@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 
@@ -38,4 +40,12 @@ pub fn generate_key_package(
     KeyPackage::builder()
         .build(ciphersuite, provider, signer, credential_with_key)
         .unwrap()
+}
+
+
+pub fn current_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
 }

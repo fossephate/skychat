@@ -8,11 +8,12 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
+    text::{Line, Span, Spans},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Tabs},
     Frame, Terminal,
 };
 use std::{
+    collections::HashMap,
     error::Error,
     io,
     time::{Duration, Instant},
@@ -57,7 +58,6 @@ struct App {
     tab_mode: TabMode,
     users: Vec<User>,
     messages: Vec<String>,
-    pending_invites: Vec<PendingInvite>,
     groups: Vec<GroupInfo>,
     client: Option<ConvoClient>,
     current_group_id: Option<GroupId>,
@@ -66,12 +66,7 @@ struct App {
     users_scroll: ListState,
     groups_scroll: ListState,
     invites_scroll: ListState,
-}
-
-struct PendingInvite {
-    group_name: String,
-    sender_name: String,
-    invite: ConvoInvite,
+    server_address: String,
 }
 
 pub struct Settings {
@@ -89,13 +84,14 @@ impl Default for App {
         groups_scroll.select(Some(0));
         let mut invites_scroll = ListState::default();
         invites_scroll.select(Some(0));
+        let default_server_address = "https://skychat.fosse.co".to_string();
         App {
-            input: String::new(),
             input_mode: InputMode::EnterServerAddress,
+            server_address: default_server_address.clone(),
+            input: default_server_address.clone(),
             tab_mode: TabMode::Users,
             users: Vec::new(),
             messages: Vec::new(),
-            pending_invites: Vec::new(),
             groups: Vec::new(),
             client: None,
             current_group_id: None,
@@ -127,7 +123,7 @@ impl App {
     fn scroll_messages(&mut self, up: bool) {
         if let Some(client) = &self.client {
             if let Some(group_id) = &self.current_group_id {
-                let messages = client.get_renderable_messages(group_id.clone());
+                let messages = client.get_group_messages(&group_id);
                 let len = messages.len();
 
                 if len == 0 {
@@ -193,7 +189,7 @@ impl App {
     }
 
     fn scroll_invites(&mut self, up: bool) {
-        let len = self.pending_invites.len();
+        let len = self.client.as_ref().unwrap().pending_invites.len();
         let i = match self.invites_scroll.selected() {
             Some(i) => {
                 if up {
@@ -343,20 +339,7 @@ impl App {
     async fn process_new_messages(&mut self, messages: Vec<ConvoMessage>) {
         if let Some(client) = &mut self.client {
             for message in messages {
-                if let Some(invite) = message.invite {
-                    // Add to pending invites
-                    let sender_name = client
-                        .id_to_name
-                        .get(&message.sender_id)
-                        .unwrap_or(&message.sender_id)
-                        .clone();
-
-                    self.pending_invites.push(PendingInvite {
-                        group_name: invite.group_name.clone(),
-                        sender_name,
-                        invite,
-                    });
-                }
+                // do something with incoming messages
             }
         }
     }
@@ -364,8 +347,8 @@ impl App {
     async fn accept_invite(&mut self) {
         if let Some(client) = &mut self.client {
             if let Some(selected) = self.invites_scroll.selected() {
-                if selected < self.pending_invites.len() {
-                    let invite = self.pending_invites.remove(selected);
+                if selected < client.pending_invites.len() {
+                    let invite = client.pending_invites.remove(selected);
                     client.process_invite(invite.invite).await;
                     self.input_mode = InputMode::Normal;
                     self.tab_mode = TabMode::Groups;
@@ -378,8 +361,9 @@ impl App {
 
     async fn decline_invite(&mut self) {
         if let Some(selected) = self.invites_scroll.selected() {
-            if selected < self.pending_invites.len() {
-                self.pending_invites.remove(selected);
+            let client = self.client.as_mut().expect("client not found!");
+            if selected < client.pending_invites.len() {
+                client.pending_invites.remove(selected);
                 self.invites_scroll.select(None);
                 self.input_mode = InputMode::Normal;
             }
@@ -389,7 +373,7 @@ impl App {
     fn scroll_to_bottom(&mut self) {
         if let Some(client) = &self.client {
             if let Some(group_id) = &self.current_group_id {
-                let messages = client.get_renderable_messages(group_id.clone());
+                let messages = client.get_renderable_messages(&group_id);
                 if !messages.is_empty() {
                     self.messages_scroll.select(Some(messages.len() - 1));
                 }
@@ -483,20 +467,24 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     })
                     .collect();
 
-                let our_user_name = app.client.as_ref().unwrap().name.clone();
+                // let our_user_name = app.client.as_ref().unwrap().name.clone();
+                // let empty_list = List::new(vec![ListItem::new(format!(
+                //     "Users <You are: {}>",
+                //     our_user_name
+                // ))])
+                // .block(Block::default().borders(Borders::ALL))
+                // .highlight_style(Style::default().add_modifier(Modifier::BOLD));
+                // f.render_widget(empty_list, chunks[1]);
 
                 let users_list = List::new(users)
-                    .block(
-                        Block::default()
-                            .title(format!("Users <You are: {}>", our_user_name))
-                            .borders(Borders::ALL),
-                    )
+                    .block(Block::default().title("Users").borders(Borders::ALL))
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
                 f.render_stateful_widget(users_list, chunks[2], &mut app.users_scroll);
             }
             TabMode::Invites => {
-                let invites: Vec<ListItem> = app
+                let client = app.client.as_ref().expect("client not found!");
+                let invites: Vec<ListItem> = client
                     .pending_invites
                     .iter()
                     .enumerate()
@@ -526,13 +514,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             }
         },
         InputMode::ChooseUsername => {
-            let instructions = "\nEnter a username + Enter to get started!\nArrow keys + Enter to select things\nEsc to go back / quit";
-            let input = Paragraph::new(instructions.to_string()).block(
-                Block::default()
-                    .title("Welcome to SkyChat!")
-                    .borders(Borders::ALL),
-            );
-            f.render_widget(input, chunks[2]);
+            // let instructions = "\nEnter a username + Enter to get started!\nArrow keys + Enter to select things\nEsc to go back / quit";
+            // let input = Paragraph::new(instructions.to_string()).block(
+            //     Block::default()
+            //         .title("Welcome to SkyChat!")
+            //         .borders(Borders::ALL),
+            // );
+            // f.render_widget(input, chunks[2]);
         }
         InputMode::EnterServerAddress => {
             let instructions = "\nEnter the server address + Enter to connect!\nArrow keys + Enter to select things\nEsc to go back / quit";
@@ -561,24 +549,62 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         InputMode::Chatting => {
             if let Some(client) = &app.client {
                 if let Some(group_id) = &app.current_group_id {
-                    let message_strings = client.get_renderable_messages(group_id.clone());
+                    let message_items = client.get_group_messages(&group_id);
+
+                    // assign a color to each sender:
+                    let mut sender_colors = HashMap::new();
+                    let mut color_index = 0;
+                    let colors = [
+                        Color::Red,
+                        Color::Blue,
+                        Color::Magenta,
+                        Color::Cyan,
+                        Color::LightBlue,
+                        // Color::LightGreen,
+                        // Color::LightYellow,
+                        Color::LightMagenta,
+                        Color::LightCyan,
+                    ];
+
+                    for sender in client.id_to_name.keys() {
+                        sender_colors.insert(sender.clone(), colors[color_index % colors.len()]);
+                        color_index += 1;
+                    }
+
                     // TODO: highlight the message that is selected:
-                    // let messages: Vec<ListItem> = message_strings
-                    // .iter()
-                    // .enumerate()
-                    // .map(|(i, m)| {
-                    //     let style = if Some(i) == app.messages_scroll.selected() {
-                    //         Style::default().fg(Color::Yellow)
-                    //     } else {
-                    //         Style::default()
-                    //     };
-                    //     ListItem::new(m.clone()).style(style)
-                    // })
-                    // .collect();
-                    let messages: Vec<ListItem> = message_strings
+                    let messages: Vec<ListItem> = message_items
                         .iter()
-                        .map(|m| ListItem::new(m.clone()))
+                        .enumerate()
+                        .map(|(i, m)| {
+                            let user_style = if m.sender_id == client.user_id {
+                                Style::default().fg(Color::Green)
+                            } else {
+                                Style::default()
+                                    .fg(sender_colors.get(&m.sender_id).unwrap().clone())
+                            };
+
+                            let message_style = if Some(i) == app.messages_scroll.selected() {
+                                Style::default().fg(Color::Yellow)
+                            } else {
+                                Style::default()
+                            };
+
+                            let sender_name = format!(
+                                "{}: ",
+                                client.id_to_name.get(&m.sender_id).unwrap().clone()
+                            );
+
+                            // return 2 spans, one for the sender and one for the message:
+                            let sender_span = Span::styled(sender_name, user_style);
+                            let message_span = Span::styled(m.text.clone(), message_style);
+                            let spans = vec![sender_span, message_span];
+                            ListItem::new(Line::from(spans))
+                        })
                         .collect();
+                    // let messages: Vec<ListItem> = message_strings
+                    //     .iter()
+                    //     .map(|m| ListItem::new(m.clone()))
+                    //     .collect();
 
                     let our_user_name = client.name.clone();
                     let messages_list = List::new(messages).block(
@@ -587,21 +613,22 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                             .borders(Borders::ALL),
                     );
 
+                    f.render_stateful_widget(
+                        messages_list,
+                        middle_chunks[0],
+                        &mut app.messages_scroll,
+                    );
+
                     // list the users:
                     let users: Vec<ListItem> = app
                         .users
                         .iter()
                         .map(|u| ListItem::new(u.name.clone()))
                         .collect();
+
                     // TODO: filter the users to only include the ones in the group:
                     let users_list = List::new(users)
                         .block(Block::default().title("Global Users").borders(Borders::ALL));
-
-                    f.render_stateful_widget(
-                        messages_list,
-                        middle_chunks[0],
-                        &mut app.messages_scroll,
-                    );
                     f.render_widget(users_list.clone(), middle_chunks[1]);
 
                     // in place of the tabs list, render You are: <your name>
@@ -614,7 +641,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         }
         InputMode::AcceptingInvite => {
             if let Some(selected) = app.invites_scroll.selected() {
-                if let Some(invite) = app.pending_invites.get(selected) {
+                let client = app.client.as_ref().expect("client not found!");
+                if let Some(invite) = client.pending_invites.get(selected) {
                     let text = format!(
                         "Accept invite to group {} from {}? (Y/n)",
                         invite.group_name, invite.sender_name
@@ -659,7 +687,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         // Update users and groups list every 5 seconds
-        if Instant::now().duration_since(last_update) >= Duration::from_secs(1) {
+        if Instant::now().duration_since(last_update) >= Duration::from_secs(3) {
             app.update_users().await;
             app.update_groups().await;
             app.check_messages().await;
@@ -736,7 +764,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         KeyCode::Enter => {
                             if !app.input.is_empty() {
                                 let mut client = ConvoClient::new(app.input.clone());
-                                let server_address = format!("http://{}:8080", server_address);
                                 let res =
                                     client.connect_to_server(server_address.to_string()).await;
 
@@ -789,6 +816,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             if !app.input.is_empty() {
                                 app.create_group().await;
                                 app.update_groups().await;
+                                app.tab_mode = TabMode::Groups;
                                 app.input.clear();
                                 app.input_mode = InputMode::Normal;
                             }

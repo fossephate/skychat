@@ -14,12 +14,20 @@ use super::manager::MessageItem;
 type GroupId = Vec<u8>;
 type SerializedMessage = Vec<u8>;
 
+#[derive(Debug, Clone)]
+pub struct PendingInvite {
+    pub group_name: String,
+    pub sender_name: String,
+    pub invite: ConvoInvite,
+}
+
 pub struct ConvoClient {
     pub name: String,
     pub user_id: String,
     pub manager: ConvoManager,
     pub server_address: Option<String>,
     pub id_to_name: HashMap<String, String>,
+    pub pending_invites: Vec<PendingInvite>,
 }
 
 impl ConvoClient {
@@ -30,6 +38,7 @@ impl ConvoClient {
             manager: ConvoManager::init(name.clone()),
             server_address: None,
             id_to_name: HashMap::new(),
+            pending_invites: Vec::new(),
         }
     }
 
@@ -236,12 +245,15 @@ impl ConvoClient {
 
         // loop through the messages and process them by type:
         for message in messages {
-            // // TODO: this auto accepts invites!:
-            // if the message contains an invite, process it:
-            // if message.invite.is_some() {
-            //     let invite = message.invite.unwrap();
-            //     self.process_invite(invite).await;
-            // }
+            // if the message contains an invite, add it to the pending_invites vector:
+            if message.invite.is_some() {
+                let invite = message.invite.unwrap();
+                self.pending_invites.push(PendingInvite {
+                    group_name: invite.group_name.clone(),
+                    sender_name: self.id_to_name.get(&message.sender_id).unwrap().clone(),
+                    invite: invite.clone(),
+                });
+            }
 
             if message.message.is_some() && group_id.is_some() {
                 let gid: Vec<u8> = group_id.clone().unwrap();
@@ -387,17 +399,16 @@ impl ConvoClient {
         }
     }
 
-    pub fn get_group_messages(&self, group_id: GroupId) -> &Vec<MessageItem> {
-        let group = self.manager.groups.get(&group_id).expect("group not found");
+    pub fn get_group_messages(&self, group_id: &GroupId) -> &Vec<MessageItem> {
+        let group = self.manager.groups.get(group_id).expect("group not found");
         &group.decrypted
     }
 
-    pub fn get_renderable_messages(&self, group_id: GroupId) -> Vec<String> {
+    pub fn get_renderable_messages(&self, group_id: &GroupId) -> Vec<String> {
         let messages = self.get_group_messages(group_id);
         // println!("{}", format!("Group messages: {:?}", messages).green());
         // loop through all the messages and print them, color coding the sender:
 
-        // assign a color to each sender:
         // assign a color to each sender:
         let mut sender_colors = HashMap::new();
         let mut color_index = 0;
@@ -426,9 +437,14 @@ impl ConvoClient {
                 .get(&message.sender_id)
                 .expect("color not found");
 
+            // display_messages.push(format!(
+            //     "{}: {}",
+            //     sender_name.color(*color).bold(),
+            //     message.text
+            // ));
             display_messages.push(format!(
                 "{}: {}",
-                sender_name.color(*color).bold(),
+                sender_name,
                 message.text
             ));
         }
@@ -436,7 +452,7 @@ impl ConvoClient {
         display_messages
     }
 
-    pub fn print_group_messages(&self, group_id: GroupId) -> Vec<String> {
+    pub fn print_group_messages(&self, group_id: &GroupId) -> Vec<String> {
         let messages = self.get_group_messages(group_id);
         // println!("{}", format!("Group messages: {:?}", messages).green());
         // loop through all the messages and print them, color coding the sender:
