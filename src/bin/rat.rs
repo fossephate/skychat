@@ -9,7 +9,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Tabs},
     Frame, Terminal,
 };
 use std::{
@@ -66,6 +66,7 @@ struct App {
     current_group_id: Option<GroupId>,
     last_update: Instant,
     incoming_alert: Option<String>,
+    messages_scroll: ListState,
 }
 
 struct PendingInvite {
@@ -81,6 +82,8 @@ pub struct Settings {
 
 impl Default for App {
     fn default() -> App {
+        let mut messages_scroll = ListState::default();
+        messages_scroll.select(Some(0));
         App {
             input: String::new(),
             input_mode: InputMode::EnterServerAddress,
@@ -96,12 +99,12 @@ impl Default for App {
             current_group_id: None,
             last_update: Instant::now(),
             incoming_alert: None,
+            messages_scroll,
         }
     }
 }
 
 impl App {
-
     async fn load_settings(&mut self, path: &str) {
         // self.manager.load_credentials(path + "/keys.json");
         // let settingsPath = path + "/settings.json";
@@ -117,6 +120,34 @@ impl App {
         // let settings: Settings = serde_json::from_str(&settings).unwrap();
     }
 
+    fn scroll_messages(&mut self, up: bool) {
+        if let Some(client) = &self.client {
+            if let Some(group_id) = &self.current_group_id {
+                let messages = client.get_renderable_messages(group_id.clone());
+                let len = messages.len();
+
+                if len == 0 {
+                    return;
+                }
+
+                let i = match self.messages_scroll.selected() {
+                    Some(i) => {
+                        if up {
+                            i.saturating_sub(1)
+                        } else {
+                            if i >= len - 1 {
+                                i
+                            } else {
+                                i + 1
+                            }
+                        }
+                    }
+                    None => 0,
+                };
+                self.messages_scroll.select(Some(i));
+            }
+        }
+    }
 
     async fn update_users(&mut self) {
         if let Some(client) = &mut self.client {
@@ -162,8 +193,11 @@ impl App {
             let new_messages = client
                 .check_incoming_messages(self.current_group_id.clone())
                 .await;
-
-            self.process_new_messages(new_messages).await;
+            if !new_messages.is_empty() {
+                self.process_new_messages(new_messages).await;
+                // Auto-scroll when new messages arrive
+                self.scroll_to_bottom();
+            }
         }
     }
 
@@ -189,6 +223,7 @@ impl App {
                             .invite_user_to_group(user_id, group_id.clone(), key_package.clone())
                             .await;
                         self.input.clear();
+                        self.scroll_to_bottom();
                         return;
                     }
 
@@ -196,6 +231,7 @@ impl App {
                         .send_message(group_id.clone(), self.input.clone())
                         .await;
                     self.input.clear();
+                    self.scroll_to_bottom();
                 }
             }
         }
@@ -268,9 +304,20 @@ impl App {
             }
         }
     }
+    
+    fn scroll_to_bottom(&mut self) {
+        if let Some(client) = &self.client {
+            if let Some(group_id) = &self.current_group_id {
+                let messages = client.get_renderable_messages(group_id.clone());
+                if !messages.is_empty() {
+                    self.messages_scroll.select(Some(messages.len() - 1));
+                }
+            }
+        }
+    }
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
+fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -398,7 +445,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             }
         },
         InputMode::ChooseUsername => {
-            let instructions = "\nEnter a username + Enter to get started!\n'q' to quit\nArrow keys + Enter to select things\nEsc to go back";
+            let instructions = "\nEnter a username + Enter to get started!\nArrow keys + Enter to select things\nEsc to go back / quit";
             let input = Paragraph::new(instructions.to_string()).block(
                 Block::default()
                     .title("Welcome to SkyChat!")
@@ -407,7 +454,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             f.render_widget(input, chunks[2]);
         }
         InputMode::EnterServerAddress => {
-            let instructions = "\nEnter the server address + Enter to connect!\n'q' to quit\nArrow keys + Enter to select things\nEsc to go back";
+            let instructions = "\nEnter the server address + Enter to connect!\nArrow keys + Enter to select things\nEsc to go back / quit";
             let input = Paragraph::new(instructions.to_string()).block(
                 Block::default()
                     .title("Welcome to SkyChat!")
@@ -416,7 +463,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             f.render_widget(input, chunks[2]);
         }
         InputMode::CreatingGroup => {
-            let user_strings = vec!["Alice", "Bob", "Charlie", "David"];
+            let user_strings = vec![app.users[app.selected_user.unwrap()].name.clone()];
             let users: Vec<ListItem> = user_strings
                 .iter()
                 .map(|u| ListItem::new(u.clone()))
@@ -424,7 +471,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
             let block = List::new(users).block(
                 Block::default()
-                    .title("Creating a group chat with these users:")
+                    .title("Creating a group chat with this user")
                     .borders(Borders::ALL),
             );
 
@@ -454,9 +501,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                         .collect();
                     // TODO: filter the users to only include the ones in the group:
                     let users_list = List::new(users)
-                        .block(Block::default().title("Users").borders(Borders::ALL));
+                        .block(Block::default().title("Global Users").borders(Borders::ALL));
 
-                    f.render_widget(messages_list.clone(), chunks[2]);
+                    f.render_stateful_widget(
+                        messages_list,
+                        middle_chunks[0],
+                        &mut app.messages_scroll,
+                    );
                     f.render_widget(users_list.clone(), middle_chunks[1]);
                 }
             }
@@ -480,7 +531,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     }
 
     let input_title = match app.input_mode {
-        InputMode::Normal => "Use Arrow keys / Enter to navigate, q to quit",
+        InputMode::Normal => "Use Arrow keys / Enter to navigate, <Esc to exit>",
         InputMode::ChooseUsername => "Enter username",
         InputMode::Chatting => "Enter message <Esc to go back>",
         InputMode::AcceptingInvite => "y to accept, n to decline <Esc to go back>",
@@ -520,13 +571,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             last_update = Instant::now();
         }
 
-        terminal.draw(|f| ui(f, &app))?;
+        terminal.draw(|f| ui(f, &mut app))?;
 
         if event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
                 match app.input_mode {
                     InputMode::Normal => match key.code {
-                        KeyCode::Char('q') => break,
+                        KeyCode::Esc => break,
                         // use left and right arrows to switch tabs
                         KeyCode::Left => {
                             app.tab_mode = match app.tab_mode {
@@ -622,7 +673,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             if !app.input.is_empty() {
                                 let mut client = ConvoClient::new(app.input.clone());
                                 let server_address = format!("http://{}:8080", server_address);
-                                let res = client.connect_to_server(server_address.to_string()).await;
+                                let res =
+                                    client.connect_to_server(server_address.to_string()).await;
 
                                 if res.is_ok() {
                                     app.client = Some(client);
@@ -632,7 +684,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     app.incoming_alert = None;
                                 } else {
                                     app.input.clear();
-                                    app.incoming_alert = Some("Failed to connect to server".to_string());
+                                    app.incoming_alert =
+                                        Some("Failed to connect to server".to_string());
                                     app.input_mode = InputMode::EnterServerAddress;
                                 }
                             }
@@ -701,6 +754,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         }
                         KeyCode::Esc => {
                             app.input_mode = InputMode::Normal;
+                        }
+                        KeyCode::Up => {
+                            app.scroll_messages(true);
+                        }
+                        KeyCode::Down => {
+                            app.scroll_messages(false);
                         }
                         _ => {}
                     },
