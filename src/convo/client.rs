@@ -83,7 +83,10 @@ impl ConvoClient {
         group_id.clone()
     }
 
-    pub async fn connect_to_server(&mut self, server_address: String) {
+    pub async fn connect_to_server(
+        &mut self,
+        server_address: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.server_address = Some(server_address.clone());
         // use reqwest to send a POST request to the server/api/connect
         let client = reqwest::Client::new();
@@ -96,6 +99,15 @@ impl ConvoClient {
             }))
             .send()
             .await;
+
+        if response.is_ok() {
+            Ok(())
+        } else {
+            Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to connect to server",
+            )))
+        }
     }
 
     pub async fn list_users(&mut self) -> Vec<ConvoUser> {
@@ -122,7 +134,8 @@ impl ConvoClient {
             self.id_to_name
                 .insert(user.user_id.clone(), user.name.clone());
         }
-        self.id_to_name.insert("system".to_string(), "system".to_string());
+        self.id_to_name
+            .insert("system".to_string(), "system".to_string());
 
         users
     }
@@ -213,7 +226,11 @@ impl ConvoClient {
         // self.manager.process_incoming_message(group_id, serialized_message)
     }
 
-    pub async fn process_new_messages(&mut self, messages: Vec<ConvoMessage>, group_id: Option<GroupId>) {
+    pub async fn process_new_messages(
+        &mut self,
+        messages: Vec<ConvoMessage>,
+        group_id: Option<GroupId>,
+    ) {
         // add the messages to the manager
         // self.manager.add_messages(messages);
 
@@ -242,7 +259,10 @@ impl ConvoClient {
         }
     }
 
-    pub async fn check_incoming_messages(&mut self, group_id: Option<GroupId>) -> Vec<ConvoMessage> {
+    pub async fn check_incoming_messages(
+        &mut self,
+        group_id: Option<GroupId>,
+    ) -> Vec<ConvoMessage> {
         let address = self
             .server_address
             .as_ref()
@@ -273,7 +293,8 @@ impl ConvoClient {
             .await
             .expect("failed to parse response");
 
-        self.process_new_messages(messages.clone(), group_id.clone()).await;
+        self.process_new_messages(messages.clone(), group_id.clone())
+            .await;
         messages
     }
 
@@ -371,7 +392,7 @@ impl ConvoClient {
         &group.decrypted
     }
 
-    pub fn get_renderable_messages(&self, group_id: GroupId) -> Vec<String>{
+    pub fn get_renderable_messages(&self, group_id: GroupId) -> Vec<String> {
         let messages = self.get_group_messages(group_id);
         // println!("{}", format!("Group messages: {:?}", messages).green());
         // loop through all the messages and print them, color coding the sender:
@@ -405,13 +426,17 @@ impl ConvoClient {
                 .get(&message.sender_id)
                 .expect("color not found");
 
-            display_messages.push(format!("{}: {}", sender_name.color(*color).bold(), message.text));
+            display_messages.push(format!(
+                "{}: {}",
+                sender_name.color(*color).bold(),
+                message.text
+            ));
         }
 
         display_messages
     }
 
-    pub fn print_group_messages(&self, group_id: GroupId) -> Vec<String>{
+    pub fn print_group_messages(&self, group_id: GroupId) -> Vec<String> {
         let messages = self.get_group_messages(group_id);
         // println!("{}", format!("Group messages: {:?}", messages).green());
         // loop through all the messages and print them, color coding the sender:
@@ -445,7 +470,11 @@ impl ConvoClient {
                 .get(&message.sender_id)
                 .expect("color not found");
 
-            display_messages.push(format!("{}: {}", sender_name.color(*color).bold(), message.text));
+            display_messages.push(format!(
+                "{}: {}",
+                sender_name.color(*color).bold(),
+                message.text
+            ));
 
             // Use the color to format the sender name, leave message plain
             println!("{}: {}", sender_name.color(*color).bold(), message.text);

@@ -30,6 +30,7 @@ enum InputMode {
     Chatting,
     AcceptingInvite,
     CreatingGroup,
+    EnterServerAddress,
 }
 
 #[derive(PartialEq)]
@@ -64,6 +65,7 @@ struct App {
     client: Option<ConvoClient>,
     current_group_id: Option<GroupId>,
     last_update: Instant,
+    incoming_alert: Option<String>,
 }
 
 struct PendingInvite {
@@ -76,7 +78,7 @@ impl Default for App {
     fn default() -> App {
         App {
             input: String::new(),
-            input_mode: InputMode::ChooseUsername,
+            input_mode: InputMode::EnterServerAddress,
             tab_mode: TabMode::Users,
             users: Vec::new(),
             selected_user: None,
@@ -88,6 +90,7 @@ impl Default for App {
             client: None,
             current_group_id: None,
             last_update: Instant::now(),
+            incoming_alert: None,
         }
     }
 }
@@ -146,21 +149,23 @@ impl App {
         if let Some(client) = &mut self.client {
             if let Some(group_id) = &self.current_group_id {
                 if !self.input.is_empty() {
-
                     // check if the message is a /inv <user_name> command:
                     if self.input.starts_with("/inv ") {
                         let user_name = self.input[5..].to_string();
                         // TODO: breaks if people have the same name!
                         // let user_id = client.name_to_id(user_name);
                         // let key_package = self.users.iter().find(|u| u.name == user_name).unwrap().key_package.clone();
-                        let user = self.users
-                        .iter()
-                        .find(|user| user.name == user_name.clone())
-                        .expect("user not found!");
+                        let user = self
+                            .users
+                            .iter()
+                            .find(|user| user.name == user_name.clone())
+                            .expect("user not found!");
 
                         let key_package = user.key_package.clone();
                         let user_id = user.user_id.clone();
-                        client.invite_user_to_group(user_id, group_id.clone(), key_package.clone()).await;
+                        client
+                            .invite_user_to_group(user_id, group_id.clone(), key_package.clone())
+                            .await;
                         self.input.clear();
                         return;
                     }
@@ -248,6 +253,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
+            Constraint::Length(3),
             Constraint::Min(0),
             Constraint::Length(3),
         ])
@@ -255,17 +261,15 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     let middle_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(70),
-            Constraint::Percentage(30),
-        ])
-        .split(chunks[1]);
+        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)])
+        .split(chunks[2]);
 
     // Render tabs in all modes except Username, CreatingGroup, and AcceptingInvite
     if app.input_mode != InputMode::ChooseUsername
         && app.input_mode != InputMode::CreatingGroup
         && app.input_mode != InputMode::AcceptingInvite
         && app.input_mode != InputMode::Chatting
+        && app.input_mode != InputMode::EnterServerAddress
     {
         let titles = vec!["Users", "Groups", "Invites"];
         let selected = match app.tab_mode {
@@ -283,6 +287,12 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                     .add_modifier(Modifier::BOLD),
             );
         f.render_widget(tabs, chunks[0]);
+    }
+
+    // Render to the last section (chunks[3])
+    if let Some(alert) = &app.incoming_alert {
+        let input = Paragraph::new(alert.as_str()).block(Block::default().borders(Borders::ALL));
+        f.render_widget(input, chunks[1]);
     }
 
     match app.input_mode {
@@ -306,7 +316,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                     .block(Block::default().title("Your Groups").borders(Borders::ALL))
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
-                f.render_widget(groups_list, chunks[1]);
+                f.render_widget(groups_list, chunks[2]);
             }
             TabMode::Users => {
                 let users: Vec<ListItem> = app
@@ -333,7 +343,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                     )
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
-                f.render_widget(users_list, chunks[1]);
+                f.render_widget(users_list, chunks[2]);
             }
             TabMode::Invites => {
                 let invites: Vec<ListItem> = app
@@ -362,7 +372,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                     )
                     .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
-                f.render_widget(invites_list, chunks[1]);
+                f.render_widget(invites_list, chunks[2]);
             }
         },
         InputMode::ChooseUsername => {
@@ -372,7 +382,16 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                     .title("Welcome to SkyChat!")
                     .borders(Borders::ALL),
             );
-            f.render_widget(input, chunks[1]);
+            f.render_widget(input, chunks[2]);
+        }
+        InputMode::EnterServerAddress => {
+            let instructions = "\nEnter the server address + Enter to connect!\n'q' to quit\nArrow keys + Enter to select things\nEsc to go back";
+            let input = Paragraph::new(instructions.to_string()).block(
+                Block::default()
+                    .title("Welcome to SkyChat!")
+                    .borders(Borders::ALL),
+            );
+            f.render_widget(input, chunks[2]);
         }
         InputMode::CreatingGroup => {
             let user_strings = vec!["Alice", "Bob", "Charlie", "David"];
@@ -387,7 +406,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                     .borders(Borders::ALL),
             );
 
-            f.render_widget(block, chunks[1]);
+            f.render_widget(block, chunks[2]);
         }
         InputMode::Chatting => {
             if let Some(client) = &app.client {
@@ -399,15 +418,23 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                         .collect();
 
                     let our_user_name = client.name.clone();
-                    let messages_list = List::new(messages)
-                        .block(Block::default().title(format!("Messages <You are: {}>", our_user_name)).borders(Borders::ALL));
+                    let messages_list = List::new(messages).block(
+                        Block::default()
+                            .title(format!("Messages <You are: {}>", our_user_name))
+                            .borders(Borders::ALL),
+                    );
 
                     // list the users:
-                    let users: Vec<ListItem> = app.users.iter().map(|u| ListItem::new(u.name.clone())).collect();
+                    let users: Vec<ListItem> = app
+                        .users
+                        .iter()
+                        .map(|u| ListItem::new(u.name.clone()))
+                        .collect();
                     // TODO: filter the users to only include the ones in the group:
-                    let users_list = List::new(users).block(Block::default().title("Users").borders(Borders::ALL));
+                    let users_list = List::new(users)
+                        .block(Block::default().title("Users").borders(Borders::ALL));
 
-                    f.render_widget(messages_list.clone(), chunks[1]);
+                    f.render_widget(messages_list.clone(), chunks[2]);
                     f.render_widget(users_list.clone(), middle_chunks[1]);
                 }
             }
@@ -424,7 +451,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                             .title("Accept Invite")
                             .borders(Borders::ALL),
                     );
-                    f.render_widget(prompt, chunks[1]);
+                    f.render_widget(prompt, chunks[2]);
                 }
             }
         }
@@ -436,11 +463,12 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         InputMode::Chatting => "Enter message <Esc to go back>",
         InputMode::AcceptingInvite => "y to accept, n to decline <Esc to go back>",
         InputMode::CreatingGroup => "Enter a name for the group! <Esc to go back>",
+        InputMode::EnterServerAddress => "Enter server address",
     };
 
     let input = Paragraph::new(app.input.as_str())
         .block(Block::default().title(input_title).borders(Borders::ALL));
-    f.render_widget(input, chunks[2]);
+    f.render_widget(input, chunks[3]);
 }
 
 #[tokio::main]
@@ -453,6 +481,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::default();
+    let mut server_address: String = String::new();
     let mut last_update = Instant::now();
 
     loop {
@@ -570,13 +599,40 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         KeyCode::Enter => {
                             if !app.input.is_empty() {
                                 let mut client = ConvoClient::new(app.input.clone());
-                                client
-                                    .connect_to_server("http://127.0.0.1:8080".to_string())
-                                    .await;
-                                app.client = Some(client);
+                                let server_address = format!("http://{}:8080", server_address);
+                                let res = client.connect_to_server(server_address.to_string()).await;
+
+                                if res.is_ok() {
+                                    app.client = Some(client);
+                                    app.input.clear();
+                                    app.update_users().await;
+                                    app.input_mode = InputMode::Normal;
+                                    app.incoming_alert = None;
+                                } else {
+                                    app.input.clear();
+                                    app.incoming_alert = Some("Failed to connect to server".to_string());
+                                    app.input_mode = InputMode::EnterServerAddress;
+                                }
+                            }
+                        }
+                        KeyCode::Char(c) => {
+                            app.input.push(c);
+                        }
+                        KeyCode::Backspace => {
+                            app.input.pop();
+                        }
+                        KeyCode::Esc => {
+                            // exit the program
+                            break;
+                        }
+                        _ => {}
+                    },
+                    InputMode::EnterServerAddress => match key.code {
+                        KeyCode::Enter => {
+                            if !app.input.is_empty() {
+                                server_address = app.input.to_string();
                                 app.input.clear();
-                                app.update_users().await;
-                                app.input_mode = InputMode::Normal;
+                                app.input_mode = InputMode::ChooseUsername;
                             }
                         }
                         KeyCode::Char(c) => {
