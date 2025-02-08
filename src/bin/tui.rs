@@ -324,7 +324,7 @@ impl App {
                 .await;
             if !new_messages.is_empty() {
                 self.process_new_messages(new_messages).await;
-                self.save_state("./").await;
+                // self.save_state("./").await;
                 // Auto-scroll when new messages arrive
                 self.scroll_to_bottom();
             }

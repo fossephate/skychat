@@ -72,6 +72,7 @@ pub struct SerializedCredentials {
     pub signer: Vec<u8>,
     pub credential_with_key: CredentialWithKey,
     pub storage: HashMap<String, Vec<u8>>,
+    pub group_id_names: HashMap<GroupId, String>,
 }
 
 impl ConvoManager {
@@ -106,11 +107,15 @@ impl ConvoManager {
             signer: self.signer.tls_serialize_detached().unwrap(),
             credential_with_key: self.credential_with_key.clone(),
             storage: converted_storage,
+            group_id_names: self.groups.iter().map(|(k, v)| (k.clone(), v.name.clone())).collect(),
         };
         serialized
     }
 
-    pub fn load_state(&mut self, serialized: SerializedCredentials) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn load_state(
+        &mut self,
+        serialized: SerializedCredentials,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Convert storage back to Vec<u8> keys
         let converted_storage: HashMap<Vec<u8>, Vec<u8>> = serialized
             .storage
@@ -124,6 +129,19 @@ impl ConvoManager {
         // Update storage
         let provider_storage = self.provider.storage();
         *provider_storage.values.write().unwrap() = converted_storage;
+
+        // load the groups:
+        for (group_id, group_name) in serialized.group_id_names {
+            let group = MlsGroup::load(
+                provider_storage,
+                &openmls::group::GroupId::from_slice(group_id.as_slice()),
+            )
+            .unwrap();
+            if let Some(group) = group {
+                self.groups
+                    .insert(group_id, LocalGroup::new(group_name, group));
+            }
+        }
         Ok(())
     }
 
