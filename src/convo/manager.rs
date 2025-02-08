@@ -11,6 +11,7 @@ use std::sync::RwLock;
 use std::{collections::HashMap, ops::Deref};
 
 use crate::utils::{generate_credential_with_key, generate_key_package};
+use crate::ConvoInvite;
 use openmls::prelude::{KeyPackage, TlsDeserialize, TlsSerialize};
 use openmls::prelude::{MlsMessageBodyIn, MlsMessageIn};
 
@@ -31,6 +32,7 @@ pub struct LocalGroup {
     pub global_index: u64,
     pub mls_group: MlsGroup,
     pub decrypted: Vec<MessageItem>,
+    pub past_invites: Vec<ConvoInvite>,
 }
 
 // impl Deref for Group {
@@ -47,6 +49,7 @@ impl LocalGroup {
             global_index: 0,
             mls_group: mls_group,
             decrypted: Vec::new(),
+            past_invites: Vec::new(),
         }
     }
 }
@@ -64,17 +67,11 @@ pub struct ProcessedResults {
     pub welcome: Option<Vec<u8>>,
 }
 
-pub struct GroupInvite {
-    pub fanned: Vec<u8>,
-    pub welcome: Vec<u8>,
-    pub ratchet_tree: Option<Vec<u8>>,
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct SerializedCredentials {
     pub signer: Vec<u8>,
     pub credential_with_key: CredentialWithKey,
-    pub storage: RwLock<HashMap<Vec<u8>, Vec<u8>>>,
+    pub storage: HashMap<String, Vec<u8>>,
 }
 
 impl ConvoManager {
@@ -97,29 +94,37 @@ impl ConvoManager {
         }
     }
 
-    pub fn save_credentials(
-        &self,
-        path: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-
+    pub fn save_state(&self) -> SerializedCredentials {
         let storage = self.provider.storage();
         let values = storage.values.read().unwrap();
+        let converted_storage: HashMap<String, Vec<u8>> = values
+            .iter()
+            .map(|(k, v)| (base64::encode(k), v.clone()))
+            .collect();
+
         let serialized = SerializedCredentials {
             signer: self.signer.tls_serialize_detached().unwrap(),
             credential_with_key: self.credential_with_key.clone(),
-            storage: RwLock::new(values.clone()),
+            storage: converted_storage,
         };
-
-        let json = serde_json::to_string(&serialized)?;
-        fs::write(path, json)?;
-        Ok(())
+        serialized
     }
 
-    pub fn load_credentials(&mut self, path: &str) {
-        let json = fs::read_to_string(path).unwrap();
-        let serialized: SerializedCredentials = serde_json::from_str(&json).expect("failed to deserialize");
-        self.signer = SignatureKeyPair::tls_deserialize_exact_bytes(serialized.signer.as_slice()).expect("failed to deserialize");
+    pub fn load_state(&mut self, serialized: SerializedCredentials) -> Result<(), Box<dyn std::error::Error>> {
+        // Convert storage back to Vec<u8> keys
+        let converted_storage: HashMap<Vec<u8>, Vec<u8>> = serialized
+            .storage
+            .iter()
+            .map(|(k, v)| (base64::decode(k).unwrap(), v.clone()))
+            .collect();
+
+        self.signer = SignatureKeyPair::tls_deserialize_exact_bytes(&serialized.signer)?;
         self.credential_with_key = serialized.credential_with_key;
+
+        // Update storage
+        let provider_storage = self.provider.storage();
+        *provider_storage.values.write().unwrap() = converted_storage;
+        Ok(())
     }
 
     pub fn get_key_package(&self) -> Vec<u8> {
@@ -193,6 +198,7 @@ impl ConvoManager {
             name: group_name.clone(),
             mls_group: new_group,
             decrypted: Vec::new(),
+            past_invites: Vec::new(),
         };
 
         let group_id = group.mls_group.group_id().to_vec();
@@ -214,6 +220,7 @@ impl ConvoManager {
             mls_group: alice_group,
             global_index: 0,
             decrypted: Vec::new(),
+            past_invites: Vec::new(),
         };
         let group_id = group.mls_group.group_id().to_vec();
         self.groups.insert(group_id.clone(), group);
@@ -224,7 +231,7 @@ impl ConvoManager {
         &mut self,
         group_id: Vec<u8>,
         serialized_key_package: Vec<u8>,
-    ) -> GroupInvite {
+    ) -> ConvoInvite {
         let group = self.groups.get_mut(&group_id).expect("group not found");
         let mls_group = &mut group.mls_group;
 
@@ -254,10 +261,12 @@ impl ConvoManager {
         let fanned = mls_message_out
             .tls_serialize_detached()
             .expect("Error serializing fanned");
-        GroupInvite {
-            fanned,
-            welcome: serialized_welcome,
+        ConvoInvite {
+            group_name: group.name.clone(),
+            welcome_message: serialized_welcome,
             ratchet_tree: Some(ratchet_tree),
+            global_index: 1,
+            fanned: Some(fanned),
         }
     }
 
@@ -332,7 +341,6 @@ impl ConvoManager {
                 mls_group
                     .merge_pending_commit(&self.provider)
                     .expect("Could not merge commit");
-                // assert_eq!(alice_group.members().count(), 2);
 
                 // let welcome2: MlsMessageIn = welcome.expect("Welcome was not returned");
 

@@ -2379,6 +2379,7 @@ dependencies = [
 name = "skychat"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "colored",
  "crossterm",
  "openmls",

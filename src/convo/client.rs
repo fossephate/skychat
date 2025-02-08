@@ -173,7 +173,7 @@ impl ConvoClient {
               "group_id": group_id.clone(),
               "sender_id": self.user_id.clone(),
               "receiver_id": receiver_id.clone(),
-              "welcome_message": group_invite.welcome.clone(),
+              "welcome_message": group_invite.welcome_message.clone(),
               "ratchet_tree": group_invite.ratchet_tree.clone(),
               "fanned": group_invite.fanned.clone(),
             }))
@@ -247,9 +247,10 @@ impl ConvoClient {
         for message in messages {
             // if the message contains an invite, add it to the pending_invites vector:
             if message.invite.is_some() {
-                let invite = message.invite.unwrap();
+                let invite = message.invite.clone().unwrap();
+                let group_name = invite.group_name.clone();
                 self.pending_invites.push(PendingInvite {
-                    group_name: invite.group_name.clone(),
+                    group_name: group_name.clone(),
                     sender_name: self.id_to_name.get(&message.sender_id).unwrap().clone(),
                     invite: invite.clone(),
                 });

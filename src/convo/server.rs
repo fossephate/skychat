@@ -21,14 +21,15 @@ pub struct ConvoInvite {
     pub welcome_message: Vec<u8>,
     pub ratchet_tree: Option<Vec<u8>>,
     pub global_index: u64,
+    pub fanned: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConvoMessage {
     pub global_index: u64,
     pub sender_id: String,
-    pub message: Option<Vec<u8>>,
     pub unix_timestamp: u64,
+    pub message: Option<Vec<u8>>,
     pub invite: Option<ConvoInvite>,
 }
 
@@ -235,6 +236,7 @@ impl ConvoServer {
                     group_name: group.group_name.clone(),
                     welcome_message: welcome_message,
                     ratchet_tree: Some(ratchet_tree),
+                    fanned: None,
                 }),
             });
         group.global_index += 1;

@@ -11,15 +11,16 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Tabs},
     Frame, Terminal,
 };
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     error::Error,
-    io,
+    fs, io,
     time::{Duration, Instant},
 };
 
-use skychat::convo::client::ConvoClient;
 use skychat::convo::server::ConvoMessage;
+use skychat::convo::{client::ConvoClient, manager::SerializedCredentials};
 
 type GroupId = Vec<u8>;
 
@@ -38,6 +39,7 @@ enum TabMode {
     Users,
     Invites,
     Groups,
+    Command,
 }
 
 struct GroupInfo {
@@ -66,6 +68,7 @@ struct App {
     groups_scroll: ListState,
     invites_scroll: ListState,
     server_address: String,
+    name: String,
 }
 
 pub struct Settings {
@@ -84,6 +87,7 @@ impl Default for App {
         let mut invites_scroll = ListState::default();
         invites_scroll.select(Some(0));
         let default_server_address = "https://skychat.fosse.co".to_string();
+
         App {
             input_mode: InputMode::EnterServerAddress,
             server_address: default_server_address.clone(),
@@ -99,24 +103,92 @@ impl Default for App {
             users_scroll,
             groups_scroll,
             invites_scroll,
+            name: "".to_string(),
         }
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct SerializedSettings {
+    name: String,
+    server_address: String,
+}
+
 impl App {
-    async fn load_settings(&mut self, path: &str) {
-        // self.manager.load_credentials(path + "/keys.json");
-        // let settingsPath = path + "/settings.json";
-        // let settings: str = fs::read_to_string(settingsPath).unwrap();
-        // let settings: Settings = serde_json::from_str(&settings).unwrap();
-        // self.name = settings.name;
-        // self.server_ip = settings.server_ip;
+    async fn load_state(&mut self, path: &str) {
+        let keys_path = format!("{}/keys.json", path);
+        let settings_path = format!("{}/settings.json", path);
+        // read settings.json:
+        if let Ok(settings_json) = fs::read_to_string(settings_path) {
+            let serialized_settings: SerializedSettings =
+                serde_json::from_str(&settings_json).unwrap();
+            self.load_settings(serialized_settings).await;
+        }
+        // read keys.json:
+        if let Ok(keys_json) = fs::read_to_string(keys_path) {
+            let serialized_credentials: SerializedCredentials =
+                serde_json::from_str(&keys_json).unwrap();
+            self.load_credentials(serialized_credentials).await;
+        }
     }
 
-    async fn save_settings(&mut self, path: &str) {
-        // self.manager.save_credentials(path + "/keys.json");
-        // let settingsPath = path + "/settings.json";
-        // let settings: Settings = serde_json::from_str(&settings).unwrap();
+    async fn save_state(&mut self, path: &str) {
+        let keys_path = format!("{}/keys.json", path);
+        let settings_path = format!("{}/settings.json", path);
+        let serialized_settings = self.get_settings();
+        let settings_json = serde_json::to_string(&serialized_settings).unwrap();
+        fs::write(settings_path, settings_json).unwrap();
+
+        let serialized_credentials = self.client.as_mut().unwrap().manager.save_state();
+        let keys_json = serde_json::to_string(&serialized_credentials).unwrap();
+        fs::write(keys_path, keys_json).unwrap();
+    }
+
+    // async fn save_credentials(&mut self, ) {
+    //     let keysPath = format!("{}/keys.json", path);
+    //     let settingsPath = format!("{}/settings.json", path);
+    //     self.save_settings(path).await;
+    // }
+
+    async fn load_credentials(&mut self, serialized: SerializedCredentials) {
+        if let Some(client) = &mut self.client {
+            client.manager.load_state(serialized).unwrap();
+        } else {
+            // create a new client
+            let mut client = ConvoClient::new(self.name.clone());
+            client.manager.load_state(serialized).unwrap();
+            self.client = Some(client);
+
+            let res = self
+                .client
+                .as_mut()
+                .unwrap()
+                .connect_to_server(self.server_address.to_string())
+                .await;
+
+            if res.is_ok() {
+                self.input.clear();
+                self.update_users().await;
+                self.input_mode = InputMode::Normal;
+                self.incoming_alert = None;
+            } else {
+                self.input.clear();
+                self.incoming_alert = Some("Failed to connect to server".to_string());
+                self.input_mode = InputMode::EnterServerAddress;
+            }
+        }
+    }
+
+    fn get_settings(&mut self) -> SerializedSettings {
+        SerializedSettings {
+            name: self.client.as_ref().unwrap().name.clone(),
+            server_address: self.server_address.clone(),
+        }
+    }
+
+    async fn load_settings(&mut self, serialized: SerializedSettings) {
+        self.name = serialized.name;
+        self.server_address = serialized.server_address;
     }
 
     fn scroll_messages(&mut self, up: bool) {
@@ -252,6 +324,7 @@ impl App {
                 .await;
             if !new_messages.is_empty() {
                 self.process_new_messages(new_messages).await;
+                self.save_state("./").await;
                 // Auto-scroll when new messages arrive
                 self.scroll_to_bottom();
             }
@@ -290,15 +363,6 @@ impl App {
                             )
                             .await;
                         self.input.clear();
-                        return;
-                    }
-
-                    if self.input.starts_with("/test") {
-                        self.client
-                            .as_mut()
-                            .unwrap()
-                            .manager
-                            .save_credentials("keys.json");
                         return;
                     }
 
@@ -418,11 +482,12 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         && app.input_mode != InputMode::Chatting
         && app.input_mode != InputMode::EnterServerAddress
     {
-        let titles = vec!["Users", "Groups", "Invites"];
+        let titles = vec!["Users", "Groups", "Invites", "Commands"];
         let selected = match app.tab_mode {
             TabMode::Users => 0,
             TabMode::Groups => 1,
             TabMode::Invites => 2,
+            TabMode::Command => 3,
         };
         let tabs = Tabs::new(titles)
             .block(Block::default().title("Tabs").borders(Borders::ALL))
@@ -444,6 +509,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     match app.input_mode {
         InputMode::Normal => match app.tab_mode {
+            TabMode::Command => {
+                let command_list = List::new(vec![ListItem::new(
+                    "Enter /save to save the application state / settings\n",
+                )])
+                .block(Block::default().title("Command mode").borders(Borders::ALL));
+                f.render_widget(command_list, chunks[2]);
+            }
             TabMode::Groups => {
                 let groups: Vec<ListItem> = app
                     .groups
@@ -695,6 +767,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::default();
+    app.load_state("./").await;
     let mut last_update = Instant::now();
 
     loop {
@@ -717,22 +790,38 @@ async fn main() -> Result<(), Box<dyn Error>> {
             if let Event::Key(key) = event::read()? {
                 match app.input_mode {
                     InputMode::Normal => match key.code {
+                        KeyCode::Char(c) => match app.tab_mode {
+                            TabMode::Command => {
+                                app.input.push(c);
+                            }
+                            _ => {}
+                        },
+                        KeyCode::Backspace => match app.tab_mode {
+                            TabMode::Command => {
+                                app.input.pop();
+                            }
+                            _ => {}
+                        },
                         KeyCode::Esc => break,
                         // use left and right arrows to switch tabs
                         KeyCode::Left => {
                             app.tab_mode = match app.tab_mode {
-                                TabMode::Users => TabMode::Invites,
+                                TabMode::Users => TabMode::Command,
                                 TabMode::Groups => TabMode::Users,
                                 TabMode::Invites => TabMode::Groups,
+                                TabMode::Command => TabMode::Invites,
                             };
+                            app.input.clear();
                             app.incoming_alert = None;
                         }
                         KeyCode::Right => {
                             app.tab_mode = match app.tab_mode {
                                 TabMode::Users => TabMode::Groups,
                                 TabMode::Groups => TabMode::Invites,
-                                TabMode::Invites => TabMode::Users,
+                                TabMode::Invites => TabMode::Command,
+                                TabMode::Command => TabMode::Users,
                             };
+                            app.input.clear();
                             app.incoming_alert = None;
                         }
                         KeyCode::Up => match app.tab_mode {
@@ -745,6 +834,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             TabMode::Invites => {
                                 app.scroll_invites(true);
                             }
+                            TabMode::Command => {
+                                // app.scroll_command(true);
+                            }
                         },
                         KeyCode::Down => match app.tab_mode {
                             TabMode::Users => {
@@ -756,10 +848,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             TabMode::Invites => {
                                 app.scroll_invites(false);
                             }
+                            TabMode::Command => {
+                                // app.scroll_command(false);
+                            }
                         },
                         KeyCode::Enter => match app.tab_mode {
                             TabMode::Users => {
-                                if app.users_scroll.selected().is_some() {
+                                if app.users_scroll.selected().is_some() && app.users.len() > 0 {
                                     app.input_mode = InputMode::CreatingGroup;
                                 }
                             }
@@ -769,6 +864,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             TabMode::Invites => {
                                 if app.invites_scroll.selected().is_some() {
                                     app.input_mode = InputMode::AcceptingInvite;
+                                }
+                            }
+                            TabMode::Command => {
+                                if app.input.starts_with("/save") {
+                                    app.save_state("./").await;
+                                    app.input.clear();
+                                    app.incoming_alert = Some("State saved".to_string());
                                 }
                             }
                         },
