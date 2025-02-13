@@ -4,6 +4,8 @@ use crate::{convo::manager::ConvoManager, utils};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use super::manager::{ConvoInvite, ConvoMessage};
+
 type GroupId = Vec<u8>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,25 +14,6 @@ pub struct ConvoUser {
     pub user_id: String,
     pub serialized_key_package: Vec<u8>,
     pub last_active: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-
-pub struct ConvoInvite {
-    pub group_name: String,
-    pub welcome_message: Vec<u8>,
-    pub ratchet_tree: Option<Vec<u8>>,
-    pub global_index: u64,
-    pub fanned: Option<Vec<u8>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConvoMessage {
-    pub global_index: u64,
-    pub sender_id: String,
-    pub unix_timestamp: u64,
-    pub message: Option<Vec<u8>>,
-    pub invite: Option<ConvoInvite>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -138,7 +121,7 @@ impl ConvoServer {
         self.users.values().cloned().collect()
     }
 
-    pub fn client_get_group_index(&self, group_id: Vec<u8>, sender_id: String) -> u64 {
+    pub fn client_get_group_index(&self, group_id: Vec<u8>, _sender_id: String) -> u64 {
         let group = self.groups.get(&group_id).expect("Group not found");
         group.global_index
     }
@@ -154,7 +137,7 @@ impl ConvoServer {
             user.last_active = utils::current_timestamp();
         }
 
-        let mut new_messages: Vec<ConvoMessage> = Vec::new();
+        let mut new_messages: Vec<ConvoMessage>;
         let mut existing_messages: Vec<ConvoMessage> = Vec::new();
 
         if let Some(group_id) = group_id {
@@ -200,7 +183,7 @@ impl ConvoServer {
         ratchet_tree: Vec<u8>,
         fanned: Option<Vec<u8>>,
     ) {
-        let mut group = self.groups.get_mut(&group_id).expect("Group not found");
+        let group = self.groups.get_mut(&group_id).expect("Group not found");
 
         // update the group with the fanned out messages:
         if let Some(fanned) = fanned {

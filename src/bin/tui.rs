@@ -20,7 +20,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use skychat::convo::server::ConvoMessage;
+use skychat::convo::manager::ConvoMessage;
 use skychat::convo::{client::ConvoClient, manager::SerializedCredentials};
 
 type GroupId = Vec<u8>;
@@ -261,7 +261,7 @@ impl App {
     }
 
     fn scroll_invites(&mut self, up: bool) {
-        let len = self.client.as_ref().unwrap().pending_invites.len();
+        let len = self.client.as_ref().unwrap().manager.pending_invites.len();
         let i = match self.invites_scroll.selected() {
             Some(i) => {
                 if up {
@@ -321,7 +321,7 @@ impl App {
     async fn check_messages(&mut self) {
         if let Some(client) = &mut self.client {
             let new_messages = client
-                .check_incoming_messages(self.current_group_id.clone())
+                .check_incoming_messages(self.current_group_id.as_ref())
                 .await;
             if !new_messages.is_empty() {
                 self.process_new_messages(new_messages).await;
@@ -356,7 +356,7 @@ impl App {
 
                         client
                             .send_message(
-                                group_id.clone(),
+                                group_id,
                                 format!(
                                     "<{} invited {} to join the group!",
                                     client.name, user_name
@@ -378,7 +378,7 @@ impl App {
                     }
 
                     client
-                        .send_message(group_id.clone(), self.input.clone())
+                        .send_message(group_id, self.input.clone())
                         .await;
                     self.input.clear();
                     self.scroll_to_bottom();
@@ -425,9 +425,9 @@ impl App {
     async fn accept_invite(&mut self) {
         if let Some(client) = &mut self.client {
             if let Some(selected) = self.invites_scroll.selected() {
-                if selected < client.pending_invites.len() {
-                    let invite = client.pending_invites.remove(selected);
-                    client.process_invite(invite.invite).await;
+                if selected < client.manager.pending_invites.len() {
+                    let invite = client.manager.pending_invites.remove(selected);
+                    client.process_invite(invite).await;
                     self.input_mode = InputMode::Normal;
                     self.tab_mode = TabMode::Groups;
                     self.invites_scroll.select(None);
@@ -440,8 +440,8 @@ impl App {
     async fn decline_invite(&mut self) {
         if let Some(selected) = self.invites_scroll.selected() {
             let client = self.client.as_mut().expect("client not found!");
-            if selected < client.pending_invites.len() {
-                client.pending_invites.remove(selected);
+            if selected < client.manager.pending_invites.len() {
+                client.manager.pending_invites.remove(selected);
                 self.invites_scroll.select(None);
                 self.input_mode = InputMode::Normal;
             }
@@ -575,6 +575,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             TabMode::Invites => {
                 let client = app.client.as_ref().expect("client not found!");
                 let invites: Vec<ListItem> = client
+                    .manager
                     .pending_invites
                     .iter()
                     .enumerate()
@@ -585,8 +586,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                             Style::default()
                         };
                         ListItem::new(format!(
-                            "Invite to {} from {}",
-                            invite.group_name, invite.sender_name
+                            "Invite to {}",
+                            invite.group_name
                         ))
                         .style(style)
                     })
@@ -728,10 +729,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         InputMode::AcceptingInvite => {
             if let Some(selected) = app.invites_scroll.selected() {
                 let client = app.client.as_ref().expect("client not found!");
-                if let Some(invite) = client.pending_invites.get(selected) {
+                if let Some(invite) = client.manager.pending_invites.get(selected) {
                     let text = format!(
-                        "Accept invite to group {} from {}? (Y/n)",
-                        invite.group_name, invite.sender_name
+                        "Accept invite to group {}? (Y/n)",
+                        invite.group_name
                     );
                     let prompt = Paragraph::new(text).block(
                         Block::default()

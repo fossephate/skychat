@@ -6,7 +6,7 @@ use openmls_basic_credential::SignatureKeyPair;
 // A helper to create and store credentials.
 pub fn generate_credential_with_key(
     identity: Vec<u8>,
-    credential_type: CredentialType,
+    _credential_type: CredentialType,
     signature_algorithm: SignatureScheme,
     provider: &impl OpenMlsProvider,
 ) -> (CredentialWithKey, SignatureKeyPair) {

@@ -7,8 +7,8 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 
-use crate::convo::server::{ConvoMessage, ConvoServer, ConvoUser};
-
+use crate::convo::server::{ConvoServer, ConvoUser};
+use crate::convo::manager::{ConvoMessage, ConvoInvite};
 
 pub struct ServerState {
     pub convo_server: Arc<Mutex<ConvoServer>>,

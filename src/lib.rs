@@ -10,4 +10,5 @@ pub use convo::server::ConvoServer;
 pub use convo::client::ConvoClient;
 
 // Re-export types that are used in public interfaces
-pub use convo::server::{ConvoMessage, ConvoUser, ConvoGroup, ConvoInvite};
+pub use convo::server::{ConvoUser, ConvoGroup};
+pub use convo::manager::{ConvoMessage, ConvoInvite};

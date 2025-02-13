@@ -6,7 +6,8 @@ use colored::{Color, Colorize};
 
 use crate::convo::{
     manager::ConvoManager,
-    server::{ConvoInvite, ConvoMessage, ConvoUser},
+    server::{ConvoUser},
+    manager::{ConvoInvite, ConvoMessage},
 };
 
 use super::manager::MessageItem;
@@ -14,12 +15,12 @@ use super::manager::MessageItem;
 type GroupId = Vec<u8>;
 type SerializedMessage = Vec<u8>;
 
-#[derive(Debug, Clone)]
-pub struct PendingInvite {
-    pub group_name: String,
-    pub sender_name: String,
-    pub invite: ConvoInvite,
-}
+// #[derive(Debug, Clone)]
+// pub struct PendingInvite {
+//     pub group_name: String,
+//     pub sender_name: String,
+//     pub invite: ConvoInvite,
+// }
 
 pub struct ConvoClient {
     pub name: String,
@@ -27,7 +28,6 @@ pub struct ConvoClient {
     pub manager: ConvoManager,
     pub server_address: Option<String>,
     pub id_to_name: HashMap<String, String>,
-    pub pending_invites: Vec<PendingInvite>,
 }
 
 impl ConvoClient {
@@ -38,7 +38,6 @@ impl ConvoClient {
             manager: ConvoManager::init(name.clone()),
             server_address: None,
             id_to_name: HashMap::new(),
-            pending_invites: Vec::new(),
         }
     }
 
@@ -164,7 +163,7 @@ impl ConvoClient {
 
         let group_invite = self
             .manager
-            .create_invite(group_id.clone(), serialized_key_package);
+            .create_invite(&group_id, serialized_key_package);
 
         let client = reqwest::Client::new();
         let response = client
@@ -196,7 +195,7 @@ impl ConvoClient {
     pub async fn process_invite(&mut self, invite: ConvoInvite) {
         // add the welcome_message to the manager
         self.manager.process_invite(
-            invite.group_name.clone(),
+            &invite.group_name,
             invite.welcome_message.clone(),
             invite.ratchet_tree.clone(),
         );
@@ -230,51 +229,9 @@ impl ConvoClient {
         }
     }
 
-    pub fn process_text_message(&mut self, message: ConvoMessage) {
-        // add the message to the manager
-        // self.manager.process_incoming_message(group_id, serialized_message)
-    }
-
-    pub async fn process_new_messages(
-        &mut self,
-        messages: Vec<ConvoMessage>,
-        group_id: Option<GroupId>,
-    ) {
-        // add the messages to the manager
-        // self.manager.add_messages(messages);
-
-        // loop through the messages and process them by type:
-        for message in messages {
-            // if the message contains an invite, add it to the pending_invites vector:
-            if message.invite.is_some() {
-                let invite = message.invite.clone().unwrap();
-                let group_name = invite.group_name.clone();
-                self.pending_invites.push(PendingInvite {
-                    group_name: group_name.clone(),
-                    sender_name: self.id_to_name.get(&message.sender_id).unwrap().clone(),
-                    invite: invite.clone(),
-                });
-            }
-
-            if message.message.is_some() && group_id.is_some() {
-                let gid: Vec<u8> = group_id.clone().unwrap();
-                let serialized_message = message.message.unwrap();
-                self.manager.process_incoming_message(
-                    gid.clone(),
-                    serialized_message,
-                    Some(message.sender_id.clone()),
-                );
-                let mut group = self.manager.groups.get_mut(&gid.clone()).unwrap();
-                if message.global_index > group.global_index {
-                    group.global_index = message.global_index;
-                }
-            }
-        }
-    }
-
     pub async fn check_incoming_messages(
         &mut self,
-        group_id: Option<GroupId>,
+        group_id: Option<&GroupId>,
     ) -> Vec<ConvoMessage> {
         let address = self
             .server_address
@@ -282,8 +239,8 @@ impl ConvoClient {
             .expect("server address is not set");
 
         let mut index = 0;
-        if let Some(group_id) = group_id.clone() {
-            if let Some(group) = self.manager.groups.get(&group_id) {
+        if let Some(group_id) = group_id {
+            if let Some(group) = self.manager.groups.get(group_id) {
                 index = group.global_index;
             }
         }
@@ -306,12 +263,11 @@ impl ConvoClient {
             .await
             .expect("failed to parse response");
 
-        self.process_new_messages(messages.clone(), group_id.clone())
-            .await;
+        self.manager.process_convo_messages(messages.clone());
         messages
     }
 
-    pub async fn get_group_index(&mut self, group_id: GroupId) -> u64 {
+    pub async fn get_group_index(&mut self, group_id: &GroupId) -> u64 {
         let address = self
             .server_address
             .as_ref()
@@ -337,17 +293,17 @@ impl ConvoClient {
         group_index
     }
 
-    pub async fn sync_group(&mut self, group_id: GroupId) {
+    pub async fn sync_group(&mut self, group_id: &GroupId) {
         // get and process any incoming messages:
-        self.check_incoming_messages(Some(group_id.clone())).await;
+        self.check_incoming_messages(Some(group_id)).await;
 
-        let group_index = self.get_group_index(group_id.clone()).await;
+        let group_index = self.get_group_index(group_id).await;
 
         // set the group_index to the group_index:
         let group = self
             .manager
             .groups
-            .get_mut(&group_id)
+            .get_mut(group_id)
             .expect("group not found");
 
         if group_index != group.global_index {
@@ -356,16 +312,16 @@ impl ConvoClient {
         }
     }
 
-    pub async fn send_message(&mut self, group_id: GroupId, text: String) {
+    pub async fn send_message(&mut self, group_id: &GroupId, text: String) {
         // we must always sync the group before sending a message:
-        self.sync_group(group_id.clone()).await;
+        self.sync_group(&group_id).await;
 
-        let msg = self.manager.create_message(group_id.clone(), text.clone());
+        let msg = self.manager.create_message(group_id, text.clone());
 
         let mut group = self
             .manager
             .groups
-            .get_mut(&group_id.clone())
+            .get_mut(group_id)
             .expect("group not found");
 
         let address = self
@@ -377,7 +333,7 @@ impl ConvoClient {
         let response = client
             .post(format!("{}/api/send_message", address))
             .json(&serde_json::json!({
-              "group_id": group_id.clone(),
+              "group_id": group_id,
               "sender_id": self.user_id.clone(),
               "message": msg.clone(),
               "global_index": group.global_index.clone(),
@@ -434,20 +390,16 @@ impl ConvoClient {
                 .id_to_name
                 .get(&message.sender_id)
                 .expect("sender not found");
-            let color = sender_colors
-                .get(&message.sender_id)
-                .expect("color not found");
+            // let color = sender_colors
+            //     .get(&message.sender_id)
+            //     .expect("color not found");
 
             // display_messages.push(format!(
             //     "{}: {}",
             //     sender_name.color(*color).bold(),
             //     message.text
             // ));
-            display_messages.push(format!(
-                "{}: {}",
-                sender_name,
-                message.text
-            ));
+            display_messages.push(format!("{}: {}", sender_name, message.text));
         }
 
         display_messages
