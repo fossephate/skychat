@@ -136,7 +136,7 @@ impl ConvoManager {
         let converted_storage: HashMap<Vec<u8>, Vec<u8>> = serialized
             .storage
             .iter()
-            .map(|(k, v)| (base64::decode(k).unwrap(), v.clone()))
+            .map(|(k, v)| (general_purpose::STANDARD.decode(k).unwrap(), v.clone()))
             .collect();
 
         self.signer = SignatureKeyPair::tls_deserialize_exact_bytes(&serialized.signer)?;
@@ -534,3 +534,5 @@ impl ConvoManager {
         );
     }
 }
+
+
