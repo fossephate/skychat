@@ -222,18 +222,19 @@ impl ConvoServer {
         let group = self.groups
             .get_mut(&group_id)
             .context("Group not found")?;
-
-        if global_index == group.global_index {
+        // the proposed message's global_index must be the current group's global_index + 1:
+        let correct_new_gi = group.global_index + 1;
+        if global_index == correct_new_gi {
             group.messages.push(ConvoMessage {
-                global_index: group.global_index,
+                global_index: correct_new_gi,
                 sender_id: sender_id.clone(),
                 message: Some(message.clone()),
                 unix_timestamp: 0,
                 invite: None,
             });
-            group.global_index += 1;
+            group.global_index = correct_new_gi;
             Ok(())
-        } else if global_index > group.global_index {
+        } else if global_index > correct_new_gi {
             anyhow::bail!("Message is somehow too new!")
         } else {
             anyhow::bail!("Message is too old! (need to sync first)")

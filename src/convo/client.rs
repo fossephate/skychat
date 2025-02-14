@@ -344,17 +344,24 @@ impl ConvoClient {
               "group_id": group_id,
               "sender_id": self.user_id.clone(),
               "message": msg.clone(),
-              "global_index": group.global_index.clone(),
+              "global_index": group.global_index + 1,
             }))
             .send()
             .await;
 
-        // if response isn't an error, increment the global_index of the group:
         if response.is_ok() {
-            group.global_index += 1;
             // add this message to our own message list:
             group.decrypted.push(MessageItem {
                 text: text.clone(),
+                sender_id: self.user_id.clone(),
+                timestamp: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+            });
+        } else {
+            group.decrypted.push(MessageItem {
+                text: "<message_failed to send!>".to_string(),
                 sender_id: self.user_id.clone(),
                 timestamp: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
