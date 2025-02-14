@@ -6,8 +6,8 @@ use colored::{Color, Colorize};
 
 use crate::convo::{
     manager::ConvoManager,
-    server::{ConvoUser},
     manager::{ConvoInvite, ConvoMessage},
+    server::ConvoUser,
 };
 
 use super::manager::MessageItem;
@@ -186,7 +186,7 @@ impl ConvoClient {
                 .groups
                 .get_mut(&group_id)
                 .expect("group not found");
-            group.global_index += 1;
+            // group.global_index += 1;// todo: maybe should increment this?
         } else {
             panic!("Failed to send invite");
         }
@@ -194,11 +194,8 @@ impl ConvoClient {
 
     pub async fn process_invite(&mut self, invite: ConvoInvite) {
         // add the welcome_message to the manager
-        self.manager.process_invite(
-            &invite.group_name,
-            invite.welcome_message.clone(),
-            invite.ratchet_tree.clone(),
-        );
+        self.manager.process_invite(invite.clone());
+        
         // let the server know we have successfully processed the invite:
         let address = self
             .server_address
@@ -271,7 +268,16 @@ impl ConvoClient {
             .await
             .expect("failed to parse response");
 
-        self.manager.process_convo_messages(messages.clone(), group_id);
+        // println!("got messages length: {:?}", messages);
+
+        // exclude any messages from our own user_id:
+        let messages: Vec<ConvoMessage> = messages
+            .into_iter()
+            .filter(|message| message.sender_id != self.user_id)
+            .collect();
+
+        self.manager
+            .process_convo_messages(messages.clone(), group_id);
         messages
     }
 
@@ -302,9 +308,10 @@ impl ConvoClient {
     }
 
     pub async fn sync_group(&mut self, group_id: &GroupId) {
-        // get and process any incoming messages:
-        self.check_incoming_messages(Some(group_id)).await;
 
+        // get and process any incoming messages:
+        let messages = self.check_incoming_messages(Some(group_id)).await;
+        
         let group_index = self.get_group_index(group_id).await;
 
         // set the group_index to the group_index:
@@ -351,6 +358,8 @@ impl ConvoClient {
 
         if response.is_ok() {
             // add this message to our own message list:
+            // increment the global_index of the group:
+            group.global_index += 1;
             group.decrypted.push(MessageItem {
                 text: text.clone(),
                 sender_id: self.user_id.clone(),

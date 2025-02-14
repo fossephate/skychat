@@ -138,7 +138,7 @@ async fn manual_chat() {
     // alice creates a new group and invites bob:
     let gid = alice.create_new_group(gn.clone());
     let group_invite = alice.create_invite(&gid, bob.get_key_package());
-    bob.process_invite(&gn, group_invite.welcome_message, group_invite.ratchet_tree);
+    bob.process_raw_invite(gn.clone(), group_invite.welcome_message, group_invite.ratchet_tree, None);
 
     println!("<------ Alice creates a new group and invites Bob! ------->");
 
@@ -170,7 +170,7 @@ async fn manual_chat() {
     // charlie + everyone* (not actually everyone, but I think log(n) people in the tree?)
     // must process the invite before any new messages can be decrypted
     // (excluding bob since he created the invite)
-    charlie.process_invite(&gn, group_invite.welcome_message, group_invite.ratchet_tree);
+    charlie.process_raw_invite(gn.clone(), group_invite.welcome_message, group_invite.ratchet_tree, None);
     // everyone* else must processes the fanned commit like a normal message
     alice.process_message(group_invite.fanned.unwrap(), None);
 
@@ -246,7 +246,7 @@ async fn manual_chat() {
     println!("<------ David joins the group! ------->");
     // print the processed_results:
     // println!("{}", format!("Processed results: {:?}", processed_results.invite.unwrap()).green());
-    david.process_convo_invite(proposed_invite.clone());
+    david.process_raw_invite(gn.clone(), proposed_invite.welcome_message, proposed_invite.ratchet_tree, None);
     println!("<------ David processed the invite! ------->");
     // charlie must also process the fanned commit:
     // charlie.process_message(proposed_invite.fanned.unwrap(), None);
@@ -354,9 +354,11 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     bob_client
         .send_message(&group_id, "Hello, alice!".to_string())
         .await;
+    println!("<!------ Bob sends a second message to alice! ------->");
     bob_client
         .send_message(&group_id, "Second message to alice!".to_string())
         .await;
+    println!("<!------ Alice sends a reply to bob! ------->");
     alice_client
         .send_message(&group_id, "Reply to bob!".to_string())
         .await;
@@ -368,18 +370,18 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     alice_client.check_incoming_messages(Some(&group_id)).await;
     bob_client.check_incoming_messages(Some(&group_id)).await;
 
-    println!("<!------ Chat history from Alice's perspective! ------->\n");
+    println!("<!------ Alice's message history ------->\n");
 
     // message history from alice's perspective:
     alice_client.print_group_messages(&group_id);
 
-    println!("\n<!------ Chat history from Bob's perspective! ------->\n");
+    println!("\n<!------ Bob's message history ------->\n");
 
     // message history from bob's perspective:
     bob_client.print_group_messages(&group_id);
 
     // create charlie:
-    println!("<!------ Creating charlie! ------->");
+    println!("\n<!------ Creating charlie! ------->");
     let mut charlie_client = ConvoClient::new(charlie_name.clone());
     charlie_client
         .connect_to_server(server_address.clone())
@@ -387,6 +389,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
     // alice calls list_users, notices charlie, and invites charlie to join the group
     let _ = alice_client.list_users().await;
+    let _ = bob_client.list_users().await;
     let users_list = charlie_client.list_users().await;
 
     let charlie_user = users_list
@@ -407,11 +410,23 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await;
 
+    println!("<!------ Alice sends a message to charlie! ------->");
+    alice_client.send_message(&group_id, "Welcome to the group, charlie!".to_string()).await;
+
     println!("<!------ Charlie checks his messages! ------->");
     charlie_client.check_incoming_messages(None).await;
 
     println!("<!------ Charlie accepts the invite! ------->");
     charlie_client.accept_current_invites().await;
+
+
+    println!("<!------ Charlie sends a message to alice! ------->");
+    charlie_client
+        .send_message(&group_id, "Hello, alice!".to_string())
+        .await;
+
+    println!("<!------ Bob checks his messages! ------->");
+    bob_client.check_incoming_messages(Some(&group_id)).await;
 
     // bob sends a message to charlie:
     println!("<!------ Bob sends a message to charlie! ------->");
@@ -425,11 +440,12 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
         .await;
 
     // display message lists:
-    println!("<!------ Alice's message list! ------->");
+    println!("\n\n<!------ Everyone's POV: ------->");
+    println!("\n<!------ Alice's message history ------->");
     alice_client.print_group_messages(&group_id);
-    println!("<!------ Bob's message list! ------->");
+    println!("\n<!------ Bob's message history ------->");
     bob_client.print_group_messages(&group_id);
-    println!("<!------ Charlie's message list! ------->");
+    println!("\n<!------ Charlie's message history ------->");
     charlie_client.print_group_messages(&group_id);
 
     // alice's message list:

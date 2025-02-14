@@ -180,14 +180,25 @@ impl ConvoManager {
         serialized_key_package
     }
 
-    pub fn process_invite(
+    pub fn process_raw_invite(
         &mut self,
-        group_name: &String,
-        welcome: Vec<u8>,
+        group_name: String,
+        welcome_message: Vec<u8>,
         ratchet_tree: Option<Vec<u8>>,
+        fanned: Option<Vec<u8>>,
     ) {
+        self.process_invite(ConvoInvite {
+            group_name: group_name.clone(),
+            welcome_message: welcome_message.clone(),
+            ratchet_tree: ratchet_tree.clone(),
+            global_index: 0,
+            fanned: fanned.clone(),
+        });
+    }
+
+    pub fn process_invite(&mut self, invite: ConvoInvite) {
         // bob can now de-serialize the message as an [`MlsMessageIn`] ...
-        let mls_message_in = MlsMessageIn::tls_deserialize(&mut welcome.as_slice())
+        let mls_message_in = MlsMessageIn::tls_deserialize(&mut invite.welcome_message.as_slice())
             .expect("An unexpected error occurred.");
 
         // ... and inspect the message.
@@ -204,7 +215,7 @@ impl ConvoManager {
         let mut ratchet_tree_deserialized: Option<RatchetTreeIn> = None;
 
         // if we have a ratchet tree:
-        if let Some(ratchet_tree) = ratchet_tree {
+        if let Some(ratchet_tree) = invite.ratchet_tree {
             ratchet_tree_deserialized = Some(
                 RatchetTreeIn::tls_deserialize(&mut ratchet_tree.as_slice())
                     .expect("Error deserializing ratchet tree"),
@@ -229,8 +240,8 @@ impl ConvoManager {
 
         // create the group:
         let group = LocalGroup {
-            global_index: 0,
-            name: group_name.clone(),
+            global_index: invite.global_index.clone(),
+            name: invite.group_name.clone(),
             mls_group: new_group,
             decrypted: Vec::new(),
         };
@@ -337,7 +348,10 @@ impl ConvoManager {
         let processed_message = mls_group.process_message(&self.provider, protocol_message);
 
         if processed_message.is_err() {
-            println!("Error processing message: {:?}", processed_message.err().unwrap());
+            println!(
+                "Error processing message: {:?}",
+                processed_message.err().unwrap()
+            );
             return ProcessedResults {
                 message: None,
                 invite: None,
@@ -513,7 +527,11 @@ impl ConvoManager {
     // higher level functions that make this class easier to use:
     // generally uses "Convo" objects instead of "Mls" objects
 
-    pub fn process_convo_messages(&mut self, messages: Vec<ConvoMessage>, group_id: Option<&GroupId>) {
+    pub fn process_convo_messages(
+        &mut self,
+        messages: Vec<ConvoMessage>,
+        group_id: Option<&GroupId>,
+    ) {
         // if the message is an invite, process it:
         for message in messages {
             if let Some(invite) = message.invite {
@@ -532,14 +550,4 @@ impl ConvoManager {
             }
         }
     }
-
-    pub fn process_convo_invite(&mut self, invite: ConvoInvite) {
-        self.process_invite(
-            &invite.group_name,
-            invite.welcome_message,
-            invite.ratchet_tree,
-        );
-    }
 }
-
-

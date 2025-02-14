@@ -176,7 +176,7 @@ impl ConvoServer {
         // Add fanned message if provided
         if let Some(fanned) = fanned {
             group.messages.push(ConvoMessage {
-                global_index: group.global_index,
+                global_index: group.global_index + 1,
                 sender_id: sender_id.clone(),
                 message: Some(fanned),
                 unix_timestamp: 0,
