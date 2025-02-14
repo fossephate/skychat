@@ -316,7 +316,7 @@ impl ConvoClient {
         // we must always sync the group before sending a message:
         self.sync_group(&group_id).await;
 
-        let msg = self.manager.create_message(group_id, text.clone());
+        let msg = self.manager.create_message(&group_id, text.clone());
 
         let mut group = self
             .manager
