@@ -280,7 +280,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     // start a client:
     println!("\n\n<!------ Starting alice client and connecting to server... ------->");
     let mut rng = rand::rng();
-    let server_address = "http://127.0.0.1:8080".to_string();
+    let server_address = "http://127.0.0.1:8888".to_string();
     let alice_name = format!("alice_{}", rng.random_range(0..1000000));
     let bob_name = format!("bob_{}", rng.random_range(0..1000000));
     let charlie_name = format!("charlie_{}", rng.random_range(0..1000000));
@@ -324,6 +324,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     bob_client.check_incoming_messages(None).await;
 
     println!("<!------ Bob accepts the invite! ------->");
+    bob_client.accept_current_invites().await;
 
     // // list bob's groups:
     // let groups = bob_client.manager.groups;
@@ -408,6 +409,9 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("<!------ Charlie checks his messages! ------->");
     charlie_client.check_incoming_messages(None).await;
+
+    println!("<!------ Charlie accepts the invite! ------->");
+    charlie_client.accept_current_invites().await;
 
     // bob sends a message to charlie:
     println!("<!------ Bob sends a message to charlie! ------->");

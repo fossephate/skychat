@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-colored = "3.0.0"
 openmls = "0.6.0"
 openmls_basic_credential = "0.3.0"
 openmls_rust_crypto = "0.3.0"
@@ -17,21 +16,26 @@ uuid = { version = "1.13.1", features = [
 ] }
 serde_json = { version = "1.0" }
 serde = { version = "1.0.217", features = ["derive"] }
-ratatui = "0.22.0"
-crossterm = "0.26.0"
 base64 = "0.22.1"
+anyhow = "1.0"
 reqwest = { version = "0.12", features = ["json"] }
+colored = "3.0.0"
+
+
+[dev-dependencies]
 rocket = { version = "0.5.1", features = ["json"] }
+crossterm = "0.26.0"
+ratatui = "0.22.0"
 
 
-[[bin]]
-name = "client"
-path = "src/bin/client.rs"
+[[example]]
+name = "tests"
+path = "examples/tests/tests.rs"
 
-[[bin]]
+[[example]]
 name = "server"
-path = "src/bin/server.rs"
+path = "examples/server/main.rs"
 
-[[bin]]
-name = "tui"
-path = "src/bin/tui.rs"
+[[example]]
+name = "client"
+path = "examples/client/tui.rs"

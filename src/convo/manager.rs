@@ -229,7 +229,7 @@ impl ConvoManager {
 
         // create the group:
         let group = LocalGroup {
-            global_index: 1,
+            global_index: 0,
             name: group_name.clone(),
             mls_group: new_group,
             decrypted: Vec::new(),
@@ -513,7 +513,7 @@ impl ConvoManager {
     // higher level functions that make this class easier to use:
     // generally uses "Convo" objects instead of "Mls" objects
 
-    pub fn process_convo_messages(&mut self, messages: Vec<ConvoMessage>) {
+    pub fn process_convo_messages(&mut self, messages: Vec<ConvoMessage>, group_id: Option<&GroupId>) {
         // if the message is an invite, process it:
         for message in messages {
             if let Some(invite) = message.invite {
@@ -522,6 +522,13 @@ impl ConvoManager {
             // if the message is a message, process it:
             if let Some(msg) = message.message {
                 self.process_message(msg, Some(message.sender_id));
+            }
+
+            if let Some(group_id) = group_id {
+                let group = self.groups.get_mut(group_id).unwrap();
+                if message.global_index > group.global_index {
+                    group.global_index = message.global_index;
+                }
             }
         }
     }

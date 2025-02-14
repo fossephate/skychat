@@ -3,10 +3,11 @@ extern crate rocket;
 
 use rocket::Config;
 use skychat::convo::server::ConvoServer;
-use skychat::web::*;
 use tokio::time::interval;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+mod web;
+use web::*;
 
 #[tokio::main]
 async fn main() {

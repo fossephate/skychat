@@ -229,6 +229,14 @@ impl ConvoClient {
         }
     }
 
+    pub async fn accept_current_invites(&mut self) {
+        let invites = self.manager.pending_invites.clone();
+        for invite in invites {
+            self.process_invite(invite).await;
+        }
+        self.manager.pending_invites.clear();
+    }
+
     pub async fn check_incoming_messages(
         &mut self,
         group_id: Option<&GroupId>,
@@ -263,7 +271,7 @@ impl ConvoClient {
             .await
             .expect("failed to parse response");
 
-        self.manager.process_convo_messages(messages.clone());
+        self.manager.process_convo_messages(messages.clone(), group_id);
         messages
     }
 

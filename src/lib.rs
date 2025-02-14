@@ -10,7 +10,6 @@ pub use convo::manager::ConvoManager;
 pub use convo::manager::{ConvoMessage, ConvoInvite};
 
 // parts of the code that are difficult for ffi:
-pub mod web;
 pub use convo::client::ConvoClient;
 pub use convo::server::ConvoServer;
 pub use convo::server::{ConvoUser, ConvoGroup};

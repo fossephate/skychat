@@ -7,8 +7,8 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 
-use crate::convo::server::{ConvoServer, ConvoUser};
-use crate::convo::manager::{ConvoMessage, ConvoInvite};
+use skychat::convo::server::{ConvoServer, ConvoUser};
+use skychat::convo::manager::{ConvoMessage, ConvoInvite};
 
 pub struct ServerState {
     pub convo_server: Arc<Mutex<ConvoServer>>,
@@ -114,7 +114,7 @@ pub async fn get_new_messages(
         data.sender_id.clone(),
         data.index.clone(),
     );
-    Json(messages)
+    Json(messages.unwrap())
 }
 
 // POST /invite_user (json containing group_id, user_id, and welcome_message)
@@ -165,5 +165,5 @@ pub async fn group_index(data: Json<GetGroupInfo>, state: &State<ServerState>) -
     let server = state.convo_server.lock().expect("failed to lock server!");
     // let messages = server.client_get_group_info(data.group_id.clone(), data.sender_id.clone());
     let global_index = server.client_get_group_index(data.group_id.clone(), data.sender_id.clone());
-    Json(global_index)
+    Json(global_index.unwrap())
 }
