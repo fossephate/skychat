@@ -4,13 +4,14 @@ use std::collections::HashMap;
 
 use colored::{Color, Colorize};
 
-use crate::convo::{
+use skychat_core::{
     manager::ConvoManager,
     manager::{ConvoInvite, ConvoMessage},
-    server::ConvoUser,
 };
 
-use super::manager::MessageItem;
+use skychat_server::server::ConvoUser;
+
+use skychat_core::manager::MessageItem;
 
 type GroupId = Vec<u8>;
 type SerializedMessage = Vec<u8>;

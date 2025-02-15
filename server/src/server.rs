@@ -3,9 +3,9 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::utils;
+use skychat_core::utils;
 
-use super::manager::{ConvoInvite, ConvoMessage};
+use skychat_core::manager::{ConvoInvite, ConvoMessage};
 
 type GroupId = Vec<u8>;
 

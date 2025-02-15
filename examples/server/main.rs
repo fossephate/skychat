@@ -2,7 +2,7 @@
 extern crate rocket;
 
 use rocket::Config;
-use skychat::convo::server::ConvoServer;
+use skychat_server::server::ConvoServer;
 use tokio::time::interval;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;

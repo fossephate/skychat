@@ -1,0 +1,31 @@
+[package]
+name = "skychat-examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+skychat-core = { path = "../core" }
+skychat-client = { path = "../client" }
+skychat-server = { path = "../server" }
+
+tokio.workspace = true
+crossterm.workspace = true
+ratatui.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+rocket.workspace = true
+colored.workspace = true
+rand.workspace = true
+
+[[example]]
+name = "core"
+path = "core/tests.rs"
+
+[[example]]
+name = "server"
+path = "server/main.rs"
+
+[[example]]
+name = "client"
+path = "client/tui.rs"

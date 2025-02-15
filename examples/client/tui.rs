@@ -20,8 +20,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use skychat::convo::manager::ConvoMessage;
-use skychat::convo::{client::ConvoClient, manager::SerializedCredentials};
+use skychat_core::manager::ConvoMessage;
+use skychat_client::client::ConvoClient;
+use skychat_core::manager::SerializedCredentials;
 
 type GroupId = Vec<u8>;
 

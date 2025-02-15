@@ -7,8 +7,8 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 
-use skychat::convo::server::{ConvoServer, ConvoUser};
-use skychat::convo::manager::{ConvoMessage, ConvoInvite};
+use skychat_server::server::{ConvoServer, ConvoUser};
+use skychat_core::manager::{ConvoMessage, ConvoInvite};
 
 pub struct ServerState {
     pub convo_server: Arc<Mutex<ConvoServer>>,

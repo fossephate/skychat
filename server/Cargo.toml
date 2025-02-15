@@ -1,0 +1,12 @@
+[package]
+name = "skychat-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+skychat-core = { path = "../core" }
+rocket = { version = "0.5.1", features = ["json"] }
+serde_json.workspace = true
+serde.workspace = true
+anyhow.workspace = true
+tokio.workspace = true

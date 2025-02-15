@@ -2,8 +2,8 @@
 
 use colored::*;
 use rand::Rng;
-use skychat::convo::client::ConvoClient;
-use skychat::convo::manager::ConvoManager;
+use skychat_client::client::ConvoClient;
+use skychat_core::manager::ConvoManager;
 
 async fn old_reference() {
     // // Define ciphersuite ...
@@ -279,7 +279,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
     // start a client:
     println!("\n\n<!------ Starting alice client and connecting to server... ------->");
-    let mut rng = rand::rng();
+    let mut rng = rand::thread_rng();
     let server_address = "http://127.0.0.1:8888".to_string();
     let alice_name = format!("alice_{}", rng.random_range(0..1000000));
     let bob_name = format!("bob_{}", rng.random_range(0..1000000));
