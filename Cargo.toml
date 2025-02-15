@@ -7,15 +7,21 @@ members = [
 ] 
 
 [workspace.dependencies]
-colored = "2.0"
+# client:
 rand = "0.9.0"
-openmls = "0.4"
+colored = "2.0"
+reqwest = { version = "0.12", features = ["json"] }
+ratatui = "0.22.0" 
+crossterm = "0.26.0"
+# server:
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1.13.1", features = ["v4", "fast-rng", "macro-diagnostics"] }
+rocket = { version = "0.5.1", features = ["json"] }
+# core:
+openmls = "0.6.0"
+openmls_basic_credential = "0.3.0"
+openmls_rust_crypto = "0.3.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0"
-anyhow = "1.0"
-tokio = { version = "1", features = ["full"] }
-rocket = { version = "0.5.1", features = ["json"] }
-crossterm = "0.26.0"
-ratatui = "0.22.0" 
-reqwest = { version = "0.12", features = ["json"] }
-uuid = { version = "1.13.1", features = ["v4", "fast-rng", "macro-diagnostics"] }
+base64 = "0.22.1"
+anyhow = "1.0" 

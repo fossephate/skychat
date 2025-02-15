@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 skychat-core = { path = "../core" }
-rocket = { version = "0.5.1", features = ["json"] }
 serde_json.workspace = true
 serde.workspace = true
 anyhow.workspace = true
