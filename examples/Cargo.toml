@@ -1,5 +1,5 @@
 [package]
-name = "skychat-examples"
+name = "skychat_examples"
 version = "0.1.0"
 edition = "2021"
 
