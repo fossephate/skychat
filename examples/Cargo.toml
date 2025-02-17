@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-skychat-core = { path = "../core" }
-skychat-client = { path = "../client" }
-skychat-server = { path = "../server" }
+skychat_core = { path = "../core" }
+skychat_client = { path = "../client" }
+skychat_server = { path = "../server" }
 
 tokio.workspace = true
 crossterm.workspace = true

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-skychat-core = { path = "../core" }
+skychat_core = { path = "../core" }
 serde_json.workspace = true
 serde.workspace = true
 anyhow.workspace = true

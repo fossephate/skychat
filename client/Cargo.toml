@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-skychat-core = { path = "../core" }
-skychat-server = { path = "../server" }
+skychat_core = { path = "../core" }
+skychat_server = { path = "../server" }
 uuid.workspace = true
 reqwest.workspace = true
 colored.workspace = true
