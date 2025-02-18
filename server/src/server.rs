@@ -148,14 +148,16 @@ impl ConvoServer {
             }
         }
 
+        // Filter messages by index
+        new_messages.retain(|msg| msg.global_index > index);
+
         // Add user-specific messages
+        // user-specific messages shouldn't be filtered by index, so we add them after the filtering:
         if let Some(specific_messages) = self.user_specific_messages.get(&sender_id) {
             new_messages.extend(specific_messages.iter().cloned());
             self.user_specific_messages.remove(&sender_id);
         }
 
-        // Filter messages by index
-        new_messages.retain(|msg| msg.global_index > index);
 
         Ok(new_messages)
     }
