@@ -11,7 +11,6 @@ type GroupId = Vec<u8>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConvoUser {
-    pub name: String,
     pub user_id: String,
     pub serialized_key_package: Vec<u8>,
     pub last_active: u64,
@@ -100,7 +99,6 @@ impl ConvoServer {
     pub fn client_connect(
         &mut self,
         user_id: String,
-        name: String,
         serialized_key_package: Vec<u8>,
     ) -> Result<()> {
         let timestamp = utils::current_timestamp();
@@ -109,7 +107,6 @@ impl ConvoServer {
             user_id.clone(),
             ConvoUser {
                 user_id: user_id.clone(),
-                name,
                 serialized_key_package,
                 last_active: timestamp,
             },

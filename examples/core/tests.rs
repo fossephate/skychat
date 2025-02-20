@@ -301,7 +301,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
     let bob_user = users_list
         .iter()
-        .find(|user| user.name == bob_name.clone())
+        .find(|user| user.user_id == bob_name.clone())
         .expect("bob not found!");
 
     let bob_user_id = bob_user.user_id.clone();
@@ -394,7 +394,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
     let charlie_user = users_list
         .iter()
-        .find(|user| user.name == charlie_name.clone())
+        .find(|user| user.user_id == charlie_name.clone())
         .expect("charlie not found!");
 
     let charlie_user_id = charlie_user.user_id.clone();

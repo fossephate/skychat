@@ -50,7 +50,6 @@ struct GroupInfo {
 }
 
 struct User {
-    name: String,
     user_id: String,
     key_package: Vec<u8>,
 }
@@ -183,7 +182,7 @@ impl App {
 
     fn get_settings(&mut self) -> SerializedSettings {
         SerializedSettings {
-            name: self.client.as_ref().unwrap().name.clone(),
+            name: self.client.as_ref().unwrap().user_id.clone(),
             server_address: self.server_address.clone(),
         }
     }
@@ -287,7 +286,7 @@ impl App {
                 .into_iter()
                 .filter(|u| u.user_id != client.user_id)
                 .map(|u| User {
-                    name: u.name,
+                    // name: u.name,
                     user_id: u.user_id,
                     key_package: u.serialized_key_package,
                 })
@@ -346,7 +345,7 @@ impl App {
                         let user = self
                             .users
                             .iter()
-                            .find(|user| user.name == user_name.clone())
+                            .find(|user| user.user_id == user_name.clone())
                             .expect("user not found!");
 
                         let key_package = user.key_package.clone();
@@ -360,7 +359,7 @@ impl App {
                                 group_id,
                                 format!(
                                     "<{} invited {} to join the group!",
-                                    client.name, user_name
+                                    client.user_id, user_name
                                 ),
                             )
                             .await;
@@ -373,7 +372,7 @@ impl App {
                         let user = self
                             .users
                             .iter()
-                            .find(|user| user.name == user_name.clone())
+                            .find(|user| user.user_id == user_name.clone())
                             .expect("user not found!");
                         // client.kick_user_from_group(user.user_id.clone(), group_id.clone()).await;
                     }
@@ -550,11 +549,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                         } else {
                             Style::default()
                         };
-                        ListItem::new(user.name.clone()).style(style)
+                        ListItem::new(user.user_id.clone()).style(style)
                     })
                     .collect();
 
-                let our_user_name = app.client.as_ref().unwrap().name.clone();
+                let our_user_name = app.client.as_ref().unwrap().user_id.clone();
                 // let empty_list = List::new(vec![ListItem::new(format!(
                 //     "Users <You are: {}>",
                 //     our_user_name
@@ -624,7 +623,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             f.render_widget(input, chunks[2]);
         }
         InputMode::CreatingGroup => {
-            let user_strings = vec![app.users[app.users_scroll.selected().unwrap()].name.clone()];
+            let user_strings = vec![app.users[app.users_scroll.selected().unwrap()].user_id.clone()];
             let users: Vec<ListItem> = user_strings
                 .iter()
                 .map(|u| ListItem::new(u.clone()))
@@ -694,7 +693,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                         })
                         .collect();
 
-                    let our_user_name = client.name.clone();
+                    let our_user_name = client.user_id.clone();
                     let messages_list = List::new(messages).block(
                         Block::default()
                             .title(format!("Messages"))
@@ -711,7 +710,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     let users: Vec<ListItem> = app
                         .users
                         .iter()
-                        .map(|u| ListItem::new(u.name.clone()))
+                        .map(|u| ListItem::new(u.user_id.clone()))
                         .collect();
 
                     // TODO: filter the users to only include the ones in the group:

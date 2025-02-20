@@ -24,7 +24,6 @@ type SerializedMessage = Vec<u8>;
 // }
 
 pub struct ConvoClient {
-    pub name: String,
     pub user_id: String,
     pub manager: ConvoManager,
     pub server_address: Option<String>,
@@ -32,11 +31,10 @@ pub struct ConvoClient {
 }
 
 impl ConvoClient {
-    pub fn new(name: String) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
-            name: name.clone(),
-            user_id: uuid::Uuid::new_v4().to_string(),
-            manager: ConvoManager::init(name.clone()),
+            user_id: id.clone(),
+            manager: ConvoManager::init(id.clone()),
             server_address: None,
             id_to_name: HashMap::new(),
         }
@@ -102,7 +100,6 @@ impl ConvoClient {
         let response = client
             .post(format!("{}/api/connect", server_address.clone()))
             .json(&serde_json::json!({
-              "name": self.name.clone(),
               "user_id": self.user_id.clone(),
               "serialized_key_package": self.manager.get_key_package()
             }))
@@ -138,11 +135,11 @@ impl ConvoClient {
             .await
             .expect("failed to parse response");
 
-        // populate the id_to_name map:
-        for user in &users {
-            self.id_to_name
-                .insert(user.user_id.clone(), user.name.clone());
-        }
+        // // populate the id_to_name map:
+        // for user in &users {
+        //     self.id_to_name
+        //         .insert(user.user_id.clone(), user.name.clone());
+        // }
         self.id_to_name
             .insert("system".to_string(), "system".to_string());
 

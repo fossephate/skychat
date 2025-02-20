@@ -28,7 +28,6 @@ impl Clone for ServerState {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
-    name: String,
     user_id: String,
     serialized_key_package: Vec<u8>,
 }
@@ -39,7 +38,6 @@ pub async fn connect(user: Json<User>, state: &State<ServerState>) -> Json<User>
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     server.client_connect(
         user.user_id.clone(),
-        user.name.clone(),
         user.serialized_key_package.clone(),
     );
     println!("Received user: {:?}", user);

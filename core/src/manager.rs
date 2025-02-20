@@ -86,12 +86,12 @@ pub struct ConvoManager {
 }
 
 impl ConvoManager {
-    pub fn init(name: String) -> Self {
+    pub fn init(id: String) -> Self {
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
         let provider = OpenMlsRustCrypto::default();
 
         let (credential_with_key, signer) = generate_credential_with_key(
-            name.into(),
+            id.into(),
             CredentialType::Basic,
             ciphersuite.signature_algorithm(),
             &provider,
