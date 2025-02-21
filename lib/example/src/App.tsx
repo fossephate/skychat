@@ -166,6 +166,7 @@ function manual_chat(): string {
 async function client_chat(): Promise<string> {
   // const convoManager = new ConvoManager('test');
   // convoManager.createNewGroup('test');
+  return "test";
 }
 
 export default function App() {

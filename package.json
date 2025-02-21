@@ -8,12 +8,16 @@
   "license": "ISC",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "mobile"
   ],
   "scripts": {
     "mobile": "pnpm --filter mobile",
     "lib": "pnpm --filter lib",
     "build": "pnpm -r build",
     "dev": "pnpm --filter mobile run ios"
+  },
+  "packageManager": "yarn@3.6.1",
+  "devDependencies": {
+    "@react-native-community/cli": "^15.1.3"
   }
 }
