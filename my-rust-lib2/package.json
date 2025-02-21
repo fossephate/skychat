@@ -1,0 +1,19 @@
+{
+  "name": "react-native-my-rust-lib2",
+  "version": "0.0.0",
+  "description": "test",
+  "main": "src/index",
+  "codegenConfig": {
+    "name": "RNMyRustLib2Spec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  },
+  "author": " <> ()",
+  "license": "UNLICENSED",
+  "homepage": "#readme",
+  "create-react-native-library": {
+    "type": "turbo-module",
+    "languages": "cpp",
+    "version": "0.48.2"
+  }
+}

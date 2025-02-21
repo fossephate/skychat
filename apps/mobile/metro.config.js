@@ -21,8 +21,19 @@ config.transformer.getTransformOptions = async () => ({
 // such as Firebase that use the extension cjs.
 config.resolver.sourceExts.push("cjs")
 
-config.watchFolders = [
-  path.resolve(__dirname, "../skychat-lib"),
-]
+// Find the project and workspace directories
+const projectRoot = __dirname;
+// This can be replaced with `find-yarn-workspace-root`
+const monorepoRoot = path.resolve(projectRoot, '../..');
+
+config.watchFolders = [monorepoRoot];
+
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(monorepoRoot, 'node_modules'),
+];
 
 module.exports = config
+
+
+
