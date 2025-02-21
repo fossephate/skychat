@@ -1,0 +1,19 @@
+{
+  "name": "skychat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "mobile": "pnpm --filter mobile",
+    "lib": "pnpm --filter lib",
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter mobile run ios"
+  }
+}

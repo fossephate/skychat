@@ -1,0 +1,12 @@
+[package]
+name = "skychat_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+openmls = "0.6.0"
+openmls_basic_credential = "0.3.0"
+openmls_rust_crypto = "0.3.0"
+serde = { version = "1.0.217", features = ["derive"] }
+base64 = "0.22.1"
+anyhow = "1.0" 
