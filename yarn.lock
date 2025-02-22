@@ -4780,6 +4780,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/lodash@npm:^4.17.15":
+  version: 4.17.15
+  resolution: "@types/lodash@npm:4.17.15"
+  checksum: 5037564154411f4ac0b187b914031c150520a7ca037dea007f774b7123c97c0da55b2e41ae81dc1bc80ff09e8d6a236455ea676d5062af12c592b8e81baec7bf
+  languageName: node
+  linkType: hard
+
 "@types/minimist@npm:^1.2.0, @types/minimist@npm:^1.2.2":
   version: 1.2.5
   resolution: "@types/minimist@npm:1.2.5"
@@ -16256,6 +16263,7 @@ __metadata:
     "@testing-library/react-native": ^12.9.0
     "@types/expo": ^33.0.1
     "@types/jest": ^29.5.14
+    "@types/lodash": ^4.17.15
     "@types/react": ~18.3.18
     apisauce: 3.0.1
     babel-jest: ^29.7.0

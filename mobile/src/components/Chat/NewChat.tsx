@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react"
-import { View, ViewStyle, TextStyle, Image, ImageStyle, Modal, TouchableOpacity } from "react-native"
+import { View, ViewStyle, TextStyle, Image, ImageStyle, Modal, TouchableOpacity, Dimensions } from "react-native"
 import { ListView, Screen, Text, Button, Icon, Checkbox, TextField } from "src/components"
 import { ThemedStyle } from "src/theme"
 import { useStores } from "src/models"
@@ -7,6 +7,7 @@ import { Agent } from '@atproto/api'
 import { useAppTheme } from "src/utils/useAppTheme"
 import { ListItem } from "src/components/ListItem"
 import debounce from 'lodash/debounce'
+import { FlatList, GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
 
 interface User {
   id: string
@@ -193,50 +194,41 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
     onClose()
   }, [state.selectedUsers, onSubmit, onClose])
 
-  const renderUser = useCallback(({ item: user }: { item: User }) => {
+  const renderSmallUsers = useCallback(({ item: user }: { item: User }) => {
     return (
       <ListItem
+        style={themed($smallUserListItem)}
         LeftComponent={
-          <View style={themed($avatarContainer)}>
-            <Image
-              source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }}
-              style={themed($avatar)}
-              accessible
-              accessibilityLabel={`${user.displayName}'s avatar`}
-            />
-          </View>
+          <Image
+            source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }}
+            style={themed($smallAvatar)}
+            accessible
+            accessibilityLabel={`${user.displayName}'s avatar`}
+          />
         }
-        RightComponent={
-          <View style={themed($checkboxContainer)}>
-            <Checkbox
-              value={true}
-              onValueChange={() => toggleUserSelection(user.id)}
-              accessibilityLabel={`Unselect ${user.displayName}`}
-            />
-          </View>
-        }
+        // RightComponent={
+        //   <View style={themed($checkboxContainer)}>
+        //     <Checkbox
+        //       value={true}
+        //       onValueChange={() => toggleUserSelection(user.id)}
+        //       accessibilityLabel={`Unselect ${user.displayName}`}
+        //     />
+        //   </View>
+        // }
         onPress={() => toggleUserSelection(user.id)}
         topSeparator={false}
         bottomSeparator
-        height={72}
+        height={24}
         accessibilityRole="button"
         accessibilityLabel={`Unselect ${user.displayName}`}
       >
-        <View style={themed($userInfo)}>
+        <View style={themed($smallUserInfo)}>
           <Text
             text={user.displayName}
-            size="xs"
+            size="xxs"
             style={themed($userName)}
             numberOfLines={1}
           />
-          {user.description && !state.selectedUsers.some(u => u.id === user.id) && (
-            <Text
-              text={user.description}
-              size="xs"
-              style={themed($userStatus)}
-              numberOfLines={1}
-            />
-          )}
         </View>
       </ListItem>
     )
@@ -246,14 +238,12 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
     return (
       <ListItem
         LeftComponent={
-          <View style={themed($avatarContainer)}>
-            <Image
-              source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }}
-              style={themed($avatar)}
-              accessible
-              accessibilityLabel={`${user.displayName}'s avatar`}
-            />
-          </View>
+          <Image
+            source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }}
+            style={themed($avatar)}
+            accessible
+            accessibilityLabel={`${user.displayName}'s avatar`}
+          />
         }
         RightComponent={
           <View style={themed($checkboxContainer)}>
@@ -299,99 +289,101 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={themed($modalContainer)}>
-        <Screen
-          preset="fixed"
-          contentContainerStyle={themed($screenContainer)}
-        >
-          <View style={themed($header)}>
-            <TouchableOpacity
-              onPress={onClose}
-              style={themed($closeButton)}
-              accessibilityLabel="Close modal"
-              accessibilityRole="button"
-            >
-              <Icon icon="x" size={24} />
-            </TouchableOpacity>
-            <Text
-              tx="newChat:title"
-              preset="heading"
-              style={themed($headerText)}
-              accessibilityRole="header"
-            />
-            <Button
-              tx="newChat:createGroupButton"
-              preset="reversed"
-              onPress={handleSubmit}
-              style={themed($submitButton)}
-              disabled={!state.selectedUsers.length}
-            />
-          </View>
-
-          <View style={themed($searchContainer)}>
-            <TextField
-              style={themed($searchInput)}
-              placeholderTx="newChat:searchPlaceholder"
-              value={state.searchQuery}
-              onChangeText={(text) => setState(prev => ({ ...prev, searchQuery: text }))}
-              accessibilityLabel="Search users"
-            />
-          </View>
-
-          <View style={themed($listsContainer)}>
-            {state.selectedUsers.length > 0 && (
-              <View style={themed($selectedUsersContainer)}>
-                <Text
-                  text="Selected Users"
-                  style={themed($sectionHeader)}
-                  accessibilityRole="header"
-                />
-                <ListView
-                  data={state.selectedUsers}
-                  renderItem={renderUser}
-                  keyExtractor={(item: User) => `selected-${item.id}`}
-                  estimatedItemSize={72}
-                  showsVerticalScrollIndicator={false}
-                />
-              </View>
-            )}
-
-            <View style={themed($availableUsersContainer)}>
-              {state.selectedUsers.length > 0 && (
-                <Text
-                  text="Available Users"
-                  style={themed($sectionHeader)}
-                  accessibilityRole="header"
-                />
-              )}
-              {unselectedUsers.length > 0 || state.loading ? (
-                <ListView
-                  data={unselectedUsers}
-                  renderItem={renderUnselectedUser}
-                  keyExtractor={(item: User) => `available-${item.id}`}
-                  estimatedItemSize={72}
-                  showsVerticalScrollIndicator={false}
-                  refreshing={state.loading}
-                  onRefresh={fetchFollowing}
-                />
-              ) : (
-                <Text
-                  text="No users found"
-                  style={themed($errorText)}
-                />
-              )}
+      <GestureHandlerRootView>
+        <View style={themed($modalContainer)}>
+          <Screen
+            preset="fixed"
+            contentContainerStyle={themed($screenContainer)}
+          >
+            <View style={themed($header)}>
+              <TouchableOpacity
+                onPress={onClose}
+                style={themed($closeButton)}
+                accessibilityLabel="Close modal"
+                accessibilityRole="button"
+              >
+                <Icon icon="x" size={24} />
+              </TouchableOpacity>
+              <Text
+                tx="newChat:title"
+                preset="heading"
+                style={themed($headerText)}
+                accessibilityRole="header"
+              />
+              <Button
+                tx="newChat:createGroupButton"
+                preset="reversed"
+                onPress={handleSubmit}
+                style={themed($submitButton)}
+                disabled={!state.selectedUsers.length}
+              />
             </View>
-          </View>
-          <View style={themed($footer)}>
-            {state.selectedUsers.length > 0 && (
+
+            <View style={themed($searchContainer)}>
               <TextField
                 style={themed($searchInput)}
-                placeholderTx="newChat:groupNamePlaceholder"
-                value={state.groupName}
-                onChangeText={(text) => setState(prev => ({ ...prev, groupName: text }))}
+                placeholderTx="newChat:searchPlaceholder"
+                value={state.searchQuery}
+                onChangeText={(text) => setState(prev => ({ ...prev, searchQuery: text }))}
+                accessibilityLabel="Search users"
               />
-            )}
-            {/* <Button
+            </View>
+
+            <View style={themed($listsContainer)}>
+              {state.selectedUsers.length > 0 && (
+                <View style={themed($selectedUsersContainer)}>
+                  <ScrollView
+                    horizontal={false}
+                    contentContainerStyle={themed($selectedUsersListContainer)}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <View style={themed($selectedUsersGrid)}>
+                      {state.selectedUsers.map(user => (
+                        <React.Fragment key={`selected-${user.id}`}>
+                          {renderSmallUsers({ item: user })}
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+
+              <View style={themed($availableUsersContainer)}>
+                {state.selectedUsers.length > 0 && (
+                  <Text
+                    text="Available Users"
+                    style={themed($sectionHeader)}
+                    accessibilityRole="header"
+                  />
+                )}
+                {unselectedUsers.length > 0 || state.loading ? (
+                  <ListView
+                    data={unselectedUsers}
+                    renderItem={renderUnselectedUser}
+                    keyExtractor={(item: User) => item.id}
+                    estimatedItemSize={72}
+                    showsVerticalScrollIndicator={false}
+                    refreshing={state.loading}
+                    onRefresh={fetchFollowing}
+                  />
+                ) : (
+                  <Text
+                    text="No users found"
+                    style={themed($errorText)}
+                  />
+                )}
+              </View>
+            </View>
+            <View style={themed($footer)}>
+              {state.selectedUsers.length > 0 && (
+                <TextField
+                  style={themed($searchInput)}
+                  placeholderTx="newChat:groupNamePlaceholder"
+                  value={state.groupName}
+                  onChangeText={(text) => setState(prev => ({ ...prev, groupName: text }))}
+                />
+              )}
+              {/* <Button
               tx="newChat:createGroupButton"
               preset="reversed"
               onPress={handleSubmit}
@@ -400,9 +392,10 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
               accessibilityLabel="Create group chat"
               accessibilityState={{ disabled: !state.selectedUserIds.length }}
             /> */}
-          </View>
-        </Screen>
-      </View>
+            </View>
+          </Screen>
+        </View>
+      </GestureHandlerRootView>
     </Modal>
   )
 }
@@ -465,13 +458,6 @@ const $listsContainer: ThemedStyle<ViewStyle> = () => ({
   display: 'flex',
 })
 
-const $selectedUsersContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  maxHeight: '40%',
-  minHeight: 200,
-  backgroundColor: colors.palette.neutral200,
-})
-
 const $availableUsersContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
   paddingHorizontal: spacing.lg,
@@ -484,25 +470,15 @@ const $sectionHeader: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   paddingVertical: spacing.sm,
 })
 
-const $avatarContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  width: 44,
-  height: 44,
-  marginRight: spacing.md,
-  justifyContent: "center",
-  marginTop: "auto",
-  marginBottom: "auto",
-})
-
-const $avatar: ThemedStyle<ImageStyle> = ({ colors }) => ({
+const $avatar: ThemedStyle<ImageStyle> = ({ colors, spacing }) => ({
   width: 44,
   height: 44,
   borderRadius: 22,
   backgroundColor: colors.palette.neutral300,
-})
-
-const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingBottom: spacing.lg,
+  marginRight: spacing.md,
+  justifyContent: "center",
+  marginTop: "auto",
+  marginBottom: "auto",
 })
 
 const $checkboxContainer: ThemedStyle<ViewStyle> = () => ({
@@ -536,4 +512,43 @@ const $footer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 
 const $submitButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
   backgroundColor: colors.palette.primary500,
+})
+
+
+// small avatar for selected users list:
+
+
+const $selectedUsersContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  paddingHorizontal: spacing.lg,
+  height: 100,
+})
+
+const $selectedUsersListContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  padding: spacing.xs,
+})
+
+const $selectedUsersGrid: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: spacing.xs,
+})
+
+const $smallAvatar: ThemedStyle<ImageStyle> = ({ colors, spacing }) => ({
+  width: 20,
+  height: 20,
+  marginTop: "auto",
+  marginBottom: "auto",
+  marginRight: spacing.xs,
+})
+
+const $smallUserListItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral500,
+  borderRadius: 20,
+  paddingHorizontal: spacing.xs,
+  // height: 16,
+})
+
+const $smallUserInfo: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  // flex: 1,
+  // marginLeft: spacing.sm,
 })
