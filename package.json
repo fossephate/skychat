@@ -8,8 +8,8 @@
   "license": "ISC",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "mobile",
+    "lib"
   ],
   "scripts": {
     "mobile": "pnpm --filter mobile",
