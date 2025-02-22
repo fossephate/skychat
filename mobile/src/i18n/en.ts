@@ -9,6 +9,7 @@ const en = {
     contactsTab: "Contacts",
     chatsTab: "Chats",
     settingsTab: "Settings",
+    invitesTab: "Invites",
   },
   contactsScreen: {
     title: "Contacts",
@@ -88,6 +89,11 @@ const en = {
     global: "Global",
     createGroupButton: "Create Group",
     groupNamePlaceholder: "Enter a name for your group",
+  },
+  invitesScreen: {
+    title: "Invites",
+    empty: "No pending invites",
+    inviteMessage: "{{sender}} invited you to join {{group}}!",
   },
 }
 

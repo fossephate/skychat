@@ -58,6 +58,18 @@ export default observer(function Layout() {
         }}
       />
       <Tabs.Screen
+        name="invites"
+        options={{
+          href: "/invites",
+          headerShown: false,
+          tabBarAccessibilityLabel: translate("navigator:invitesTab"),
+          tabBarLabel: showLabel ? translate("navigator:invitesTab") : "",
+          tabBarIcon: ({ focused, color }) => (
+            <FontAwesome name="users" size={28} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           href: "/settings",
