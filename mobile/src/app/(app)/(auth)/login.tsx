@@ -8,6 +8,7 @@ import { openAuthSessionAsync } from 'expo-web-browser'
 import { useAppTheme } from "@/utils/useAppTheme"
 
 import { AUTH_SERVER_URL } from "@/env";
+import { router } from "expo-router"
 
 
 
@@ -100,6 +101,20 @@ export default observer(function LoginScreen(_props) {
       console.log("oauthUrl", oauthUrl)
 
       const authRes = await openAuthSessionAsync(oauthUrl.toString())
+      console.log("authRes", authRes)
+      if (authRes.type === 'success') {
+        const urlObj = new URL(authRes.url)
+        let urlParams = new URLSearchParams();
+        urlParams.set("code", urlObj.searchParams.get('code') as string)
+        urlParams.set("state", urlObj.searchParams.get('state') as string)
+        urlParams.set("iss", urlObj.searchParams.get('iss') as string)
+        const { session, state } = await client.callback(urlParams)
+        console.log("logged in as", session.sub)
+        authStore.setSession(session)
+        router.replace("/chats")
+      } else {
+        throw new Error("Login / OAuth failed")
+      }
     } catch (err) {
       console.error("Login error:", err)
       setError("Login failed")

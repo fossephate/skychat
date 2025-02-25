@@ -22,7 +22,9 @@ export default observer(function Layout() {
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarStyle: themed($tabBar),
+        tabBarStyle: [themed($tabBar), {
+          paddingBottom: bottom,
+        }],
         // tabBarActiveTintColor: themed(({ colors }) => colors.text),
         // tabBarInactiveTintColor: themed(({ colors }) => "#000"),
         tabBarLabelStyle: themed($tabBarLabel),
@@ -85,12 +87,12 @@ export default observer(function Layout() {
   )
 })
 
-const $tabBar: ThemedStyle<ViewStyle> = ({ colors }) => ({
+const $tabBar: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.palette.neutral300,
   // borderTopColor: colors.transparent,
   // borderTopWidth: 1,
   paddingTop: 4,
-  height: 48,
+  height: 64,
   borderTopWidth: 0,
 })
 

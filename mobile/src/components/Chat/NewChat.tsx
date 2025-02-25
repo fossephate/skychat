@@ -8,6 +8,7 @@ import { useAppTheme } from "src/utils/useAppTheme"
 import { ListItem } from "src/components/ListItem"
 import debounce from 'lodash/debounce'
 import { FlatList, GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 interface User {
   id: string
@@ -245,15 +246,15 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
             accessibilityLabel={`${user.displayName}'s avatar`}
           />
         }
-        RightComponent={
-          <View style={themed($checkboxContainer)}>
-            <Checkbox
-              value={false}
-              onValueChange={() => toggleUserSelection(user.id)}
-              accessibilityLabel={`Select ${user.displayName}`}
-            />
-          </View>
-        }
+        // RightComponent={
+        //   <View style={themed($checkboxContainer)}>
+        //     <Checkbox
+        //       value={false}
+        //       onValueChange={() => toggleUserSelection(user.id)}
+        //       accessibilityLabel={`Select ${user.displayName}`}
+        //     />
+        //   </View>
+        // }
         onPress={() => toggleUserSelection(user.id)}
         topSeparator={false}
         bottomSeparator
@@ -290,7 +291,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
       onRequestClose={onClose}
     >
       <GestureHandlerRootView>
-        <View style={themed($modalContainer)}>
+        <SafeAreaView style={themed($modalContainer)} edges={['top']}>
           <Screen
             preset="fixed"
             contentContainerStyle={themed($screenContainer)}
@@ -394,7 +395,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
             /> */}
             </View>
           </Screen>
-        </View>
+        </SafeAreaView>
       </GestureHandlerRootView>
     </Modal>
   )
