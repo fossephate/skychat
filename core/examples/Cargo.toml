@@ -17,6 +17,7 @@ anyhow.workspace = true
 rocket.workspace = true
 colored.workspace = true
 rand.workspace = true
+base64.workspace = true
 
 [[example]]
 name = "core"

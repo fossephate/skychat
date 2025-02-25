@@ -1,7 +1,7 @@
 // should handle all of the complexities of dealing with the skychat server and lib, handle saving and loading state, etc.
 
-import { v4 as uuidv4 } from 'uuid';
-import { ConvoManager } from 'skychat-lib';
+import { v4 as uuidv4 } from "uuid";
+import { ConvoManager } from "skychat-lib";
 
 // Type definitions
 type GroupId = ArrayBuffer;
@@ -51,14 +51,16 @@ export class ConvoClient {
   }
 
   async createGroup(groupName: string): Promise<void> {
-    if (!this.serverAddress) {throw new Error("Server address is not set");}
+    if (!this.serverAddress) {
+      throw new Error("Server address is not set");
+    }
 
     const groupId = this.manager.createNewGroup(groupName);
 
     const response = await fetch(`${this.serverAddress}/api/create_group`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         group_id: groupId,
@@ -83,24 +85,29 @@ export class ConvoClient {
     this.serverAddress = address;
 
     const response = await fetch(`${address}/api/connect`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "user_id": this.id,
-        "serialized_key_package": this.manager.getKeyPackage()
+        user_id: this.id,
+        serialized_key_package: this.manager.getKeyPackage()
       })
     });
 
     console.log("address: ", address);
-    console.log("serialized_key_package: ", this.manager.getKeyPackage())
+    console.log("serialized_key_package: ", this.manager.getKeyPackage());
     console.log("response: ", response);
 
     if (!response.ok) {
       // console.error("Failed to connect to server", response);
       throw new Error("Failed to connect to server");
     }
+
+    // every 10 seconds, get any new messages and process them
+    setInterval(() => {
+      this.checkIncomingMessages();
+    }, 10000);
   }
 
   // async listUsers(): Promise<ConvoUser[]> {
@@ -119,11 +126,7 @@ export class ConvoClient {
   //   return users;
   // }
 
-  async inviteUserToGroup(
-    receiverId: string,
-    groupId: GroupId,
-    serializedKeyPackage: ArrayBuffer
-  ): Promise<void> {
+  async inviteUserToGroup(receiverId: string, groupId: GroupId, serializedKeyPackage: ArrayBuffer): Promise<void> {
     if (!this.serverAddress) {
       throw new Error("Server address is not set");
     }
@@ -131,9 +134,9 @@ export class ConvoClient {
     const groupInvite = this.manager.createInvite(groupId, serializedKeyPackage);
 
     const response = await fetch(`${this.serverAddress}/api/invite_user`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         group_id: groupId,
@@ -183,37 +186,37 @@ export class ConvoClient {
   //   this.manager.pendingInvites = [];
   // }
 
-  // async checkIncomingMessages(groupId?: GroupId): Promise<ConvoMessage[]> {
-  //   if (!this.serverAddress) {
-  //     throw new Error("Server address is not set");
-  //   }
+  async checkIncomingMessages(groupId?: GroupId): Promise<ConvoMessage[]> {
+    if (!this.serverAddress) {
+      throw new Error("Server address is not set");
+    }
 
-  //   let index = 0;
-  //   if (groupId) {
-  //     const group = this.manager.groups.get(Buffer.from(groupId).toString('hex'));
-  //     if (group) {
-  //       index = group.globalIndex;
-  //     }
-  //   }
+    let index = 0;
+    if (groupId) {
+      const group = this.manager.groups.get(Buffer.from(groupId).toString("hex"));
+      if (group) {
+        index = group.globalIndex;
+      }
+    }
 
-  //   const response = await fetch(`${this.serverAddress}/api/get_new_messages`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json'
-  //     },
-  //     body: JSON.stringify({
-  //       group_id: groupId ? Array.from(groupId) : null,
-  //       sender_id: this.userId,
-  //       index
-  //     })
-  //   });
+    const response = await fetch(`${this.serverAddress}/api/get_new_messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        group_id: groupId,
+        sender_id: this.id,
+        index
+      })
+    });
 
-  //   const messages: ConvoMessage[] = await response.json();
-  //   const filteredMessages = messages.filter(msg => msg.senderId !== this.userId);
+    const messages: ConvoMessage[] = await response.json();
+    const filteredMessages = messages.filter(msg => msg.senderId !== this.id);
 
-  //   this.manager.processConvoMessages(filteredMessages, groupId);
-  //   return filteredMessages;
-  // }
+    this.manager.processConvoMessages(filteredMessages, groupId);
+    return filteredMessages;
+  }
 
   // async syncGroup(groupId: GroupId): Promise<void> {
   //   await this.checkIncomingMessages(groupId);

@@ -23,13 +23,43 @@ impl Clone for ServerState {
 }
 
 
+// base64 utils:
+type EncodedBase64 = String;
+use base64::{Engine as _, engine::general_purpose};
+use std::error::Error;
+pub struct BufferConverter;
+impl BufferConverter {
+    /// Converts a byte slice to a base64 string
+    /// 
+    /// # Arguments
+    /// * `buffer` - The byte slice to convert
+    /// 
+    /// # Returns
+    /// A String containing the base64 encoded data
+    pub fn to_base64(buffer: &[u8]) -> String {
+        general_purpose::STANDARD.encode(buffer)
+    }
+
+    /// Converts a base64 string back to a Vec<u8>
+    /// 
+    /// # Arguments
+    /// * `base64` - The base64 string to convert
+    /// 
+    /// # Returns
+    /// Result containing either the decoded bytes or an error
+    pub fn from_base64(base64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+        Ok(general_purpose::STANDARD.decode(base64)?)
+    }
+}
+
+
 
 // POST /api/connect (json containing name and user_id)
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
     user_id: String,
-    serialized_key_package: Vec<u8>,
+    serialized_key_package: EncodedBase64,
 }
 
 // POST /connect (json containing name and user_id)
@@ -38,7 +68,7 @@ pub async fn connect(user: Json<User>, state: &State<ServerState>) -> Json<User>
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     server.client_connect(
         user.user_id.clone(),
-        user.serialized_key_package.clone(),
+        BufferConverter::from_base64(&user.serialized_key_package).unwrap(),
     );
     println!("Received user: {:?}", user);
     user
@@ -55,8 +85,8 @@ pub async fn list_users(state: &State<ServerState>) -> Json<Vec<ConvoUser>> {
 // POST /send_message (json containing group_id, message)
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SendMessage {
-    pub group_id: Vec<u8>,
-    pub message: Vec<u8>,
+    pub group_id: EncodedBase64,
+    pub message: EncodedBase64,
     pub sender_id: String,
     pub global_index: u64,
 }
@@ -79,7 +109,7 @@ pub async fn send_message(data: Json<SendMessage>, state: &State<ServerState>) {
 // return nothing or error
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateGroup {
-    pub group_id: Vec<u8>,
+    pub group_id: EncodedBase64,
     pub group_name: String,
     pub sender_id: String, // the user creating the group
 }
@@ -87,7 +117,7 @@ pub struct CreateGroup {
 pub async fn create_group(data: Json<CreateGroup>, state: &State<ServerState>) {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     server.client_create_group(
-        data.group_id.clone(),
+        BufferConverter::from_base64(&data.group_id).unwrap(),
         data.group_name.clone(),
         data.sender_id.clone(),
     );
@@ -97,7 +127,7 @@ pub async fn create_group(data: Json<CreateGroup>, state: &State<ServerState>) {
 // returns Vec<ConvoMessage>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetMessages {
-    pub group_id: Option<Vec<u8>>, // the group to get messages from
+    pub group_id: Option<EncodedBase64>, // the group to get messages from
     pub sender_id: String, // the user requesting the messages
     pub index: u64,        // the index of the first message to get
 }
@@ -108,7 +138,7 @@ pub async fn get_new_messages(
 ) -> Json<Vec<ConvoMessage>> {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     let messages = server.client_get_new_messages(
-        data.group_id.clone(),
+        data.group_id.as_ref().map(|g| BufferConverter::from_base64(g).unwrap()),
         data.sender_id.clone(),
         data.index.clone(),
     );
@@ -119,49 +149,55 @@ pub async fn get_new_messages(
 // return nothing or error
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InviteUser {
-    pub group_id: Vec<u8>,        // the group to invite the user to
+    pub group_id: EncodedBase64,        // the group to invite the user to
     pub sender_id: String,        // the user sending the invite
     pub receiver_id: String,      // the user to invite
-    pub welcome_message: Vec<u8>, // the welcome message to send to the user
-    pub ratchet_tree: Vec<u8>,    // the ratchet tree to send to the user
-    pub fanned: Option<Vec<u8>>, // the fanned commit to send to all other users in the group
+    pub welcome_message: EncodedBase64, // the welcome message to send to the user
+    pub ratchet_tree: EncodedBase64,    // the ratchet tree to send to the user
+    pub fanned: Option<EncodedBase64>, // the fanned commit to send to all other users in the group
 }
 
 #[post("/invite_user", format = "json", data = "<data>")]
 pub async fn invite_user(data: Json<InviteUser>, state: &State<ServerState>) {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     server.client_invite_user(
-        data.group_id.clone(),
+        BufferConverter::from_base64(&data.group_id).unwrap(),
         data.sender_id.clone(),
         data.receiver_id.clone(),
-        data.welcome_message.clone(),
-        data.ratchet_tree.clone(),
-        data.fanned.clone(),
+        BufferConverter::from_base64(&data.welcome_message).unwrap(),
+        BufferConverter::from_base64(&data.ratchet_tree).unwrap(),
+        data.fanned.as_ref().map(|f| BufferConverter::from_base64(f).unwrap()),
     );
 }
 
 // POST /accept_invite (json containing group_id, user_id, )
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AcceptInvite {
-    pub group_id: Vec<u8>,
+    pub group_id: EncodedBase64,
     pub sender_id: String,
 }
 #[post("/accept_invite", format = "json", data = "<data>")]
 pub async fn accept_invite(data: Json<AcceptInvite>, state: &State<ServerState>) {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
-    server.client_accept_invite(data.group_id.clone(), data.sender_id.clone());
+    server.client_accept_invite(
+        BufferConverter::from_base64(&data.group_id).unwrap(),
+        data.sender_id.clone(),
+    );
 }
 
 // GET /group_info (json containing group_id and sender_id)
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetGroupInfo {
-    pub group_id: Vec<u8>,
+    pub group_id: EncodedBase64,
     pub sender_id: String,
 }
 #[post("/group_index", format = "json", data = "<data>")]
 pub async fn group_index(data: Json<GetGroupInfo>, state: &State<ServerState>) -> Json<u64> {
     let server = state.convo_server.lock().expect("failed to lock server!");
     // let messages = server.client_get_group_info(data.group_id.clone(), data.sender_id.clone());
-    let global_index = server.client_get_group_index(data.group_id.clone(), data.sender_id.clone());
+    let global_index = server.client_get_group_index(
+        BufferConverter::from_base64(&data.group_id).unwrap(),
+        data.sender_id.clone(),
+    );
     Json(global_index.unwrap())
 }

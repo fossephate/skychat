@@ -9,7 +9,7 @@ edition = "2021"
 uniffi.workspace = true
 thiserror = "1.0.64"
 # get the skychat lib
-skychat_core = { path = "../../../../../../core/core" }
+skychat_core = { path = "../../../../../core/core" }
 
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }
