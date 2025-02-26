@@ -94,9 +94,9 @@ pub struct SendMessage {
 pub async fn send_message(data: Json<SendMessage>, state: &State<ServerState>) {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     let res = server.client_send_message(
-        data.group_id.clone(),
+        BufferConverter::from_base64(&data.group_id).unwrap(),
         data.sender_id.clone(),
-        data.message.clone(),
+        BufferConverter::from_base64(&data.message).unwrap(),
         data.global_index.clone(),
     );
     if res.is_err() {

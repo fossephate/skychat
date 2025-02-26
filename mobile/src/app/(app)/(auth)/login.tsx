@@ -1,7 +1,6 @@
 import { ViewStyle, TextStyle, Linking, View } from "react-native"
 import { Button, Screen, Text, TextField } from "src/components"
 import { observer } from "mobx-react-lite"
-import { useStores } from "src/models"
 import { ThemedStyle } from "src/theme"
 import { useEffect, useState } from 'react'
 import { openAuthSessionAsync } from 'expo-web-browser'
@@ -9,13 +8,14 @@ import { useAppTheme } from "@/utils/useAppTheme"
 
 import { AUTH_SERVER_URL } from "@/env";
 import { router } from "expo-router"
+import { useAuth } from "@/contexts/AuthContext"
 
 
 
 export default observer(function LoginScreen(_props) {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
-  const { authStore } = useStores();
+  const authContext = useAuth();
   const { themed } = useAppTheme();
 
   // // Set up deep link handling when component mounts
@@ -88,7 +88,7 @@ export default observer(function LoginScreen(_props) {
   // };
 
   const handleLogin = async () => {
-    const client = authStore.client
+    const client = authContext.client
 
     if (!client) {
       setError("Client not initialized")
@@ -110,7 +110,7 @@ export default observer(function LoginScreen(_props) {
         urlParams.set("iss", urlObj.searchParams.get('iss') as string)
         const { session, state } = await client.callback(urlParams)
         console.log("logged in as", session.sub)
-        authStore.setSession(session)
+        authContext.setSession(session)
         router.replace("/chats")
       } else {
         throw new Error("Login / OAuth failed")

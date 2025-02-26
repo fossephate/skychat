@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { Redirect, router, Slot, SplashScreen, Stack, useRouter, useSegments, usePathname } from "expo-router"
 import { observer } from "mobx-react-lite"
-import { useInitialRootStore, useStores } from "src/models"
 import { useFonts } from "expo-font"
 import { customFontsToLoad } from "src/theme"
 import { initI18n } from "@/i18n"

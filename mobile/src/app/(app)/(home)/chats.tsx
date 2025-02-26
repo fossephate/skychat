@@ -17,7 +17,7 @@ import { router } from "expo-router"
 import { Chat, ChatItem, User } from "src/components/Chat/ChatItem"
 import { colors, spacing, ThemedStyle } from "src/theme"
 import { useAppTheme } from "src/utils/useAppTheme"
-import { useStores } from "@/models/helpers/useStores"
+import { useConvo } from "@/contexts/ConvoContext"
 
 
 const UserSelectDrawer = ({ isVisible, onClose, users }: {
@@ -205,8 +205,7 @@ export default function chatsScreen() {
   const [composeDrawerOpen, setComposeDrawerOpen] = useState(false)
   const router = useRouter()
   const { themed } = useAppTheme()
-  const { convoStore } = useStores();
-
+  const convoContext = useConvo();
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
       <View style={themed($header)}>

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react"
 import { View, ViewStyle, TextStyle, Image, ImageStyle, TextInput, TouchableOpacity } from "react-native"
 import { Button, Icon, ListView, Screen, Text, TextField } from "src/components"
 import { colors, ThemedStyle } from "src/theme"
-import { useStores } from "src/models"
 import { Agent } from '@atproto/api'
 import { useAppTheme } from "src/utils/useAppTheme"
 import { ListItem } from "src/components/ListItem"
 import { NewChatModal } from "@/components/Chat/NewChat"
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useAuth } from "@/contexts/AuthContext"
+import { useConvo } from "@/contexts/ConvoContext"
 
 interface User {
   did: string
@@ -23,20 +24,23 @@ export default function UsersScreen() {
   const [searchQuery, setSearchQuery] = useState("")
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const { authStore } = useStores()
   const { themed } = useAppTheme()
   const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false)
+  const authContext = useAuth();
+  const convoContext = useConvo();
 
-  const handleNewChat = (selectedUsers: string[]) => {
+  const handleNewChat = (groupName: string, selectedUsers: string[]) => {
     // Handle the selected users here
     console.log('Selected users:', selectedUsers)
+    console.log('Group name:', groupName)
     // Add your logic to create a new chat
+    convoContext.createGroup(groupName, selectedUsers)
   }
 
   useEffect(() => {
     async function fetchFollowing() {
-      const client = authStore.client;
-      const session = authStore.session;
+      const client = authContext.client;
+      const session = authContext.session;
       if (!client || !session) return;
       try {
         const agent = new Agent(session);
@@ -71,7 +75,7 @@ export default function UsersScreen() {
     }
 
     fetchFollowing()
-  }, [authStore.session])
+  }, [authContext.session])
 
   const filteredUsers = users.filter(
     user =>

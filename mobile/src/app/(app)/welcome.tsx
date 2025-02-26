@@ -4,20 +4,18 @@ import React from "react"
 import { Image, ImageStyle, TextStyle, View, ViewStyle } from "react-native"
 import { Button, Text } from "src/components"
 import { isRTL } from "src/i18n"
-import { useStores } from "src/models"
 import { useHeader } from "src/utils/useHeader"
 import { useSafeAreaInsetsStyle } from "src/utils/useSafeAreaInsetsStyle"
 import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
+import { useAuth } from "@/contexts/AuthContext"
 
 const welcomeBanner = require("assets/images/banner.png")
 // const welcomeFace = require("assets/images/welcome-face.png")
 
 export default observer(function WelcomeScreen() {
-  const {
-    authStore: { logout },
-  } = useStores()
 
+  const { logout } = useAuth();
   const { themed } = useAppTheme()
 
   function goNext() {

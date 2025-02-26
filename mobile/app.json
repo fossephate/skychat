@@ -11,7 +11,9 @@
       "fallbackToCacheTimeout": 0
     },
     "newArchEnabled": true,
-    "developmentClient": true,
+    "developmentClient": {
+      "silentLaunch": true
+    },
     "jsEngine": "hermes",
     "assetBundlePatterns": [
       "**/*"

@@ -50,7 +50,23 @@ export class ConvoClient {
     this.idToName = new Map();
   }
 
-  async createGroup(groupName: string): Promise<void> {
+  toB64(buffer: ArrayBuffer): string {
+    return Buffer.from(buffer).toString("base64");
+  }
+
+  fromB64(b64: string): ArrayBuffer {
+    // Create a buffer from the base64 string
+    const buffer = Buffer.from(b64, "base64");
+    // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
+    const arrayBuffer = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < buffer.length; i++) {
+      view[i] = buffer[i];
+    }
+    return arrayBuffer;
+  }
+
+  async createGroup(groupName: string, userIds: string[]): Promise<void> {
     if (!this.serverAddress) {
       throw new Error("Server address is not set");
     }
@@ -63,22 +79,40 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: groupId,
+        group_id: this.toB64(groupId),
         group_name: groupName,
         sender_id: this.id
       })
     });
 
-    if (response.ok) {
-      // const group = this.manager.groups.get(Buffer.from(groupId).toString('hex'));
-      // if (group) {
-      //   group.decrypted.push({
-      //     text: "<group_created>",
-      //     senderId: "system",
-      //     timestamp: Date.now()
-      //   });
-      // }
+    if (!response.ok) {
+      throw new Error("Failed to create group");
     }
+
+    // get the serialized key packages for all of the users in the group:
+    const keyPackages = await this.getKeyPackages(userIds);
+
+
+
+    // invite the users 1 by 1:
+    for (const keyPackage of keyPackages) {
+      // await this.inviteUserToGroup(keyPackage, groupId);
+    }
+
+    // push to the group locally:
+    // const group = this.manager.groups.get(Buffer.from(groupId).toString('hex'));
+    // if (group) {
+    //   group.decrypted.push({
+    //     text: "<group_created>",
+    //     senderId: "system",
+    //     timestamp: Date.now()
+    //   });
+    // }
+  }
+
+  async getKeyPackages(userIds: string[]): Promise<ArrayBuffer[]> {
+    // TODO: implement this
+    return [];
   }
 
   async connectToServer(address: string): Promise<void> {
@@ -91,13 +125,14 @@ export class ConvoClient {
       },
       body: JSON.stringify({
         user_id: this.id,
-        serialized_key_package: this.manager.getKeyPackage()
+        serialized_key_package: this.toB64(this.manager.getKeyPackage())
       })
     });
 
     console.log("address: ", address);
     console.log("serialized_key_package: ", this.manager.getKeyPackage());
-    console.log("response: ", response);
+    // console.log("response: ", response);
+    console.log("response.ok: ", response.ok);
 
     if (!response.ok) {
       // console.error("Failed to connect to server", response);

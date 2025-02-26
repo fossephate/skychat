@@ -1,4 +1,3 @@
-import { useStores } from "@/models";
 import { router } from "expo-router";
 import React, { useEffect } from "react"
 import { View, ViewStyle, TextStyle, ScrollView, Image, ImageStyle, Switch } from "react-native"
@@ -8,13 +7,12 @@ import { Agent } from '@atproto/api'
 import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
 import FontAwesome from '@expo/vector-icons/FontAwesome'
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsScreen() {
 
-  const { authStore } = useStores();
   const { themed } = useAppTheme();
-  const client = authStore.client;
-  const session = authStore.session;
+  const { client, session, setDidAuthenticate } = useAuth();
 
   const [userProfile, setUserProfile] = React.useState({
     displayName: "",
@@ -76,8 +74,7 @@ export default function SettingsScreen() {
   const handleLogout = async () => {
     try {
       if (client) {
-        // await client.();
-        authStore.setDidAuthenticate(false);
+        setDidAuthenticate(false);
       }
     } catch (err) {
       console.error("Logout error:", err)

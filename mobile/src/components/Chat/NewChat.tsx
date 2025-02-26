@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { View, ViewStyle, TextStyle, Image, ImageStyle, Modal, TouchableOpacity, Dimensions } from "react-native"
 import { ListView, Screen, Text, Button, Icon, Checkbox, TextField } from "src/components"
 import { ThemedStyle } from "src/theme"
-import { useStores } from "src/models"
 import { Agent } from '@atproto/api'
 import { useAppTheme } from "src/utils/useAppTheme"
 import { ListItem } from "src/components/ListItem"
 import debounce from 'lodash/debounce'
 import { FlatList, GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
 import { SafeAreaView } from "react-native-safe-area-context"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface User {
   id: string
@@ -23,7 +23,7 @@ interface User {
 interface NewChatModalProps {
   isVisible: boolean
   onClose: () => void
-  onSubmit: (selectedUsers: string[]) => void // Returns array of DIDs
+  onSubmit: (groupName: string, selectedUsers: string[]) => void // Returns array of DIDs
 }
 
 export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps) {
@@ -37,14 +37,14 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
     isGlobalSearch: true,
   })
 
-  const { authStore } = useStores()
+  const authContext = useAuth();
   const { themed } = useAppTheme()
 
   // Memoized agent instance
   const agent = useMemo(() => {
-    if (!authStore.session) return null
-    return new Agent(authStore.session)
-  }, [authStore.session])
+    if (!authContext.session) return null
+    return new Agent(authContext.session)
+  }, [authContext.session])
 
   // Get unselected users for main list
   const unselectedUsers = useMemo(() => {
@@ -71,13 +71,13 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
   }, [isVisible])
 
   const fetchFollowing = async () => {
-    if (!agent || !authStore.session) return
+    if (!agent || !authContext.session) return
 
     try {
       setState(prev => ({ ...prev, loading: true, error: "" }))
 
       const following = await agent.getFollows({
-        actor: authStore.session.did,
+        actor: authContext.session.did,
         limit: 100,
       })
 
@@ -96,7 +96,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
       }))
 
       // filter out our own profile:
-      formattedUsers = formattedUsers.filter(user => user.id !== authStore.session?.did)
+      formattedUsers = formattedUsers.filter(user => user.id !== authContext.session?.did)
 
       setState(prev => ({
         ...prev,
@@ -191,9 +191,9 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
   }
 
   const handleSubmit = useCallback(() => {
-    onSubmit(state.selectedUsers.map(user => user.id))
+    onSubmit(state.groupName, state.selectedUsers.map(user => user.id))
     onClose()
-  }, [state.selectedUsers, onSubmit, onClose])
+  }, [state.selectedUsers, state.groupName, onSubmit, onClose])
 
   const renderSmallUsers = useCallback(({ item: user }: { item: User }) => {
     return (
@@ -287,7 +287,6 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
     <Modal
       visible={isVisible}
       animationType="slide"
-      transparent={true}
       onRequestClose={onClose}
     >
       <GestureHandlerRootView>

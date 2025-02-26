@@ -1,23 +1,16 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { observer } from "mobx-react-lite"
-import { useStores } from "@/models";
+import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 
-export default observer(function LoadingScreen() {
-
-  const { authStore } = useStores();
+export default function LoadingScreen() {
+  const authContext = useAuth();
   const params = useLocalSearchParams();
 
-  console.log("params", params)
-
-  // setTimeout(() => {
-  //   router.replace("/login")
-  // }, 3000);
-  // const { session, state } = router.params;
 
   useEffect(() => {
     (async () => {
-      const client = authStore.client;
+      const client = authContext.client;
       if (params.code && params.state && params.iss && client) {
         let urlParams = new URLSearchParams();
         urlParams.set("code", params.code as string)
@@ -25,20 +18,32 @@ export default observer(function LoadingScreen() {
         urlParams.set("iss", params.iss as string)
         const { session, state } = await client.callback(urlParams)
         console.log(`logged in as ${session.sub}!`)
-        authStore.setSession(session)
+        authContext.setSession(session)
         router.replace("/chats")
-      } else {
-        // just for dev:
-        router.replace("/chats")
+        return;
       }
+      // setTimeout(() => {
+      //   if (!client && !authContext.session) {
+      //     router.replace("/welcome")
+      //   } else {
+      //     router.replace("/chats")
+      //   }
+      // }, 3000)
+
+      // console.log("test", client, authContext.session);
+      // if (authContext.session) {
+        setTimeout(() => {
+          router.replace("/chats")
+        }, 3000)
+      // }
     })()
     // force login for testing:
     // setTimeout(() => {
     //   router.replace("/chats")
     // }, 3000)
-  }, [])
+  }, [authContext.client])
 
 
 
   return null;
-})
+}

@@ -1,15 +1,9 @@
-import { Instance, SnapshotOut, types } from "mobx-state-tree"
-import { AuthenticationStoreModel } from "./AuthenticationStore"
-import { EpisodeStoreModel } from "./EpisodeStore"
-import { ConvoStoreModel } from "./ConvoStore"
+import { Instance, SnapshotOut, types } from "mobx-state-tree";
 
 /**
  * A RootStore model.
  */
-export const RootStoreModel = types.model("RootStore").props({
-  authStore: types.optional(AuthenticationStoreModel, {}),
-  convoStore: types.optional(ConvoStoreModel, {}),
-})
+export const RootStoreModel = types.model("RootStore").props({});
 
 /**
  * The RootStore instance.
