@@ -32,9 +32,9 @@ export default function LoadingScreen() {
 
       // console.log("test", client, authContext.session);
       // if (authContext.session) {
-        setTimeout(() => {
-          router.replace("/chats")
-        }, 3000)
+        // setTimeout(() => {
+        //   router.replace("/chats")
+        // }, 3000)
       // }
     })()
     // force login for testing:

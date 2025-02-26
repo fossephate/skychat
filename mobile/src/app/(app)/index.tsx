@@ -22,20 +22,6 @@ export default function LoadingScreen() {
         router.replace("/chats")
         return;
       }
-      // setTimeout(() => {
-      //   if (!client && !authContext.session) {
-      //     router.replace("/welcome")
-      //   } else {
-      //     router.replace("/chats")
-      //   }
-      // }, 3000)
-
-      // console.log("test", client, authContext.session);
-      // if (authContext.session) {
-        setTimeout(() => {
-          router.replace("/chats")
-        }, 3000)
-      // }
     })()
     // force login for testing:
     // setTimeout(() => {

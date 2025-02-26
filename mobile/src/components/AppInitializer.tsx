@@ -78,8 +78,8 @@ export function AppInitializer() {
           // console.error("Failed to connect to convo server", e);
         }
         
-        if (convo.connected) {
-          console.log("AppInitializer: convo connected");
+        if (convo.isConnected) {
+          console.log("AppInitializer: convo connected!");
           router.replace("/chats");
         } else {
           console.log("AppInitializer: convo not connected");

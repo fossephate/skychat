@@ -90,6 +90,7 @@ export class ConvoClient {
     }
 
     // get the serialized key packages for all of the users in the group:
+    // map of userId to key package:
     const keyPackages = await this.getKeyPackages(userIds);
 
 
@@ -110,13 +111,34 @@ export class ConvoClient {
     // }
   }
 
-  async getKeyPackages(userIds: string[]): Promise<ArrayBuffer[]> {
-    // TODO: implement this
-    return [];
+  async getUserKeyPackages(userIds: string[]): Promise<Map<string, ArrayBuffer>> {
+    const response = await fetch(`${this.serverAddress}/api/get_user_keys`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        user_ids: userIds
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get key packages");
+    }
+
+    const keyPackages: string[] = await response.json();
+    // convert the base64 strings to ArrayBuffers and map them to the userIds:
+    const keyPackageMap = new Map<string, ArrayBuffer>();
+    for (let i = 0; i < userIds.length; i++) {
+      keyPackageMap.set(userIds[i], this.fromB64(keyPackages[i]));
+    }
+    return keyPackageMap;
   }
 
   async connectToServer(address: string): Promise<void> {
     this.serverAddress = address;
+
+    console.log("connecting to server...");
 
     const response = await fetch(`${address}/api/connect`, {
       method: "POST",

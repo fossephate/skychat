@@ -239,4 +239,14 @@ impl ConvoServer {
             anyhow::bail!("Message is too old! (need to sync first)")
         }
     }
+
+    pub fn client_get_user_keys(&self, user_ids: Vec<String>) -> Result<Vec<Vec<u8>>> {
+        let mut key_packages = Vec::new();
+        for user_id in user_ids {
+            if let Some(user) = self.users.get(&user_id) {
+                key_packages.push(user.serialized_key_package.clone());
+            }
+        }
+        Ok(key_packages)
+    }
 }

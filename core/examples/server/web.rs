@@ -123,6 +123,21 @@ pub async fn create_group(data: Json<CreateGroup>, state: &State<ServerState>) {
     );
 }
 
+// POST /get_user_keys (json containing list of user_ids, return list of serialized_key_packages)
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetUserKeys {
+    pub user_ids: Vec<String>,
+}
+#[post("/get_user_keys", format = "json", data = "<data>")]
+pub async fn get_user_keys(data: Json<GetUserKeys>, state: &State<ServerState>) -> Json<Vec<EncodedBase64>> {
+    let server = state.convo_server.lock().expect("failed to lock server!");
+    let keys = server.client_get_user_keys(data.user_ids.clone());
+    // Json(keys)
+    // convert the keys to base64 strings:
+    let base64_keys = keys.unwrap().iter().map(|key| BufferConverter::to_base64(key)).collect::<Vec<String>>();
+    Json(base64_keys)
+}
+
 // GET /get_new_messages (json containing group_id and index)
 // returns Vec<ConvoMessage>
 #[derive(Debug, Serialize, Deserialize)]
