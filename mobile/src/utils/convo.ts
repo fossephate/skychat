@@ -6,6 +6,7 @@ import { ConvoManager } from "skychat-lib";
 // Type definitions
 type GroupId = ArrayBuffer;
 type SerializedMessage = ArrayBuffer;
+type EncodedGroupId = string;
 
 interface MessageItem {
   text: string;
@@ -66,12 +67,14 @@ export class ConvoClient {
     return arrayBuffer;
   }
 
-  async createGroup(groupName: string, userIds: string[]): Promise<void> {
+  async createGroup(groupName: string, userIds: string[]): Promise<EncodedGroupId> {
+    console.log("convo.ts: createGroup()");
     if (!this.serverAddress) {
       throw new Error("Server address is not set");
     }
 
     const groupId = this.manager.createNewGroup(groupName);
+    const encodedGroupId = this.toB64(groupId);
 
     const response = await fetch(`${this.serverAddress}/api/create_group`, {
       method: "POST",
@@ -79,19 +82,20 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: this.toB64(groupId),
+        group_id: encodedGroupId,
         group_name: groupName,
         sender_id: this.id
       })
     });
 
     if (!response.ok) {
+      console.error("Failed to create group", response);
       throw new Error("Failed to create group");
     }
 
     // get the serialized key packages for all of the users in the group:
     // map of userId to key package:
-    const keyPackages = await this.getKeyPackages(userIds);
+    const keyPackages = await this.getUserKeyPackages(userIds);
 
 
 
@@ -109,6 +113,8 @@ export class ConvoClient {
     //     timestamp: Date.now()
     //   });
     // }
+
+    return encodedGroupId;
   }
 
   async getUserKeyPackages(userIds: string[]): Promise<Map<string, ArrayBuffer>> {
@@ -123,7 +129,9 @@ export class ConvoClient {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to get key packages");
+      // the user is not on skychat :(
+      console.error("Failed to get key packages", response);
+      throw new Error("failed_get_key_packages");
     }
 
     const keyPackages: string[] = await response.json();
@@ -136,9 +144,8 @@ export class ConvoClient {
   }
 
   async connectToServer(address: string): Promise<void> {
+    console.log("convo.ts: connectToServer()");
     this.serverAddress = address;
-
-    console.log("connecting to server...");
 
     const response = await fetch(`${address}/api/connect`, {
       method: "POST",
@@ -151,10 +158,10 @@ export class ConvoClient {
       })
     });
 
-    console.log("address: ", address);
-    console.log("serialized_key_package: ", this.manager.getKeyPackage());
+    // console.log("address: ", address);
+    // console.log("serialized_key_package: ", this.manager.getKeyPackage());
     // console.log("response: ", response);
-    console.log("response.ok: ", response.ok);
+    // console.log("response.ok: ", response.ok);
 
     if (!response.ok) {
       // console.error("Failed to connect to server", response);

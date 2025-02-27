@@ -6,8 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConvo } from '@/contexts/ConvoContext';
 
 export function AppInitializer() {
-  const auth = useAuth();
-  const convo = useConvo();
+  const authContext = useAuth();
+  const convoContext = useConvo();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -35,7 +35,7 @@ export function AppInitializer() {
       });
 
       console.log("initializing client");
-      auth.setClient(authClient);
+      authContext.setClient(authClient);
 
       const result = await authClient.init();
       console.log("client init results:", result);
@@ -50,7 +50,7 @@ export function AppInitializer() {
         ) => {
           const { sub, cause } = event.detail;
           console.error(`Session for ${sub} is no longer available (cause: ${cause})`);
-          auth.setDidAuthenticate(false);
+          authContext.setDidAuthenticate(false);
           router.replace("/welcome" as any);
         },
       );
@@ -64,25 +64,16 @@ export function AppInitializer() {
         } else {
           console.log(`${session.sub} was restored (last active session)`);
         }
-        auth.setDidAuthenticate(true);
-        auth.setSession(session);
+        authContext.setDidAuthenticate(true);
+        authContext.setSession(session);
 
         let userId = session.sub;
 
-        // initialize the convo client
-        console.log("initializing convo client");
         try {
-          convo.initClient(userId);
-          await convo.connect(SKYCHAT_SERVER_URL);
-        } catch (e) {
-          // console.error("Failed to connect to convo server", e);
-        }
-        
-        if (convo.isConnected) {
-          console.log("AppInitializer: convo connected!");
+          await convoContext.initAndConnect(SKYCHAT_SERVER_URL, userId);
           router.replace("/chats");
-        } else {
-          console.log("AppInitializer: convo not connected");
+        } catch (e) {
+          console.error("Failed to initialize convo client", e);
           // TODO: handle this better: ¯\_(ツ)_/¯
           router.replace("/welcome" as any);
         }

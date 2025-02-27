@@ -27,8 +27,9 @@ interface ConvoContextType {
   users: User[];
   connected: boolean;
   isConnected: boolean;
-  initClient: (id: string) => void;
-  connect: (serverAddress: string) => Promise<void>;
+  // initClient: (id: string) => void;
+  // connect: (serverAddress: string) => Promise<void>;
+  initAndConnect: (serverAddress: string, id: string) => Promise<void>;
   createGroup: (name: string, userids: string[]) => Promise<void>;
   sendMessage: (groupId: Uint8Array, text: string) => Promise<void>;
   getGroups: () => Promise<void>;
@@ -44,27 +45,35 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [connected, setConnected] = useState(false);
 
-  const initClient = useCallback((id: string) => {
-    // TODO: check if a client with that id already exists in persistent storage
+  // const initClient = useCallback((id: string) => {
+  //   // TODO: check if a client with that id already exists in persistent storage
+  //   const newClient = new ConvoClient(id);
+  //   setClient(newClient);
+  //   return newClient; // Return the client instance directly
+  // }, []);
+
+  // const connect = useCallback(async (serverAddress: string) => {
+  //   console.log("connecting to server...", serverAddress, client);
+  //   if (!client) throw new Error("Client not initialized");
+  //   await client.connectToServer(serverAddress);
+  //   setConnected(true);
+    
+  //   // Optionally load initial users
+  //   // const users = await client.listUsers()
+  //   // setUsers(users);
+  // }, [client]);
+
+
+  const initAndConnect = useCallback(async (serverAddress: string, id: string) => {
     const newClient = new ConvoClient(id);
     setClient(newClient);
-  }, []);
-
-  const connect = useCallback(async (serverAddress: string) => {
-    if (!client) throw new Error("Client not initialized");
-    await client.connectToServer(serverAddress);
+    await newClient.connectToServer(serverAddress);
     setConnected(true);
-    
-    // Optionally load initial users
-    // const users = await client.listUsers()
-    // setUsers(users);
   }, [client]);
 
   const createGroup = useCallback(async (name: string, userids: string[]) => {
     if (!client) throw new Error("Client not initialized");
     await client.createGroup(name, userids);
-    // Refresh groups after creation
-    // TODO: Implement getGroups to refresh the list
   }, [client]);
 
   const sendMessage = useCallback(async (groupId: Uint8Array, text: string) => {
@@ -79,6 +88,12 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     // if (fetchedGroups) setGroups(fetchedGroups);
   }, [client]);
 
+
+  const getAllChats = useCallback(async () => {
+    if (!client) throw new Error("Client not initialized");
+    // get bluesky dms:
+  }, [client]);
+
   // Computed property
   const isConnected = connected;
 
@@ -88,8 +103,8 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     users,
     connected,
     isConnected,
-    initClient,
-    connect,
+    initAndConnect,
+    // connect,
     createGroup,
     sendMessage,
     getGroups,

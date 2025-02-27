@@ -7,7 +7,7 @@ import { useAppTheme } from "src/utils/useAppTheme"
 import { ListItem } from "src/components/ListItem"
 import debounce from 'lodash/debounce'
 import { FlatList, GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useAuth } from "@/contexts/AuthContext"
 
 interface User {
@@ -283,18 +283,24 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
     )
   }, [themed, toggleUserSelection])
 
+  // get safe area insets
+  const insets = useSafeAreaInsets();
+
+
   return (
     <Modal
       visible={isVisible}
       animationType="slide"
+      transparent={true}
       onRequestClose={onClose}
     >
-      <GestureHandlerRootView>
-        <SafeAreaView style={themed($modalContainer)} edges={['top']}>
+      <View style={[themed($modalContainer), { paddingTop: insets.top }]}>
+        <GestureHandlerRootView>
           <Screen
             preset="fixed"
             contentContainerStyle={themed($screenContainer)}
           >
+
             <View style={themed($header)}>
               <TouchableOpacity
                 onPress={onClose}
@@ -374,6 +380,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
                 )}
               </View>
             </View>
+
             <View style={themed($footer)}>
               {state.selectedUsers.length > 0 && (
                 <TextField
@@ -393,9 +400,10 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
               accessibilityState={{ disabled: !state.selectedUserIds.length }}
             /> */}
             </View>
+
           </Screen>
-        </SafeAreaView>
-      </GestureHandlerRootView>
+        </GestureHandlerRootView>
+      </View>
     </Modal>
   )
 }

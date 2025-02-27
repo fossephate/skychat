@@ -48,7 +48,11 @@ export default observer(function Layout() {
     default:
       topBarColor = theme.colors.background;
       bottomBarColor = "#00000000";
+      break;
   }
+
+  bottomBarColor = "#0f0";
+  topBarColor = "#f00";
 
   return <Stack screenOptions={{
     headerShown: false,

@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
   View,
   ViewStyle,
@@ -18,6 +18,8 @@ import { Chat, ChatItem, User } from "src/components/Chat/ChatItem"
 import { colors, spacing, ThemedStyle } from "src/theme"
 import { useAppTheme } from "src/utils/useAppTheme"
 import { useConvo } from "@/contexts/ConvoContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { Agent } from "@atproto/api"
 
 
 const UserSelectDrawer = ({ isVisible, onClose, users }: {
@@ -206,6 +208,32 @@ export default function chatsScreen() {
   const router = useRouter()
   const { themed } = useAppTheme()
   const convoContext = useConvo();
+  const authContext = useAuth();
+
+
+
+  useEffect(() => {
+    async function fetchDms() {
+      // convoContext.getAllChats();
+
+      console.log("fetching dms");
+
+      // get bluesky dm ids:
+      const { session } = authContext;
+      if (!session) {
+        console.error("No session found");
+        return;
+      }
+      const agent = new Agent(session);
+      console.log("agent created");
+      let convos = await agent.withProxy('atproto_labeler', session.did).chat.bsky.convo.listConvos();
+      // const convos = await agent.chat.bsky.convo.listConvos();
+      console.log("convos", convos);
+    }
+    fetchDms();
+  }, [convoContext]);
+
+
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
       <View style={themed($header)}>

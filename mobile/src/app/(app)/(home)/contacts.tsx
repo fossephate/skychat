@@ -9,6 +9,7 @@ import { NewChatModal } from "@/components/Chat/NewChat"
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuth } from "@/contexts/AuthContext"
 import { useConvo } from "@/contexts/ConvoContext"
+import { router } from "expo-router"
 
 interface User {
   did: string
@@ -29,12 +30,30 @@ export default function UsersScreen() {
   const authContext = useAuth();
   const convoContext = useConvo();
 
-  const handleNewChat = (groupName: string, selectedUsers: string[]) => {
-    // Handle the selected users here
-    console.log('Selected users:', selectedUsers)
+  const handleNewChat = async (groupName: string, selectedUsers: string[]) => {
+    if (groupName === "") {
+      // random group name
+      groupName = "Group " + Math.floor(Math.random() * 1000000)
+    }
     console.log('Group name:', groupName)
-    // Add your logic to create a new chat
-    convoContext.createGroup(groupName, selectedUsers)
+    console.log('Selected users:', selectedUsers)
+    try {
+      const encodedGroupId = await convoContext.createGroup(groupName, selectedUsers)
+      console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)
+      router.push(`/chats/${encodedGroupId}`)
+    } catch (error) {
+      console.error('Error creating chat:', error)
+    }
+  }
+
+  const handleCreateDm = (user: User) => {
+    // check if we have a group with this user already:
+    // if we do, open it
+    // if we don't, create it
+    // convoContext.createDm(userId)
+
+    // for now assume we don't have a group with this user already:
+    handleNewChat("DM with " + user.handle, [user.did])
   }
 
   useEffect(() => {
@@ -97,6 +116,7 @@ export default function UsersScreen() {
       topSeparator={false}
       bottomSeparator
       height={72}
+      onPress={() => handleCreateDm(user)}
     >
       <View style={themed($userInfo)}>
         <Text text={user.displayName} size="xs" style={themed($userName)} numberOfLines={1} />
@@ -108,8 +128,7 @@ export default function UsersScreen() {
   return (
     <>
       <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
-
-
+        
         <View style={themed($header)}>
           <Text tx="contactsScreen:title" preset="heading" style={themed($headerText)} />
         </View>
