@@ -47,6 +47,7 @@ async fn main() {
                 accept_invite,
                 send_message,
                 group_index,
+                get_user_keys,
             ],
         )
         .manage(server_state);
