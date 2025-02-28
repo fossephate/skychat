@@ -91,6 +91,17 @@ impl ConvoManager {
         let epoch = inner.get_group_epoch(&group_id);
         epoch.as_u64()
     }
+
+    pub fn save_state(&self) -> SerializedCredentialsWrapper {
+        let mut inner = self.inner.lock().unwrap();
+        let state = inner.save_state();
+        state.into()
+    }
+
+    pub fn load_state(&self, state: SerializedCredentialsWrapper) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.load_state(state.into());
+    }
 }
 
 // // examples / testing:

@@ -44,7 +44,7 @@ export class ConvoClient {
   public serverAddress: string | null;
   public idToName: Map<string, string>;
 
-  constructor(id: string) {
+  constructor(id: string, state: any) {
     this.id = id;
     this.manager = new ConvoManager(id);
     this.serverAddress = null;
@@ -93,9 +93,13 @@ export class ConvoClient {
       throw new Error("Failed to create group");
     }
 
+    console.log("getting key packages for users: ", userIds);
+
     // get the serialized key packages for all of the users in the group:
     // map of userId to key package:
     const keyPackages = await this.getUserKeyPackages(userIds);
+
+    console.log("keyPackages: ", keyPackages);
 
 
 
@@ -135,6 +139,12 @@ export class ConvoClient {
     }
 
     const keyPackages: string[] = await response.json();
+
+    if (keyPackages.length !== userIds.length) {
+      console.error("Failed to get some key packages", response);
+      throw new Error("failed_get_some_key_packages");
+    }
+
     // convert the base64 strings to ArrayBuffers and map them to the userIds:
     const keyPackageMap = new Map<string, ArrayBuffer>();
     for (let i = 0; i < userIds.length; i++) {

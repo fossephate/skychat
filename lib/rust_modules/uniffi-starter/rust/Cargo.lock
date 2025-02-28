@@ -1115,6 +1115,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "base64",
+ "bincode",
  "openmls",
  "openmls_basic_credential",
  "openmls_rust_crypto",

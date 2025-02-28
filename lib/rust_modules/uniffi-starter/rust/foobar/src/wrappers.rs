@@ -1,5 +1,5 @@
 use skychat_core::manager::*;
-
+use std::collections::HashMap;
 // Wrapper for ConvoInvite
 #[derive(uniffi::Record)]
 pub struct ConvoInviteWrapper {
@@ -96,4 +96,39 @@ pub struct LocalGroupWrapper {
     pub name: String,
     pub global_index: u64,
     pub decrypted: Vec<MessageItemWrapper>,
+}
+
+
+// wrapper for SerializedCredentials
+#[derive(uniffi::Record)]
+pub struct SerializedCredentialsWrapper {
+    pub signer: Vec<u8>,
+    pub storage: HashMap<String, Vec<u8>>,
+    pub group_names: Vec<String>,
+    pub group_name_to_id: HashMap<String, Vec<u8>>,
+    pub serialized_credential_with_key: Vec<u8>,
+}
+
+impl From<skychat_core::manager::SerializedCredentials> for SerializedCredentialsWrapper {
+    fn from(state: skychat_core::manager::SerializedCredentials) -> Self {
+        Self {
+            signer: state.signer,
+            serialized_credential_with_key: state.serialized_credential_with_key,
+            storage: state.storage,
+            group_names: state.group_names,
+            group_name_to_id: state.group_name_to_id,
+        }
+    }
+}
+
+impl From<SerializedCredentialsWrapper> for skychat_core::manager::SerializedCredentials {
+    fn from(wrapper: SerializedCredentialsWrapper) -> Self {
+        Self {
+            signer: wrapper.signer,
+            serialized_credential_with_key: wrapper.serialized_credential_with_key,
+            storage: wrapper.storage,
+            group_names: wrapper.group_names,
+            group_name_to_id: wrapper.group_name_to_id,
+        }
+    }
 }

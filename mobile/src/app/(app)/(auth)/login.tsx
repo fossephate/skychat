@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { openAuthSessionAsync } from 'expo-web-browser'
 import { useAppTheme } from "@/utils/useAppTheme"
 
-import { AUTH_SERVER_URL } from "@/env";
 import { router } from "expo-router"
 import { useAuth } from "@/contexts/AuthContext"
 

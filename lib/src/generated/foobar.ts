@@ -41,6 +41,7 @@ import {
   FfiConverterArrayBuffer,
   FfiConverterBool,
   FfiConverterInt32,
+  FfiConverterMap,
   FfiConverterObject,
   FfiConverterOptional,
   FfiConverterUInt64,
@@ -320,6 +321,80 @@ const FfiConverterTypeProcessedResultsWrapper = (() => {
   return new FFIConverter();
 })();
 
+export type SerializedCredentialsWrapper = {
+  signer: ArrayBuffer;
+  storage: Map<string, ArrayBuffer>;
+  groupNames: Array<string>;
+  groupNameToId: Map<string, ArrayBuffer>;
+  serializedCredentialWithKey: ArrayBuffer;
+};
+
+/**
+ * Generated factory for {@link SerializedCredentialsWrapper} record objects.
+ */
+export const SerializedCredentialsWrapper = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<
+      SerializedCredentialsWrapper,
+      ReturnType<typeof defaults>
+    >(defaults);
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link SerializedCredentialsWrapper}, with defaults specified
+     * in Rust, in the {@link foobar} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link SerializedCredentialsWrapper}, with defaults specified
+     * in Rust, in the {@link foobar} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link foobar} crate.
+     */
+    defaults: () =>
+      Object.freeze(defaults()) as Partial<SerializedCredentialsWrapper>,
+  });
+})();
+
+const FfiConverterTypeSerializedCredentialsWrapper = (() => {
+  type TypeName = SerializedCredentialsWrapper;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        signer: FfiConverterArrayBuffer.read(from),
+        storage: FfiConverterMapStringArrayBuffer.read(from),
+        groupNames: FfiConverterArrayString.read(from),
+        groupNameToId: FfiConverterMapStringArrayBuffer.read(from),
+        serializedCredentialWithKey: FfiConverterArrayBuffer.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterArrayBuffer.write(value.signer, into);
+      FfiConverterMapStringArrayBuffer.write(value.storage, into);
+      FfiConverterArrayString.write(value.groupNames, into);
+      FfiConverterMapStringArrayBuffer.write(value.groupNameToId, into);
+      FfiConverterArrayBuffer.write(value.serializedCredentialWithKey, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterArrayBuffer.allocationSize(value.signer) +
+        FfiConverterMapStringArrayBuffer.allocationSize(value.storage) +
+        FfiConverterArrayString.allocationSize(value.groupNames) +
+        FfiConverterMapStringArrayBuffer.allocationSize(value.groupNameToId) +
+        FfiConverterArrayBuffer.allocationSize(
+          value.serializedCredentialWithKey
+        )
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
 const stringConverter = {
   stringToBytes: (s: string) =>
     uniffiCaller.rustCall((status) =>
@@ -345,6 +420,12 @@ const stringConverter = {
 };
 const FfiConverterString = uniffiCreateFfiConverterString(stringConverter);
 
+// FfiConverter for Map<string, ArrayBuffer>
+const FfiConverterMapStringArrayBuffer = new FfiConverterMap(
+  FfiConverterString,
+  FfiConverterArrayBuffer
+);
+
 export interface ConvoManagerInterface {
   createInvite(
     groupId: ArrayBuffer,
@@ -355,6 +436,7 @@ export interface ConvoManagerInterface {
   getGroupEpoch(groupId: ArrayBuffer): /*u64*/ bigint;
   getKeyPackage(): ArrayBuffer;
   getPartialGroup(groupId: ArrayBuffer): LocalGroupWrapper;
+  loadState(state: SerializedCredentialsWrapper): void;
   processMessage(
     message: ArrayBuffer,
     senderId: string | undefined
@@ -365,6 +447,7 @@ export interface ConvoManagerInterface {
     ratchetTree: ArrayBuffer | undefined,
     keyPackage: ArrayBuffer | undefined
   ): void;
+  saveState(): SerializedCredentialsWrapper;
 }
 
 export class ConvoManager
@@ -484,6 +567,19 @@ export class ConvoManager
     );
   }
 
+  public loadState(state: SerializedCredentialsWrapper): void {
+    uniffiCaller.rustCall(
+      /*caller:*/ (callStatus) => {
+        nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_load_state(
+          uniffiTypeConvoManagerObjectFactory.clonePointer(this),
+          FfiConverterTypeSerializedCredentialsWrapper.lower(state),
+          callStatus
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift
+    );
+  }
+
   public processMessage(
     message: ArrayBuffer,
     senderId: string | undefined
@@ -521,6 +617,20 @@ export class ConvoManager
         );
       },
       /*liftString:*/ FfiConverterString.lift
+    );
+  }
+
+  public saveState(): SerializedCredentialsWrapper {
+    return FfiConverterTypeSerializedCredentialsWrapper.lift(
+      uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_save_state(
+            uniffiTypeConvoManagerObjectFactory.clonePointer(this),
+            callStatus
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift
+      )
     );
   }
 
@@ -627,6 +737,9 @@ const FfiConverterArrayTypeMessageItemWrapper = new FfiConverterArray(
   FfiConverterTypeMessageItemWrapper
 );
 
+// FfiConverter for Array<string>
+const FfiConverterArrayString = new FfiConverterArray(FfiConverterString);
+
 /**
  * This should be called before anything else.
  *
@@ -698,6 +811,14 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_load_state() !==
+    33161
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_method_convomanager_load_state'
+    );
+  }
+  if (
     nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_process_message() !==
     22503
   ) {
@@ -711,6 +832,14 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_process_raw_invite'
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_save_state() !==
+    12640
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_method_convomanager_save_state'
     );
   }
   if (
@@ -731,5 +860,6 @@ export default Object.freeze({
     FfiConverterTypeLocalGroupWrapper,
     FfiConverterTypeMessageItemWrapper,
     FfiConverterTypeProcessedResultsWrapper,
+    FfiConverterTypeSerializedCredentialsWrapper,
   },
 });

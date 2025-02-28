@@ -62,6 +62,7 @@ const en = {
     title: "Chat with {{name}}",
     inputPlaceholder: "Type a message...",
     send: "Send",
+    noChats: "No chats found",
   },
   settingsScreen: {
     account: "Account",

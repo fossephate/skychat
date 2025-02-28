@@ -6,7 +6,7 @@ use openmls::prelude::tls_codec::{Deserialize as _, Serialize as _};
 use openmls::prelude::{tls_codec::*, *};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 
 use crate::utils::{generate_credential_with_key, generate_key_package};
@@ -51,7 +51,7 @@ pub struct ProcessedResults {
 #[derive(Serialize, Deserialize)]
 pub struct SerializedCredentials {
     pub signer: Vec<u8>,
-    pub credential_with_key: CredentialWithKey,
+    pub serialized_credential_with_key: Vec<u8>,
     pub storage: HashMap<String, Vec<u8>>,
     pub group_names: Vec<String>,
     pub group_name_to_id: HashMap<String, GroupId>,
@@ -114,9 +114,14 @@ impl ConvoManager {
             .map(|(k, v)| (general_purpose::STANDARD.encode(k), v.clone()))
             .collect();
 
+        // let serialized_credential_with_key = TlsSerialize::tls_serialize_detached(&self.credential_with_key).unwrap();
+        // let serialized_credential_with_key = Serializer::SerializeMap(&self.credential_with_key).unwrap();
+        let serialized_credential_with_key: Vec<u8> =
+            bincode::serialize(&self.credential_with_key).expect("Failed to serialize credential with key");
+
         let serialized = SerializedCredentials {
             signer: self.signer.tls_serialize_detached().unwrap(),
-            credential_with_key: self.credential_with_key.clone(),
+            serialized_credential_with_key: serialized_credential_with_key,
             storage: converted_storage,
             group_names: self.groups.values().map(|g| g.name.clone()).collect(),
             group_name_to_id: self
@@ -140,7 +145,10 @@ impl ConvoManager {
             .collect();
 
         self.signer = SignatureKeyPair::tls_deserialize_exact_bytes(&serialized.signer)?;
-        self.credential_with_key = serialized.credential_with_key;
+        // self.credential_with_key = serialized.credential_with_key;
+        let deserialized_credential_with_key: CredentialWithKey =
+            bincode::deserialize(&serialized.serialized_credential_with_key).unwrap();
+        self.credential_with_key = deserialized_credential_with_key;
 
         // Update storage
         let provider_storage = self.provider.storage();

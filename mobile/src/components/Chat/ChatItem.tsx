@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
-import { colors, spacing, ThemedStyle } from "@/theme";
+import { ThemedStyle } from "@/theme";
 import { ListItem } from "src/components/ListItem";
 import { Text } from "src/components";
 import { useAppTheme } from "@/utils/useAppTheme";
@@ -16,6 +16,7 @@ export interface User {
 
 export interface Chat {
   id: string
+  isBsky: boolean
   members: User[]
   name?: string
   lastMessage?: {
@@ -56,7 +57,6 @@ const renderChatAvatar = (chat: Chat) => {
     return (
       <View style={themed($avatarContainer)}>
         <Image source={{ uri: otherMember.avatar }} style={themed($avatar)} />
-        {otherMember.online && <View style={themed($onlineBadge)} />}
       </View>
     )
   } else {
@@ -104,22 +104,24 @@ const ChatItem = ({ item: chat }: { item: Chat }) => {
     <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
       <ListItem
         LeftComponent={renderChatAvatar(chat)}
-        text={getChatName(chat, SELF_USER.id)}
         textStyle={[
           themed($chatName),
           !chat.lastMessage?.read && themed($unreadChatName),
         ]}
         onPress={() => {
-          console.log("chatName", chat.id)
-          const chatName = getChatName(chat, SELF_USER.id)
-          router.push(`/chats/${chat.id}` as any)
+          if (chat.isBsky) {
+            router.push(`/bskychats/${chat.id}` as any)
+          } else {
+            router.push(`/chats/${chat.id}` as any)
+          }
         }}
+
         RightComponent={
           <View style={themed($rightContainer)}>
             <Text style={[
               themed($timestamp),
-              !chat.lastMessage?.read && themed($unreadTimestamp),
-              chat.muted && themed($mutedText),
+              // !chat.lastMessage?.read && themed($unreadTimestamp),
+              // chat.muted && themed($mutedText),
             ]}>
               {chat.lastMessage?.timestamp}
             </Text>
@@ -128,12 +130,20 @@ const ChatItem = ({ item: chat }: { item: Chat }) => {
                 <Text style={themed($unreadText)}>{chat.unreadCount}</Text>
               </View>
             )}
-            {chat.muted && <Text style={themed($mutedIcon)}>🔇</Text>}
-            {chat.pinned && <Text style={themed($pinnedIcon)}>📌</Text>}
+            {/* {chat.muted && <Text style={themed($mutedIcon)}>🔇</Text>} */}
+            {/* {chat.pinned && <Text style={themed($pinnedIcon)}>📌</Text>} */}
           </View>
         }
         style={themed($listItem)}
-      />
+      >
+        <View style={{ flexDirection: "column" }}>
+          <Text>{getChatName(chat, SELF_USER.id)}</Text>
+          {chat.lastMessage && (
+            <Text numberOfLines={1} style={themed($lastMessage)}>{chat.lastMessage?.text}</Text>
+          )}
+        </View>
+      </ListItem>
+
     </View>
   );
 };
@@ -179,6 +189,16 @@ const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
+})
+
+const $lastMessage: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+  fontSize: 14,
+  color: colors.palette.neutral600,
+  marginTop: spacing.xs,
+  textOverflow: "ellipsis",
+  overflow: "hidden",
+  // marginBottom: spacing.xs,
+  // maxWidth: 240,
 })
 
 const $headerText: ThemedStyle<TextStyle> = () => ({

@@ -1808,7 +1808,7 @@ SPEC CHECKSUMS:
   skychat-lib: edaf4af55ceaab2803458d8f9c44268a9ec572e9
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   uniffi-bindgen-react-native: fe61f9324cf6b3af2021c8b5f544c542ced1a2c3
-  Yoga: 1fd059161b449018342943b095a6d4e69bcaa719
+  Yoga: 2957d0e744897870b5a377f26522e3f08cadd7ac
 
 PODFILE CHECKSUM: 4207a767e2bd9dbda1766c0cb9d4e938a83582f8
 

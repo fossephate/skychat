@@ -2,7 +2,6 @@ import { router } from "expo-router";
 import React, { useEffect } from "react"
 import { View, ViewStyle, TextStyle, ScrollView, Image, ImageStyle, Switch } from "react-native"
 import { Screen, Text, ListItem } from "src/components"
-import { colors, spacing } from "src/theme"
 import { Agent } from '@atproto/api'
 import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
@@ -292,7 +291,7 @@ const $name: ThemedStyle<TextStyle> = ({ colors }) => ({
   marginBottom: spacing.xs,
 })
 
-const $handle: ThemedStyle<TextStyle> = ({ colors }) => ({
+const $handle: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 16,
   color: colors.textDim,
   marginBottom: spacing.xs,
