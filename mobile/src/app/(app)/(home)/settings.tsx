@@ -285,7 +285,7 @@ const $profileInfo: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginLeft: spacing.md,
 })
 
-const $name: ThemedStyle<TextStyle> = ({ colors }) => ({
+const $name: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 24,
   color: colors.text,
   marginBottom: spacing.xs,

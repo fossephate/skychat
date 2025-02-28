@@ -53,17 +53,6 @@ impl ConvoManager {
         invite.into() // Use From/Into trait
     }
 
-    pub fn process_raw_invite(
-        &self,
-        group_name: String,
-        welcome_message: Vec<u8>,
-        ratchet_tree: Option<Vec<u8>>,
-        key_package: Option<Vec<u8>>,
-    ) {
-        let mut inner = self.inner.lock().unwrap();
-        inner.process_raw_invite(group_name, welcome_message, ratchet_tree, key_package);
-    }
-
     pub fn create_message(&self, group_id: &GroupId, message: String) -> Vec<u8> {
         let mut inner = self.inner.lock().unwrap();
         let message = inner.create_message(group_id, message);
@@ -80,16 +69,25 @@ impl ConvoManager {
         results.into() // Use From/Into trait
     }
 
+    pub fn process_convo_messages(
+        &self,
+        messages: Vec<ConvoMessageWrapper>,
+        group_id: Option<GroupId>,
+    ) {
+        let mut inner = self.inner.lock().unwrap();
+
+        // convert Option<GroupId> to Option<&GroupId>
+        let group_id_ref = group_id.as_ref();
+        inner.process_convo_messages(
+            messages.into_iter().map(|m| m.into()).collect(),
+            group_id_ref,
+        );
+    }
+
     pub fn get_key_package(&self) -> Vec<u8> {
         let inner = self.inner.lock().unwrap();
         let key_package = inner.get_key_package();
         key_package
-    }
-
-    pub fn get_group_epoch(&self, group_id: GroupId) -> u64 {
-        let mut inner = self.inner.lock().unwrap();
-        let epoch = inner.get_group_epoch(&group_id);
-        epoch.as_u64()
     }
 
     pub fn save_state(&self) -> SerializedCredentialsWrapper {
@@ -102,6 +100,33 @@ impl ConvoManager {
         let mut inner = self.inner.lock().unwrap();
         inner.load_state(state.into());
     }
+
+    pub fn group_set_index(&self, group_id: GroupId, index: u64) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.group_set_index(&group_id, index);
+    }
+
+    pub fn group_get_index(&self, group_id: GroupId) -> u64 {
+        let mut inner = self.inner.lock().unwrap();
+        inner.group_get_index(&group_id)
+    }
+
+    pub fn group_get_epoch(&self, group_id: GroupId) -> u64 {
+        let mut inner = self.inner.lock().unwrap();
+        let epoch = inner.group_get_epoch(&group_id);
+        epoch.as_u64()
+    }
+
+    pub fn group_push_message(&self, group_id: GroupId, message: String, sender_id: String) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.group_push_message(&group_id, message, sender_id);
+    }
+
+    pub fn get_pending_invites(&self) -> Vec<ConvoInviteWrapper> {
+      let mut inner = self.inner.lock().unwrap();
+      let invites = inner.pending_invites.iter().map(|i| (*i).into()).collect();
+      invites
+  }
 }
 
 // // examples / testing:

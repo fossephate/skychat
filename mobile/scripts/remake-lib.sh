@@ -1,9 +1,14 @@
 #!/bin/bash
 
-cd ../skychat-lib
-npm pack
+# start in the /mobile directory:
 
-cd ../skychat-mobile
-rm -rf ./node_modules/skychat-lib
-pnpm i
-pnpm expo prebuild
+cd ../lib
+yarn ubrn:ios
+cd ./rust_modules/uniffi-starter/rust/
+./build-ios.sh
+cd ../../../../
+
+
+cd ./mobile
+yarn install
+yarn expo prebuild

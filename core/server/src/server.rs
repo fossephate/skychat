@@ -199,6 +199,7 @@ impl ConvoServer {
                 message: None,
                 unix_timestamp: 0,
                 invite: Some(ConvoInvite {
+                    sender_id: sender_id.clone(),
                     global_index: group.global_index,
                     group_name: group.group_name.clone(),
                     welcome_message,

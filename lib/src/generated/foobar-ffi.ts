@@ -52,11 +52,6 @@ interface NativeModuleInterface {
     name: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): Uint8Array;
-  ubrn_uniffi_foobar_fn_method_convomanager_get_group_epoch(
-    ptr: bigint,
-    groupId: Uint8Array,
-    uniffi_out_err: UniffiRustCallStatus
-  ): bigint;
   ubrn_uniffi_foobar_fn_method_convomanager_get_key_package(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus
@@ -66,9 +61,38 @@ interface NativeModuleInterface {
     groupId: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): Uint8Array;
+  ubrn_uniffi_foobar_fn_method_convomanager_group_get_epoch(
+    ptr: bigint,
+    groupId: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus
+  ): bigint;
+  ubrn_uniffi_foobar_fn_method_convomanager_group_get_index(
+    ptr: bigint,
+    groupId: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus
+  ): bigint;
+  ubrn_uniffi_foobar_fn_method_convomanager_group_push_message(
+    ptr: bigint,
+    groupId: Uint8Array,
+    message: Uint8Array,
+    senderId: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus
+  ): void;
+  ubrn_uniffi_foobar_fn_method_convomanager_group_set_index(
+    ptr: bigint,
+    groupId: Uint8Array,
+    index: bigint,
+    uniffi_out_err: UniffiRustCallStatus
+  ): void;
   ubrn_uniffi_foobar_fn_method_convomanager_load_state(
     ptr: bigint,
     state: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus
+  ): void;
+  ubrn_uniffi_foobar_fn_method_convomanager_process_convo_messages(
+    ptr: bigint,
+    messages: Uint8Array,
+    groupId: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): void;
   ubrn_uniffi_foobar_fn_method_convomanager_process_message(
@@ -77,14 +101,6 @@ interface NativeModuleInterface {
     senderId: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): Uint8Array;
-  ubrn_uniffi_foobar_fn_method_convomanager_process_raw_invite(
-    ptr: bigint,
-    groupName: Uint8Array,
-    welcomeMessage: Uint8Array,
-    ratchetTree: Uint8Array,
-    keyPackage: Uint8Array,
-    uniffi_out_err: UniffiRustCallStatus
-  ): void;
   ubrn_uniffi_foobar_fn_method_convomanager_save_state(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus
@@ -92,12 +108,15 @@ interface NativeModuleInterface {
   ubrn_uniffi_foobar_checksum_method_convomanager_create_invite(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_create_message(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_create_new_group(): number;
-  ubrn_uniffi_foobar_checksum_method_convomanager_get_group_epoch(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_key_package(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_partial_group(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_group_get_epoch(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_group_get_index(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_group_push_message(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_group_set_index(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_load_state(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_process_convo_messages(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_process_message(): number;
-  ubrn_uniffi_foobar_checksum_method_convomanager_process_raw_invite(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_save_state(): number;
   ubrn_uniffi_foobar_checksum_constructor_convomanager_new(): number;
   ubrn_ffi_foobar_uniffi_contract_version(): number;

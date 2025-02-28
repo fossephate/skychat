@@ -60,6 +60,7 @@ pub struct SerializedCredentials {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 
 pub struct ConvoInvite {
+    pub sender_id: String,
     pub group_name: String,
     pub welcome_message: Vec<u8>,
     pub ratchet_tree: Option<Vec<u8>>,
@@ -77,6 +78,7 @@ pub struct ConvoMessage {
 }
 
 pub struct ConvoManager {
+    pub id: String,
     provider: OpenMlsRustCrypto,
     ciphersuite: Ciphersuite,
     signer: SignatureKeyPair,
@@ -91,12 +93,13 @@ impl ConvoManager {
         let provider = OpenMlsRustCrypto::default();
 
         let (credential_with_key, signer) = generate_credential_with_key(
-            id.into(),
+            id.clone().into(),
             CredentialType::Basic,
             ciphersuite.signature_algorithm(),
             &provider,
         );
         Self {
+            id: id.clone(),
             provider: provider,
             ciphersuite: ciphersuite,
             signer: signer,
@@ -190,12 +193,14 @@ impl ConvoManager {
 
     pub fn process_raw_invite(
         &mut self,
+        sender_id: String,
         group_name: String,
         welcome_message: Vec<u8>,
         ratchet_tree: Option<Vec<u8>>,
         fanned: Option<Vec<u8>>,
     ) {
         self.process_invite(ConvoInvite {
+            sender_id: sender_id.clone(),
             group_name: group_name.clone(),
             welcome_message: welcome_message.clone(),
             ratchet_tree: ratchet_tree.clone(),
@@ -314,6 +319,7 @@ impl ConvoManager {
             .tls_serialize_detached()
             .expect("Error serializing fanned");
         ConvoInvite {
+            sender_id: self.id.clone(),
             group_name: group.name.clone(),
             welcome_message: serialized_welcome,
             ratchet_tree: Some(ratchet_tree),
@@ -419,6 +425,7 @@ impl ConvoManager {
                 ProcessedResults {
                     message: None,
                     invite: Some(ConvoInvite {
+                        sender_id: self.id.clone(),
                         group_name: group.name.clone(),
                         welcome_message: serialized_welcome,
                         ratchet_tree: Some(ratchet_tree),
@@ -492,14 +499,6 @@ impl ConvoManager {
         (fanned, None)
     }
 
-    pub fn get_group_epoch(&mut self, group_id: &GroupId) -> GroupEpoch {
-        let group = self.groups.get_mut(group_id).unwrap();
-        let mls_group = &mut group.mls_group;
-
-        let epoch = mls_group.epoch();
-        epoch
-    }
-
     pub fn request_join(&mut self, group_id: &GroupId, epoch: &GroupEpoch) -> Vec<u8> {
         let key_package_in = KeyPackageIn::tls_deserialize_exact(self.get_key_package())
             .expect("Error deserializing key package");
@@ -557,5 +556,36 @@ impl ConvoManager {
                 }
             }
         }
+    }
+
+    // not strictly necessary but helpful functions:
+    pub fn group_get_epoch(&mut self, group_id: &GroupId) -> GroupEpoch {
+        let group = self.groups.get_mut(group_id).unwrap();
+        let mls_group = &mut group.mls_group;
+
+        let epoch = mls_group.epoch();
+        epoch
+    }
+
+    pub fn group_set_index(&mut self, group_id: &GroupId, index: u64) {
+        let group = self.groups.get_mut(group_id).unwrap();
+        group.global_index = index;
+    }
+
+    pub fn group_get_index(&self, group_id: &GroupId) -> u64 {
+        let group = self.groups.get(group_id).unwrap();
+        group.global_index
+    }
+
+    pub fn group_push_message(&mut self, group_id: &GroupId, message: String, sender_id: String) {
+        let group = self.groups.get_mut(group_id).unwrap();
+        group.decrypted.push(MessageItem {
+            text: message,
+            sender_id: sender_id,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+        });
     }
 }

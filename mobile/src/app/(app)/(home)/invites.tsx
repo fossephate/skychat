@@ -1,10 +1,11 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { View, ViewStyle } from "react-native"
 import { Screen, Text, ListItem } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
 import { translate } from "@/i18n"
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { spacing } from "@/theme"
+import { useConvo } from "@/contexts/ConvoContext"
 
 interface Invite {
   id: string
@@ -32,6 +33,17 @@ const mockInvites: Invite[] = [
 export default function InvitesScreen() {
   const { themed } = useAppTheme()
   const [invites, setInvites] = useState<Invite[]>(mockInvites)
+
+  const convoContext = useConvo();
+
+
+  useEffect(() => {
+    const doThing = async () => {
+      const invites = await convoContext.getInvites();
+      // setInvites(invites);
+    }
+    doThing();
+  }, []);
 
   const handleAccept = (inviteId: string) => {
     setInvites(current => current.filter(invite => invite.id !== inviteId))

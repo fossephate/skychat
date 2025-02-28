@@ -3,6 +3,7 @@ use std::collections::HashMap;
 // Wrapper for ConvoInvite
 #[derive(uniffi::Record)]
 pub struct ConvoInviteWrapper {
+    pub sender_id: String,
     pub group_name: String,
     pub welcome_message: Vec<u8>,
     pub ratchet_tree: Option<Vec<u8>>,
@@ -13,6 +14,7 @@ pub struct ConvoInviteWrapper {
 impl From<skychat_core::manager::ConvoInvite> for ConvoInviteWrapper {
     fn from(invite: skychat_core::manager::ConvoInvite) -> Self {
         Self {
+            sender_id: invite.sender_id,
             group_name: invite.group_name,
             welcome_message: invite.welcome_message,
             ratchet_tree: invite.ratchet_tree,
@@ -25,6 +27,7 @@ impl From<skychat_core::manager::ConvoInvite> for ConvoInviteWrapper {
 impl From<ConvoInviteWrapper> for skychat_core::manager::ConvoInvite {
     fn from(wrapper: ConvoInviteWrapper) -> Self {
         Self {
+            sender_id: wrapper.sender_id,
             group_name: wrapper.group_name,
             welcome_message: wrapper.welcome_message,
             ratchet_tree: wrapper.ratchet_tree,
@@ -132,3 +135,47 @@ impl From<SerializedCredentialsWrapper> for skychat_core::manager::SerializedCre
         }
     }
 }
+
+
+// Wrapper for ConvoMessage
+// pub struct ConvoMessage {
+//   pub global_index: u64,
+//   pub sender_id: String,
+//   pub unix_timestamp: u64,
+//   pub message: Option<Vec<u8>>,
+//   pub invite: Option<ConvoInvite>,
+// }
+
+#[derive(uniffi::Record)]
+pub struct ConvoMessageWrapper {
+    pub global_index: u64,
+    pub sender_id: String,
+    pub unix_timestamp: u64,
+    pub message: Option<Vec<u8>>,
+    pub invite: Option<ConvoInviteWrapper>,
+}
+
+impl From<skychat_core::manager::ConvoMessage> for ConvoMessageWrapper {
+    fn from(message: skychat_core::manager::ConvoMessage) -> Self {
+        Self {
+            global_index: message.global_index,
+            sender_id: message.sender_id,
+            unix_timestamp: message.unix_timestamp,
+            message: message.message,
+            invite: message.invite.map(Into::into),
+        }
+    }
+}
+
+impl From<ConvoMessageWrapper> for skychat_core::manager::ConvoMessage {
+    fn from(wrapper: ConvoMessageWrapper) -> Self {
+        Self {
+            global_index: wrapper.global_index,
+            sender_id: wrapper.sender_id,
+            unix_timestamp: wrapper.unix_timestamp,
+            message: wrapper.message,
+            invite: wrapper.invite.map(Into::into),
+        }
+    }
+}
+

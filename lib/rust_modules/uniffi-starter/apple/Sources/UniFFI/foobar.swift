@@ -482,15 +482,27 @@ public protocol ConvoManagerProtocol : AnyObject {
     
     func createNewGroup(name: String)  -> Data
     
-    func getGroupEpoch(groupId: Data)  -> UInt64
-    
     func getKeyPackage()  -> Data
     
     func getPartialGroup(groupId: Data)  -> LocalGroupWrapper
     
+    func groupGetEpoch(groupId: Data)  -> UInt64
+    
+    func groupGetIndex(groupId: Data)  -> UInt64
+    
+    func groupPushMessage(groupId: Data, message: String, senderId: String) 
+    
+    func groupSetIndex(groupId: Data, index: UInt64) 
+    
+    func loadState(state: SerializedCredentialsWrapper) 
+    
+    func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) 
+    
     func processMessage(message: Data, senderId: String?)  -> ProcessedResultsWrapper
     
     func processRawInvite(groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) 
+    
+    func saveState()  -> SerializedCredentialsWrapper
     
 }
 
@@ -578,14 +590,6 @@ open func createNewGroup(name: String) -> Data {
 })
 }
     
-open func getGroupEpoch(groupId: Data) -> UInt64 {
-    return try!  FfiConverterUInt64.lift(try! rustCall() {
-    uniffi_foobar_fn_method_convomanager_get_group_epoch(self.uniffiClonePointer(),
-        FfiConverterData.lower(groupId),$0
-    )
-})
-}
-    
 open func getKeyPackage() -> Data {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_get_key_package(self.uniffiClonePointer(),$0
@@ -599,6 +603,54 @@ open func getPartialGroup(groupId: Data) -> LocalGroupWrapper {
         FfiConverterData.lower(groupId),$0
     )
 })
+}
+    
+open func groupGetEpoch(groupId: Data) -> UInt64 {
+    return try!  FfiConverterUInt64.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_group_get_epoch(self.uniffiClonePointer(),
+        FfiConverterData.lower(groupId),$0
+    )
+})
+}
+    
+open func groupGetIndex(groupId: Data) -> UInt64 {
+    return try!  FfiConverterUInt64.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_group_get_index(self.uniffiClonePointer(),
+        FfiConverterData.lower(groupId),$0
+    )
+})
+}
+    
+open func groupPushMessage(groupId: Data, message: String, senderId: String) {try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_group_push_message(self.uniffiClonePointer(),
+        FfiConverterData.lower(groupId),
+        FfiConverterString.lower(message),
+        FfiConverterString.lower(senderId),$0
+    )
+}
+}
+    
+open func groupSetIndex(groupId: Data, index: UInt64) {try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_group_set_index(self.uniffiClonePointer(),
+        FfiConverterData.lower(groupId),
+        FfiConverterUInt64.lower(index),$0
+    )
+}
+}
+    
+open func loadState(state: SerializedCredentialsWrapper) {try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_load_state(self.uniffiClonePointer(),
+        FfiConverterTypeSerializedCredentialsWrapper.lower(state),$0
+    )
+}
+}
+    
+open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) {try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_process_convo_messages(self.uniffiClonePointer(),
+        FfiConverterSequenceTypeConvoMessageWrapper.lower(messages),
+        FfiConverterOptionData.lower(groupId),$0
+    )
+}
 }
     
 open func processMessage(message: Data, senderId: String?) -> ProcessedResultsWrapper {
@@ -618,6 +670,13 @@ open func processRawInvite(groupName: String, welcomeMessage: Data, ratchetTree:
         FfiConverterOptionData.lower(keyPackage),$0
     )
 }
+}
+    
+open func saveState() -> SerializedCredentialsWrapper {
+    return try!  FfiConverterTypeSerializedCredentialsWrapper.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_save_state(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 
@@ -762,6 +821,96 @@ public func FfiConverterTypeConvoInviteWrapper_lift(_ buf: RustBuffer) throws ->
 #endif
 public func FfiConverterTypeConvoInviteWrapper_lower(_ value: ConvoInviteWrapper) -> RustBuffer {
     return FfiConverterTypeConvoInviteWrapper.lower(value)
+}
+
+
+public struct ConvoMessageWrapper {
+    public var globalIndex: UInt64
+    public var senderId: String
+    public var unixTimestamp: UInt64
+    public var message: Data?
+    public var invite: ConvoInviteWrapper?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(globalIndex: UInt64, senderId: String, unixTimestamp: UInt64, message: Data?, invite: ConvoInviteWrapper?) {
+        self.globalIndex = globalIndex
+        self.senderId = senderId
+        self.unixTimestamp = unixTimestamp
+        self.message = message
+        self.invite = invite
+    }
+}
+
+
+
+extension ConvoMessageWrapper: Equatable, Hashable {
+    public static func ==(lhs: ConvoMessageWrapper, rhs: ConvoMessageWrapper) -> Bool {
+        if lhs.globalIndex != rhs.globalIndex {
+            return false
+        }
+        if lhs.senderId != rhs.senderId {
+            return false
+        }
+        if lhs.unixTimestamp != rhs.unixTimestamp {
+            return false
+        }
+        if lhs.message != rhs.message {
+            return false
+        }
+        if lhs.invite != rhs.invite {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(globalIndex)
+        hasher.combine(senderId)
+        hasher.combine(unixTimestamp)
+        hasher.combine(message)
+        hasher.combine(invite)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeConvoMessageWrapper: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConvoMessageWrapper {
+        return
+            try ConvoMessageWrapper(
+                globalIndex: FfiConverterUInt64.read(from: &buf), 
+                senderId: FfiConverterString.read(from: &buf), 
+                unixTimestamp: FfiConverterUInt64.read(from: &buf), 
+                message: FfiConverterOptionData.read(from: &buf), 
+                invite: FfiConverterOptionTypeConvoInviteWrapper.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ConvoMessageWrapper, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.globalIndex, into: &buf)
+        FfiConverterString.write(value.senderId, into: &buf)
+        FfiConverterUInt64.write(value.unixTimestamp, into: &buf)
+        FfiConverterOptionData.write(value.message, into: &buf)
+        FfiConverterOptionTypeConvoInviteWrapper.write(value.invite, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoMessageWrapper_lift(_ buf: RustBuffer) throws -> ConvoMessageWrapper {
+    return try FfiConverterTypeConvoMessageWrapper.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoMessageWrapper_lower(_ value: ConvoMessageWrapper) -> RustBuffer {
+    return FfiConverterTypeConvoMessageWrapper.lower(value)
 }
 
 
@@ -978,6 +1127,96 @@ public func FfiConverterTypeProcessedResultsWrapper_lower(_ value: ProcessedResu
     return FfiConverterTypeProcessedResultsWrapper.lower(value)
 }
 
+
+public struct SerializedCredentialsWrapper {
+    public var signer: Data
+    public var storage: [String: Data]
+    public var groupNames: [String]
+    public var groupNameToId: [String: Data]
+    public var serializedCredentialWithKey: Data
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(signer: Data, storage: [String: Data], groupNames: [String], groupNameToId: [String: Data], serializedCredentialWithKey: Data) {
+        self.signer = signer
+        self.storage = storage
+        self.groupNames = groupNames
+        self.groupNameToId = groupNameToId
+        self.serializedCredentialWithKey = serializedCredentialWithKey
+    }
+}
+
+
+
+extension SerializedCredentialsWrapper: Equatable, Hashable {
+    public static func ==(lhs: SerializedCredentialsWrapper, rhs: SerializedCredentialsWrapper) -> Bool {
+        if lhs.signer != rhs.signer {
+            return false
+        }
+        if lhs.storage != rhs.storage {
+            return false
+        }
+        if lhs.groupNames != rhs.groupNames {
+            return false
+        }
+        if lhs.groupNameToId != rhs.groupNameToId {
+            return false
+        }
+        if lhs.serializedCredentialWithKey != rhs.serializedCredentialWithKey {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(signer)
+        hasher.combine(storage)
+        hasher.combine(groupNames)
+        hasher.combine(groupNameToId)
+        hasher.combine(serializedCredentialWithKey)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSerializedCredentialsWrapper: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SerializedCredentialsWrapper {
+        return
+            try SerializedCredentialsWrapper(
+                signer: FfiConverterData.read(from: &buf), 
+                storage: FfiConverterDictionaryStringData.read(from: &buf), 
+                groupNames: FfiConverterSequenceString.read(from: &buf), 
+                groupNameToId: FfiConverterDictionaryStringData.read(from: &buf), 
+                serializedCredentialWithKey: FfiConverterData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SerializedCredentialsWrapper, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.signer, into: &buf)
+        FfiConverterDictionaryStringData.write(value.storage, into: &buf)
+        FfiConverterSequenceString.write(value.groupNames, into: &buf)
+        FfiConverterDictionaryStringData.write(value.groupNameToId, into: &buf)
+        FfiConverterData.write(value.serializedCredentialWithKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSerializedCredentialsWrapper_lift(_ buf: RustBuffer) throws -> SerializedCredentialsWrapper {
+    return try FfiConverterTypeSerializedCredentialsWrapper.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSerializedCredentialsWrapper_lower(_ value: SerializedCredentialsWrapper) -> RustBuffer {
+    return FfiConverterTypeSerializedCredentialsWrapper.lower(value)
+}
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1053,6 +1292,56 @@ fileprivate struct FfiConverterOptionTypeConvoInviteWrapper: FfiConverterRustBuf
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]
+
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterString.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [String]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeConvoMessageWrapper: FfiConverterRustBuffer {
+    typealias SwiftType = [ConvoMessageWrapper]
+
+    public static func write(_ value: [ConvoMessageWrapper], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeConvoMessageWrapper.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ConvoMessageWrapper] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ConvoMessageWrapper]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeConvoMessageWrapper.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeMessageItemWrapper: FfiConverterRustBuffer {
     typealias SwiftType = [MessageItemWrapper]
 
@@ -1072,6 +1361,32 @@ fileprivate struct FfiConverterSequenceTypeMessageItemWrapper: FfiConverterRustB
             seq.append(try FfiConverterTypeMessageItemWrapper.read(from: &buf))
         }
         return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringData: FfiConverterRustBuffer {
+    public static func write(_ value: [String: Data], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterData.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: Data] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: Data]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterData.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
     }
 }
 
@@ -1099,19 +1414,37 @@ private var initializationResult: InitializationResult = {
     if (uniffi_foobar_checksum_method_convomanager_create_new_group() != 44787) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_get_group_epoch() != 35913) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_foobar_checksum_method_convomanager_get_key_package() != 58549) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_get_partial_group() != 51255) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_foobar_checksum_method_convomanager_group_get_epoch() != 17970) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_group_get_index() != 56153) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_group_push_message() != 12963) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_group_set_index() != 13168) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_load_state() != 33161) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_process_convo_messages() != 42325) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_foobar_checksum_method_convomanager_process_message() != 22503) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_process_raw_invite() != 34162) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_save_state() != 12640) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_constructor_convomanager_new() != 51625) {
