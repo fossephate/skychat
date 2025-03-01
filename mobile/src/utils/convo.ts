@@ -100,26 +100,21 @@ export class ConvoClient {
 
     // get the serialized key packages for all of the users in the group:
     // map of userId to key package:
-    const keyPackages = await this.getUserKeyPackages(userIds);
+    const keyPackagesMap = await this.getUserKeyPackages(userIds);
 
-    console.log("keyPackages: ", keyPackages);
+    console.log("keyPackagesMap: ", keyPackagesMap);
 
-
+    await this.manager.groupPushMessage(groupId, "<group_created>", this.id);
 
     // invite the users 1 by 1:
-    for (const keyPackage of keyPackages) {
-      // await this.inviteUserToGroup(keyPackage, groupId);
+    for (const [userId, keyPackage] of keyPackagesMap.entries()) {
+      console.log("inviting user to group: ", userId, keyPackage);
+      await this.inviteUserToGroup(userId, groupId, keyPackage);
+      let systemMessage = `<${userId}> joined the group`;
+      await this.manager.groupPushMessage(groupId, systemMessage, this.id);
     }
 
-    // push to the group locally:
-    // const group = this.manager.groups.get(Buffer.from(groupId).toString('hex'));
-    // if (group) {
-    //   group.decrypted.push({
-    //     text: "<group_created>",
-    //     senderId: "system",
-    //     timestamp: Date.now()
-    //   });
-    // }
+    await this.manager.groupPushMessage(groupId, "<finished_creating_group>", this.id);
 
     return encodedGroupId;
   }
@@ -191,15 +186,12 @@ export class ConvoClient {
   //   if (!this.serverAddress) {
   //     throw new Error("Server address is not set");
   //   }
-
   //   const response = await fetch(`${this.serverAddress}/api/list_users`);
   //   const users: ConvoUser[] = await response.json();
-
   //   users.forEach(user => {
   //     this.idToName.set(user.userId, user.name);
   //   });
   //   this.idToName.set("system", "system");
-
   //   return users;
   // }
 
@@ -207,6 +199,8 @@ export class ConvoClient {
     if (!this.serverAddress) {
       throw new Error("Server address is not set");
     }
+
+    console.log("inviting user to group: ", receiverId, groupId, serializedKeyPackage);
 
     const groupInvite = this.manager.createInvite(groupId, serializedKeyPackage);
 
@@ -232,14 +226,11 @@ export class ConvoClient {
 
   async processInvite(invite: ConvoInvite): Promise<void> {
     // this.manager.processInvite(invite);
-
     // if (!this.serverAddress) {
     //   throw new Error("Server address is not set");
     // }
-
     // // const groupId = Array.from(this.findGroupIdByName(invite.groupName));
     // const groupId = invite.groupId;
-
     // const response = await fetch(`${this.serverAddress}/api/accept_invite`, {
     //   method: 'POST',
     //   headers: {
@@ -250,7 +241,6 @@ export class ConvoClient {
     //     sender_id: this.id
     //   })
     // });
-
     // if (!response.ok) {
     //   throw new Error("Failed to accept invite");
     // }
@@ -282,7 +272,7 @@ export class ConvoClient {
       body: JSON.stringify({
         group_id: groupId,
         sender_id: this.id,
-        index,
+        index
         // TODO: this should need to be signed by the userid or some other auth
       })
     });
@@ -323,9 +313,9 @@ export class ConvoClient {
     }
 
     const response = await fetch(`${this.serverAddress}/api/send_message`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         group_id: groupId,

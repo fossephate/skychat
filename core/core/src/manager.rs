@@ -323,7 +323,7 @@ impl ConvoManager {
             group_name: group.name.clone(),
             welcome_message: serialized_welcome,
             ratchet_tree: Some(ratchet_tree),
-            global_index: 1,
+            global_index: 1,// TODO: this should be a parameter:
             fanned: Some(serialized_fanned),
         }
     }

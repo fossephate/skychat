@@ -45,15 +45,15 @@ export default function UsersScreen() {
       console.error('Error creating chat:', error)
     }
   }
-
+  
   const handleCreateDm = (user: User) => {
-    // check if we have a group with this user already:
+    // TODO: check if we have a group with this user already:
     // if we do, open it
     // if we don't, create it
     // convoContext.createDm(userId)
 
     // for now assume we don't have a group with this user already:
-    handleNewChat("DM with " + user.handle, [user.did])
+    handleNewChat(`DM with ${user.handle}`, [user.did])
   }
 
   useEffect(() => {

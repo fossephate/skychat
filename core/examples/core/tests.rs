@@ -138,7 +138,13 @@ async fn manual_chat() {
     // alice creates a new group and invites bob:
     let gid = alice.create_new_group(gn.clone());
     let group_invite = alice.create_invite(&gid, bob.get_key_package());
-    bob.process_raw_invite(group_invite.sender_id.clone(), group_invite.group_name.clone(), group_invite.welcome_message, group_invite.ratchet_tree, None);
+    bob.process_raw_invite(
+        group_invite.sender_id.clone(),
+        group_invite.group_name.clone(),
+        group_invite.welcome_message,
+        group_invite.ratchet_tree,
+        None,
+    );
 
     println!("<------ Alice creates a new group and invites Bob! ------->");
 
@@ -170,7 +176,13 @@ async fn manual_chat() {
     // charlie + everyone* (not actually everyone, but I think log(n) people in the tree?)
     // must process the invite before any new messages can be decrypted
     // (excluding bob since he created the invite)
-    charlie.process_raw_invite(group_invite.sender_id.clone(), gn.clone(), group_invite.welcome_message, group_invite.ratchet_tree, None);
+    charlie.process_raw_invite(
+        group_invite.sender_id.clone(),
+        gn.clone(),
+        group_invite.welcome_message,
+        group_invite.ratchet_tree,
+        None,
+    );
     // everyone* else must processes the fanned commit like a normal message
     alice.process_message(group_invite.fanned.unwrap(), None);
 
@@ -246,7 +258,13 @@ async fn manual_chat() {
     println!("<------ David joins the group! ------->");
     // print the processed_results:
     // println!("{}", format!("Processed results: {:?}", processed_results.invite.unwrap()).green());
-    david.process_raw_invite(bob.id.clone(), gn.clone(), proposed_invite.welcome_message, proposed_invite.ratchet_tree, None);
+    david.process_raw_invite(
+        proposed_invite.sender_id.clone(),
+        proposed_invite.group_name.clone(),
+        proposed_invite.welcome_message,
+        proposed_invite.ratchet_tree,
+        None,
+    );
     println!("<------ David processed the invite! ------->");
     // charlie must also process the fanned commit:
     // charlie.process_message(proposed_invite.fanned.unwrap(), None);
@@ -411,14 +429,15 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
         .await;
 
     println!("<!------ Alice sends a message to charlie! ------->");
-    alice_client.send_message(&group_id, "Welcome to the group, charlie!".to_string()).await;
+    alice_client
+        .send_message(&group_id, "Welcome to the group, charlie!".to_string())
+        .await;
 
     println!("<!------ Charlie checks his messages! ------->");
     charlie_client.check_incoming_messages(None).await;
 
     println!("<!------ Charlie accepts the invite! ------->");
     charlie_client.accept_current_invites().await;
-
 
     println!("<!------ Charlie sends a message to alice! ------->");
     charlie_client

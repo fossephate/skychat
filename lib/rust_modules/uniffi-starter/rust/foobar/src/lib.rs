@@ -53,6 +53,24 @@ impl ConvoManager {
         invite.into() // Use From/Into trait
     }
 
+    pub fn process_raw_invite(
+        &self,
+        sender_id: String,
+        group_name: String,
+        welcome_message: Vec<u8>,
+        ratchet_tree: Option<Vec<u8>>,
+        key_package: Option<Vec<u8>>,
+    ) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.process_raw_invite(
+            sender_id,
+            group_name,
+            welcome_message,
+            ratchet_tree,
+            key_package,
+        );
+    }
+
     pub fn create_message(&self, group_id: &GroupId, message: String) -> Vec<u8> {
         let mut inner = self.inner.lock().unwrap();
         let message = inner.create_message(group_id, message);
@@ -123,10 +141,14 @@ impl ConvoManager {
     }
 
     pub fn get_pending_invites(&self) -> Vec<ConvoInviteWrapper> {
-      let mut inner = self.inner.lock().unwrap();
-      let invites = inner.pending_invites.iter().map(|i| (*i).into()).collect();
-      invites
-  }
+        let mut inner = self.inner.lock().unwrap();
+        let invites = inner
+            .pending_invites
+            .iter()
+            .map(|i| i.clone().into())
+            .collect();
+        invites
+    }
 }
 
 // // examples / testing:
