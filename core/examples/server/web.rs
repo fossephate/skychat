@@ -1,6 +1,7 @@
 // src/web.rs
 
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 use rocket::{get, post};
 use rocket::serde::json::Json;
@@ -129,13 +130,16 @@ pub struct GetUserKeys {
     pub user_ids: Vec<String>,
 }
 #[post("/get_user_keys", format = "json", data = "<data>")]
-pub async fn get_user_keys(data: Json<GetUserKeys>, state: &State<ServerState>) -> Json<Vec<EncodedBase64>> {
+pub async fn get_user_keys(data: Json<GetUserKeys>, state: &State<ServerState>) -> Json<HashMap<String, String>> {
     let server = state.convo_server.lock().expect("failed to lock server!");
-    let keys = server.client_get_user_keys(data.user_ids.clone());
-    // Json(keys)
-    // convert the keys to base64 strings:
-    let base64_keys = keys.unwrap().iter().map(|key| BufferConverter::to_base64(key)).collect::<Vec<String>>();
-    Json(base64_keys)
+    let keys_map = server.client_get_user_keys(data.user_ids.clone()).unwrap();
+    
+    // Convert the binary key packages to base64 strings while preserving the user ID mapping
+    let base64_keys_map = keys_map.into_iter()
+        .map(|(user_id, key)| (user_id, BufferConverter::to_base64(&key)))
+        .collect::<HashMap<String, String>>();
+        
+    Json(base64_keys_map)
 }
 
 // GET /get_new_messages (json containing group_id and index)

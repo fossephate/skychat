@@ -241,13 +241,14 @@ impl ConvoServer {
         }
     }
 
-    pub fn client_get_user_keys(&self, user_ids: Vec<String>) -> Result<Vec<Vec<u8>>> {
-        let mut key_packages = Vec::new();
+    pub fn client_get_user_keys(&self, user_ids: Vec<String>) -> Result<HashMap<String, Vec<u8>>> {
+        let mut key_packages_map = HashMap::new();
         for user_id in user_ids {
             if let Some(user) = self.users.get(&user_id) {
-                key_packages.push(user.serialized_key_package.clone());
+                key_packages_map.insert(user_id, user.serialized_key_package.clone());
             }
         }
-        Ok(key_packages)
+        Ok(key_packages_map)
     }
+    
 }
