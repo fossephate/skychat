@@ -61,6 +61,10 @@ interface NativeModuleInterface {
     groupId: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): Uint8Array;
+  ubrn_uniffi_foobar_fn_method_convomanager_get_pending_invites(
+    ptr: bigint,
+    uniffi_out_err: UniffiRustCallStatus
+  ): Uint8Array;
   ubrn_uniffi_foobar_fn_method_convomanager_group_get_epoch(
     ptr: bigint,
     groupId: Uint8Array,
@@ -101,6 +105,15 @@ interface NativeModuleInterface {
     senderId: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): Uint8Array;
+  ubrn_uniffi_foobar_fn_method_convomanager_process_raw_invite(
+    ptr: bigint,
+    senderId: Uint8Array,
+    groupName: Uint8Array,
+    welcomeMessage: Uint8Array,
+    ratchetTree: Uint8Array,
+    keyPackage: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus
+  ): void;
   ubrn_uniffi_foobar_fn_method_convomanager_save_state(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus
@@ -110,6 +123,7 @@ interface NativeModuleInterface {
   ubrn_uniffi_foobar_checksum_method_convomanager_create_new_group(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_key_package(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_partial_group(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_get_pending_invites(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_group_get_epoch(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_group_get_index(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_group_push_message(): number;
@@ -117,6 +131,7 @@ interface NativeModuleInterface {
   ubrn_uniffi_foobar_checksum_method_convomanager_load_state(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_process_convo_messages(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_process_message(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_process_raw_invite(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_save_state(): number;
   ubrn_uniffi_foobar_checksum_constructor_convomanager_new(): number;
   ubrn_ffi_foobar_uniffi_contract_version(): number;

@@ -509,6 +509,7 @@ export interface ConvoManagerInterface {
   createNewGroup(name: string): ArrayBuffer;
   getKeyPackage(): ArrayBuffer;
   getPartialGroup(groupId: ArrayBuffer): LocalGroupWrapper;
+  getPendingInvites(): Array<ConvoInviteWrapper>;
   groupGetEpoch(groupId: ArrayBuffer): /*u64*/ bigint;
   groupGetIndex(groupId: ArrayBuffer): /*u64*/ bigint;
   groupPushMessage(
@@ -526,6 +527,13 @@ export interface ConvoManagerInterface {
     message: ArrayBuffer,
     senderId: string | undefined
   ): ProcessedResultsWrapper;
+  processRawInvite(
+    senderId: string,
+    groupName: string,
+    welcomeMessage: ArrayBuffer,
+    ratchetTree: ArrayBuffer | undefined,
+    keyPackage: ArrayBuffer | undefined
+  ): void;
   saveState(): SerializedCredentialsWrapper;
 }
 
@@ -623,6 +631,20 @@ export class ConvoManager
           return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_partial_group(
             uniffiTypeConvoManagerObjectFactory.clonePointer(this),
             FfiConverterArrayBuffer.lower(groupId),
+            callStatus
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift
+      )
+    );
+  }
+
+  public getPendingInvites(): Array<ConvoInviteWrapper> {
+    return FfiConverterArrayTypeConvoInviteWrapper.lift(
+      uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_pending_invites(
+            uniffiTypeConvoManagerObjectFactory.clonePointer(this),
             callStatus
           );
         },
@@ -743,6 +765,29 @@ export class ConvoManager
     );
   }
 
+  public processRawInvite(
+    senderId: string,
+    groupName: string,
+    welcomeMessage: ArrayBuffer,
+    ratchetTree: ArrayBuffer | undefined,
+    keyPackage: ArrayBuffer | undefined
+  ): void {
+    uniffiCaller.rustCall(
+      /*caller:*/ (callStatus) => {
+        nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_process_raw_invite(
+          uniffiTypeConvoManagerObjectFactory.clonePointer(this),
+          FfiConverterString.lower(senderId),
+          FfiConverterString.lower(groupName),
+          FfiConverterArrayBuffer.lower(welcomeMessage),
+          FfiConverterOptionalArrayBuffer.lower(ratchetTree),
+          FfiConverterOptionalArrayBuffer.lower(keyPackage),
+          callStatus
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift
+    );
+  }
+
   public saveState(): SerializedCredentialsWrapper {
     return FfiConverterTypeSerializedCredentialsWrapper.lift(
       uniffiCaller.rustCall(
@@ -855,6 +900,11 @@ const FfiConverterOptionalTypeConvoInviteWrapper = new FfiConverterOptional(
 // FfiConverter for string | undefined
 const FfiConverterOptionalString = new FfiConverterOptional(FfiConverterString);
 
+// FfiConverter for Array<ConvoInviteWrapper>
+const FfiConverterArrayTypeConvoInviteWrapper = new FfiConverterArray(
+  FfiConverterTypeConvoInviteWrapper
+);
+
 // FfiConverter for Array<ConvoMessageWrapper>
 const FfiConverterArrayTypeConvoMessageWrapper = new FfiConverterArray(
   FfiConverterTypeConvoMessageWrapper
@@ -931,6 +981,14 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_get_pending_invites() !==
+    33098
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_method_convomanager_get_pending_invites'
+    );
+  }
+  if (
     nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_group_get_epoch() !==
     17970
   ) {
@@ -984,6 +1042,14 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_process_message'
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_process_raw_invite() !==
+    54618
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_method_convomanager_process_raw_invite'
     );
   }
   if (

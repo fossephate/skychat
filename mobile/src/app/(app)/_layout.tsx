@@ -35,6 +35,7 @@ export default observer(function Layout() {
     case "/chats":
     case "/settings":
     case "/contacts":
+    case "/invites":
       bottomBarColor = theme.colors.palette.neutral300;
       topBarColor = theme.colors.background;
       break;
@@ -51,8 +52,8 @@ export default observer(function Layout() {
       break;
   }
 
-  bottomBarColor = "#0f0";
-  topBarColor = "#f00";
+  // bottomBarColor = "#0f0";
+  // topBarColor = "#f00";
 
   return <Stack screenOptions={{
     headerShown: false,

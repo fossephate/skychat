@@ -36,7 +36,8 @@
     "ios": {
       "icon": "./assets/images/app-icon-ios.png",
       "supportsTablet": true,
-      "bundleIdentifier": "co.perish.skychat"
+      "bundleIdentifier": "co.perish.skychat",
+      "appleTeamId": "BZR8JDUBS8"
     },
     "web": {
       "favicon": "./assets/images/app-icon-web-favicon.png",
@@ -65,7 +66,9 @@
             "useSQLCipher": false
           },
           "ios": {
-            "customBuildFlags": ["-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"]
+            "customBuildFlags": [
+              "-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"
+            ]
           }
         }
       ]

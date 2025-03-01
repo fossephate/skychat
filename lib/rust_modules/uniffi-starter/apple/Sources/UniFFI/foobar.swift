@@ -486,6 +486,8 @@ public protocol ConvoManagerProtocol : AnyObject {
     
     func getPartialGroup(groupId: Data)  -> LocalGroupWrapper
     
+    func getPendingInvites()  -> [ConvoInviteWrapper]
+    
     func groupGetEpoch(groupId: Data)  -> UInt64
     
     func groupGetIndex(groupId: Data)  -> UInt64
@@ -500,7 +502,7 @@ public protocol ConvoManagerProtocol : AnyObject {
     
     func processMessage(message: Data, senderId: String?)  -> ProcessedResultsWrapper
     
-    func processRawInvite(groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) 
+    func processRawInvite(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) 
     
     func saveState()  -> SerializedCredentialsWrapper
     
@@ -605,6 +607,13 @@ open func getPartialGroup(groupId: Data) -> LocalGroupWrapper {
 })
 }
     
+open func getPendingInvites() -> [ConvoInviteWrapper] {
+    return try!  FfiConverterSequenceTypeConvoInviteWrapper.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_get_pending_invites(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func groupGetEpoch(groupId: Data) -> UInt64 {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_group_get_epoch(self.uniffiClonePointer(),
@@ -662,8 +671,9 @@ open func processMessage(message: Data, senderId: String?) -> ProcessedResultsWr
 })
 }
     
-open func processRawInvite(groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) {try! rustCall() {
+open func processRawInvite(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) {try! rustCall() {
     uniffi_foobar_fn_method_convomanager_process_raw_invite(self.uniffiClonePointer(),
+        FfiConverterString.lower(senderId),
         FfiConverterString.lower(groupName),
         FfiConverterData.lower(welcomeMessage),
         FfiConverterOptionData.lower(ratchetTree),
@@ -735,6 +745,7 @@ public func FfiConverterTypeConvoManager_lower(_ value: ConvoManager) -> UnsafeM
 
 
 public struct ConvoInviteWrapper {
+    public var senderId: String
     public var groupName: String
     public var welcomeMessage: Data
     public var ratchetTree: Data?
@@ -743,7 +754,8 @@ public struct ConvoInviteWrapper {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(groupName: String, welcomeMessage: Data, ratchetTree: Data?, globalIndex: UInt64, fanned: Data?) {
+    public init(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, globalIndex: UInt64, fanned: Data?) {
+        self.senderId = senderId
         self.groupName = groupName
         self.welcomeMessage = welcomeMessage
         self.ratchetTree = ratchetTree
@@ -756,6 +768,9 @@ public struct ConvoInviteWrapper {
 
 extension ConvoInviteWrapper: Equatable, Hashable {
     public static func ==(lhs: ConvoInviteWrapper, rhs: ConvoInviteWrapper) -> Bool {
+        if lhs.senderId != rhs.senderId {
+            return false
+        }
         if lhs.groupName != rhs.groupName {
             return false
         }
@@ -775,6 +790,7 @@ extension ConvoInviteWrapper: Equatable, Hashable {
     }
 
     public func hash(into hasher: inout Hasher) {
+        hasher.combine(senderId)
         hasher.combine(groupName)
         hasher.combine(welcomeMessage)
         hasher.combine(ratchetTree)
@@ -791,6 +807,7 @@ public struct FfiConverterTypeConvoInviteWrapper: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConvoInviteWrapper {
         return
             try ConvoInviteWrapper(
+                senderId: FfiConverterString.read(from: &buf), 
                 groupName: FfiConverterString.read(from: &buf), 
                 welcomeMessage: FfiConverterData.read(from: &buf), 
                 ratchetTree: FfiConverterOptionData.read(from: &buf), 
@@ -800,6 +817,7 @@ public struct FfiConverterTypeConvoInviteWrapper: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: ConvoInviteWrapper, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.senderId, into: &buf)
         FfiConverterString.write(value.groupName, into: &buf)
         FfiConverterData.write(value.welcomeMessage, into: &buf)
         FfiConverterOptionData.write(value.ratchetTree, into: &buf)
@@ -1317,6 +1335,31 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeConvoInviteWrapper: FfiConverterRustBuffer {
+    typealias SwiftType = [ConvoInviteWrapper]
+
+    public static func write(_ value: [ConvoInviteWrapper], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeConvoInviteWrapper.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ConvoInviteWrapper] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ConvoInviteWrapper]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeConvoInviteWrapper.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeConvoMessageWrapper: FfiConverterRustBuffer {
     typealias SwiftType = [ConvoMessageWrapper]
 
@@ -1420,6 +1463,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_foobar_checksum_method_convomanager_get_partial_group() != 51255) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_foobar_checksum_method_convomanager_get_pending_invites() != 33098) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_foobar_checksum_method_convomanager_group_get_epoch() != 17970) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1441,7 +1487,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_foobar_checksum_method_convomanager_process_message() != 22503) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_process_raw_invite() != 34162) {
+    if (uniffi_foobar_checksum_method_convomanager_process_raw_invite() != 54618) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_save_state() != 12640) {
