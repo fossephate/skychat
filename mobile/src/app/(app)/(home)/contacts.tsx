@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react"
-import { View, ViewStyle, TextStyle, Image, ImageStyle, TextInput, TouchableOpacity } from "react-native"
+import React, { useState, useEffect, useCallback } from "react"
+import { View, ViewStyle, TextStyle, Image, ImageStyle, TextInput, TouchableOpacity, RefreshControl } from "react-native"
 import { Button, Icon, ListView, Screen, Text, TextField } from "src/components"
 import { colors, ThemedStyle } from "src/theme"
 import { Agent } from '@atproto/api'
@@ -25,10 +25,53 @@ export default function UsersScreen() {
   const [searchQuery, setSearchQuery] = useState("")
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const { themed } = useAppTheme()
   const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false)
   const authContext = useAuth();
   const convoContext = useConvo();
+
+  const fetchFollowing = useCallback(async () => {
+    const client = authContext.client;
+    const session = authContext.session;
+    if (!client || !session) return;
+    try {
+      const agent = new Agent(session);
+
+      // Get the user's following list
+      const following = await agent.getFollows({
+        actor: session.did,
+        limit: 100,
+      })
+
+      // Get detailed profiles for each followed user
+      const profiles = await agent.getProfiles({
+        actors: following.data.follows.map(f => f.did),
+      })
+
+      const formattedUsers: User[] = profiles.data.profiles.map(profile => ({
+        did: profile.did,
+        handle: profile.handle,
+        displayName: profile.displayName || profile.handle,
+        avatar: profile.avatar,
+        description: profile.description,
+        verified: profile.viewer?.muted !== true, // Just an example condition
+        online: false, // We could implement real online status later
+      }))
+
+      setUsers(formattedUsers)
+    } catch (error) {
+      console.error('Error fetching following:', error)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [authContext.session, authContext.client])
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true)
+    fetchFollowing()
+  }, [fetchFollowing])
 
   const handleNewChat = async (groupName: string, selectedUsers: string[]) => {
     if (groupName === "") {
@@ -57,44 +100,8 @@ export default function UsersScreen() {
   }
 
   useEffect(() => {
-    async function fetchFollowing() {
-      const client = authContext.client;
-      const session = authContext.session;
-      if (!client || !session) return;
-      try {
-        const agent = new Agent(session);
-
-        // Get the user's following list
-        const following = await agent.getFollows({
-          actor: session.did,
-          limit: 100,
-        })
-
-        // Get detailed profiles for each followed user
-        const profiles = await agent.getProfiles({
-          actors: following.data.follows.map(f => f.did),
-        })
-
-        const formattedUsers: User[] = profiles.data.profiles.map(profile => ({
-          did: profile.did,
-          handle: profile.handle,
-          displayName: profile.displayName || profile.handle,
-          avatar: profile.avatar,
-          description: profile.description,
-          verified: profile.viewer?.muted !== true, // Just an example condition
-          online: false, // We could implement real online status later
-        }))
-
-        setUsers(formattedUsers)
-      } catch (error) {
-        console.error('Error fetching following:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchFollowing()
-  }, [authContext.session])
+  }, [fetchFollowing])
 
   const filteredUsers = users.filter(
     user =>
@@ -148,6 +155,14 @@ export default function UsersScreen() {
           estimatedItemSize={72}
           contentContainerStyle={themed($listContent)}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.palette.primary500}
+              colors={[colors.palette.primary500]}
+            />
+          }
         />
       </Screen>
 

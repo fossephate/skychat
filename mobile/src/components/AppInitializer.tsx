@@ -42,7 +42,6 @@ export function AppInitializer() {
       authContext.setClient(authClient);
 
       const result = await authClient.init();
-      console.log("client init results:", result);
 
       authClient.addEventListener(
         'deleted',

@@ -54,7 +54,10 @@ export class ConvoClient {
     }
   }
 
-  toB64(buffer: ArrayBuffer): string {
+  toB64(buffer: ArrayBuffer | undefined): string | undefined {
+    if (!buffer) {
+      return undefined;
+    }
     return Buffer.from(buffer).toString("base64");
   }
 
@@ -108,7 +111,6 @@ export class ConvoClient {
 
     // invite the users 1 by 1:
     for (const [userId, keyPackage] of keyPackagesMap.entries()) {
-      console.log("inviting user to group: ", userId, keyPackage);
       await this.inviteUserToGroup(userId, groupId, keyPackage);
       let systemMessage = `<${userId}> joined the group`;
       await this.manager.groupPushMessage(groupId, systemMessage, this.id);
@@ -136,10 +138,11 @@ export class ConvoClient {
       throw new Error("failed_get_key_packages");
     }
 
-    let keyPackageMap: Map<string, any> = await response.json();
-
+    
+    const responseData: any = await response.json();    
+    // Convert the object to a Map
+    let keyPackageMap = new Map<string, string>(Object.entries(responseData));
     if (keyPackageMap.size !== userIds.length) {
-      console.error("Failed to get some key packages", response);
       throw new Error("failed_get_some_key_packages");
     }
 
@@ -200,7 +203,7 @@ export class ConvoClient {
       throw new Error("Server address is not set");
     }
 
-    console.log("inviting user to group: ", receiverId, groupId, serializedKeyPackage);
+    console.log(`inviting user to group: ${receiverId}, ${groupId.byteLength}, ${serializedKeyPackage.byteLength}`);
 
     const groupInvite = this.manager.createInvite(groupId, serializedKeyPackage);
 
@@ -210,12 +213,12 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: groupId,
+        group_id: this.toB64(groupId),
         sender_id: this.id,
         receiver_id: receiverId,
-        welcome_message: groupInvite.welcomeMessage,
-        ratchet_tree: groupInvite.ratchetTree,
-        fanned: groupInvite.fanned
+        welcome_message: this.toB64(groupInvite.welcomeMessage),
+        ratchet_tree: this.toB64(groupInvite.ratchetTree),
+        fanned: this.toB64(groupInvite.fanned)
       })
     });
 
@@ -246,13 +249,13 @@ export class ConvoClient {
     // }
   }
 
-  async acceptCurrentInvites(): Promise<void> {
-    const invites = [...this.manager.pendingInvites];
-    for (const invite of invites) {
-      await this.processInvite(invite);
-    }
-    this.manager.pendingInvites = [];
-  }
+  // async acceptCurrentInvites(): Promise<void> {
+  //   const invites = [...this.manager.pendingInvites];
+  //   for (const invite of invites) {
+  //     await this.processInvite(invite);
+  //   }
+  //   this.manager.pendingInvites = [];
+  // }
 
   async checkIncomingMessages(groupId?: GroupId): Promise<ConvoMessage[]> {
     if (!this.serverAddress) {

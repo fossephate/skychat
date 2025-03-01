@@ -78,13 +78,11 @@ export default function chatsScreen() {
       return
     }
     const agent = new Agent(session)
-    console.log("agent created")
 
     try {
       const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
       const response = await proxy.chat.bsky.convo.listConvos()
       const convos = response.data.convos
-      console.log("convos", convos)
 
       // Transform API convos to our chat format
       if (!convos.length) {
@@ -92,10 +90,6 @@ export default function chatsScreen() {
       }
 
       const transformedChats = await Promise.all(convos.map(async (convo) => {
-
-        // const convoData = (await proxy.chat.bsky.convo.getConvo({
-        //   convoId: convo.id
-        // })).data;
 
         // Extract members excluding self
         const memberUsers = convo.members
