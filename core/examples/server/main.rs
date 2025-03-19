@@ -27,13 +27,14 @@ async fn main() {
         convo_server: Arc::clone(&server_state.convo_server),
     };
 
-    tokio::spawn(async move {
-        let mut interval = interval(Duration::from_secs(10));
-        loop {
-            interval.tick().await;
-            server_state_clone.convo_server.lock().unwrap().cleanup_inactive_users();
-        }
-    });
+    // todo: disabled for now:
+    // tokio::spawn(async move {
+    //     let mut interval = interval(Duration::from_secs(10));
+    //     loop {
+    //         interval.tick().await;
+    //         server_state_clone.convo_server.lock().unwrap().cleanup_inactive_users();
+    //     }
+    // });
 
     let rocket = rocket::custom(config)
         .mount(
