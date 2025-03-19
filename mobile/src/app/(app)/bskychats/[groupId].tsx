@@ -4,6 +4,7 @@ import { ThemedStyle } from "@/theme"
 
 import ChatMessageBox from "@/components/Chat/ChatMessageBox"
 import ReplyMessageBar from "@/components/Chat/ReplyMessageBar"
+import { Screen } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import { ImageBackground, View, ViewStyle, Image, ActivityIndicator } from "react-native"
@@ -23,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Agent } from "@atproto/api"
 import { translate } from "@/i18n"
 
-const Page = () => {
+export default function Page() {
   const [messages, setMessages] = useState<IMessage[]>([])
   const [text, setText] = useState("")
   const [loading, setLoading] = useState(true)
@@ -260,20 +261,6 @@ const Page = () => {
     }
   }, [groupId, session, replyMessage])
 
-  const renderInputToolbar = (props: any) => {
-    return (
-      <InputToolbar
-        {...props}
-        containerStyle={{ backgroundColor: theme.colors.background }}
-        renderActions={() => (
-          <View style={{ height: 44, justifyContent: "center", alignItems: "center", left: 5 }}>
-            <Ionicons name="add" color={theme.colors.palette.primary300} size={28} />
-          </View>
-        )}
-      />
-    )
-  }
-
   const updateRowRef = useCallback(
     (ref: any) => {
       if (
@@ -325,114 +312,130 @@ const Page = () => {
   }
 
   return (
-    <ImageBackground
-      source={{ uri: backgroundImage }}
-      style={{
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        marginBottom: insets.bottom,
-      }}>
-      <Header title={translate("chatScreen:title", { name: convoName })} leftIcon="back" onLeftPress={() => router.back()} />
-      <GiftedChat
-        messages={messages}
-        onSend={(messages: any) => onSend(messages)}
-        onInputTextChanged={setText}
-        user={{
-          _id: session?.did || '1',
-        }}
-        renderSystemMessage={(props) => (
-          <SystemMessage {...props} textStyle={{ color: theme.colors.palette.neutral300 }} />
-        )}
-        bottomOffset={insets.bottom}
-        renderAvatar={() => (
-          <Image
-            source={{ uri: getConvoAvatar() }}
-            style={{ width: 32, height: 32, borderRadius: 16 }}
-          />
-        )}
-        maxComposerHeight={100}
-        textInputProps={themed($composer)}
-        renderBubble={(props) => {
-          return (
-            <Bubble
-              {...props}
-              textStyle={{
-                right: {
-                  color: "#000",
-                },
-              }}
-              wrapperStyle={{
-                left: {
-                  backgroundColor: "#fff",
-                },
-                right: {
-                  backgroundColor: theme.colors.palette.secondary300,
-                },
-              }}
-            />
-          )
-        }}
-        isTyping={false}
-        infiniteScroll
-        onPressActionButton={() => {
-          console.log("action button pressed")
-        }}
-        isScrollToBottomEnabled={true}
-        renderSend={(props) => (
-          <View
-            style={{
-              height: 44,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 14,
-              paddingHorizontal: 14,
+    <Screen preset="fixed" contentContainerStyle={themed($screenContainer)} safeAreaEdges={["bottom"]}>
+    {/* // <View style={{ flex: 1, backgroundColor: theme.colors.background, paddingBottom: insets.bottom }}> */}
+        <ImageBackground
+          source={{ uri: backgroundImage }}
+          style={{
+            flex: 1,
+            backgroundColor: theme.colors.background,
+          }}>
+          <Header title={translate("chatScreen:title", { name: convoName })} leftIcon="back" onLeftPress={() => router.back()} />
+          <GiftedChat
+            messages={messages}
+            onSend={(messages: any) => onSend(messages)}
+            onInputTextChanged={setText}
+            user={{
+              _id: session?.did || '1',
             }}
-          >
-            {text === "" && (
-              <>
-                <Ionicons name="camera-outline" color={theme.colors.palette.primary300} size={28} />
-                <Ionicons name="mic-outline" color={theme.colors.palette.primary300} size={28} />
-              </>
+            renderSystemMessage={(props) => (
+              <SystemMessage {...props} textStyle={{ color: theme.colors.palette.neutral300 }} />
             )}
-            {text !== "" && (
-              <Send
-                {...props}
-                containerStyle={{
+            renderAvatar={() => (
+              <Image
+                source={{ uri: getConvoAvatar() }}
+                style={{ width: 32, height: 32, borderRadius: 16 }}
+              />
+            )}
+            maxComposerHeight={100}
+            // minComposerHeight={10}
+            // bottomOffset={insets.bottom}
+            isKeyboardInternallyHandled={false}
+            textInputProps={themed($composer)}
+            renderBubble={(props) => {
+              return (
+                <Bubble
+                  {...props}
+                  textStyle={{
+                    right: {
+                      color: "#000",
+                    },
+                  }}
+                  wrapperStyle={{
+                    left: {
+                      backgroundColor: "#fff",
+                    },
+                    right: {
+                      backgroundColor: theme.colors.palette.secondary300,
+                    },
+                  }}
+                />
+              )
+            }}
+            placeholder={translate("chatScreen:inputPlaceholder")}
+            isTyping={false}
+            infiniteScroll
+            onPressActionButton={() => {
+              console.log("action button pressed")
+            }}
+            isScrollToBottomEnabled={true}
+            renderSend={(props) => (
+              <View
+                style={{
+                  height: 44,
+                  flexDirection: "row",
+                  alignItems: "center",
                   justifyContent: "center",
+                  gap: 14,
+                  paddingHorizontal: 14,
                 }}
               >
-                <Ionicons name="send" color={theme.colors.palette.primary300} size={28} />
-              </Send>
+                {/* {text === "" && (
+                <>
+                  <Ionicons name="camera-outline" color={theme.colors.palette.primary300} size={28} />
+                  <Ionicons name="mic-outline" color={theme.colors.palette.primary300} size={28} />
+                </>
+              )} */}
+                {text !== "" && (
+                  <Send
+                    {...props}
+                    containerStyle={{
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="send" color={theme.colors.palette.primary300} size={28} />
+                  </Send>
+                )}
+              </View>
             )}
-          </View>
-        )}
-        renderInputToolbar={renderInputToolbar}
-        renderChatFooter={() => (
-          <ReplyMessageBar clearReply={() => setReplyMessage(null)} message={replyMessage} />
-        )}
-        onLongPress={(context, message) => setReplyMessage(message)}
-        renderMessage={(props) => (
-          <ChatMessageBox
-            {...props}
-            setReplyOnSwipeOpen={setReplyMessage}
-            updateRowRef={updateRowRef}
+
+            renderInputToolbar={(props) => (
+              <InputToolbar
+                {...props}
+                containerStyle={{ backgroundColor: theme.colors.background }}
+                renderActions={() => (
+                  <View style={{ height: 44, justifyContent: "center", alignItems: "center", left: 5 }}>
+                    <Ionicons name="add" color={theme.colors.palette.primary300} size={28} />
+                  </View>
+                )}
+              />
+            )}
+            renderChatFooter={() => (
+              <ReplyMessageBar clearReply={() => setReplyMessage(null)} message={replyMessage} />
+            )}
+            onLongPress={(context, message) => setReplyMessage(message)}
+            renderMessage={(props) => (
+              <ChatMessageBox
+                {...props}
+                setReplyOnSwipeOpen={setReplyMessage}
+                updateRowRef={updateRowRef}
+              />
+            )}
           />
-        )}
-      />
-    </ImageBackground>
+        </ImageBackground>
+        {/* </View> */}
+    </Screen>
   )
 }
 
 const $composer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: "#fff",
   borderRadius: 18,
-  borderWidth: 1,
-  borderColor: colors.palette.neutral300,
+  backgroundColor: colors.border,
   paddingHorizontal: 10,
-  paddingTop: 8,
-  fontSize: 16,
-  marginVertical: 4,
+  color: colors.text,
 })
 
-export default Page
+const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  flex: 1,
+  backgroundColor: colors.background,
+})

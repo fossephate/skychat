@@ -34,8 +34,10 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Header, Text } from "@/components"
 import { router } from "expo-router"
+import { Screen } from "@/components"
+import { translate } from "@/i18n"
 
-const Page = () => {
+export default function Page() {
   const [messages, setMessages] = useState<IMessage[]>([])
   const [text, setText] = useState("")
   const insets = useSafeAreaInsets()
@@ -75,20 +77,6 @@ const Page = () => {
     setMessages((previousMessages: any[]) => GiftedChat.append(previousMessages, messages))
   }, [])
 
-  const renderInputToolbar = (props: any) => {
-    return (
-      <InputToolbar
-        {...props}
-        containerStyle={{ backgroundColor: theme.colors.background }}
-        renderActions={() => (
-          <View style={{ height: 44, justifyContent: "center", alignItems: "center", left: 5 }}>
-            <Ionicons name="add" color={theme.colors.palette.primary300} size={28} />
-          </View>
-        )}
-      />
-    )
-  }
-
   const updateRowRef = useCallback(
     (ref: any) => {
       if (
@@ -118,16 +106,18 @@ const Page = () => {
   }
 
   return (
-    <ImageBackground
-      source={{ uri: backgroundImage }}
-      style={{
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        marginBottom: insets.bottom,
-      }}>
-      {/* <View style={{ flex: 1, backgroundColor: theme.colors.background }}> */}
+    <Screen preset="fixed" contentContainerStyle={themed($screenContainer)}>
+      <ImageBackground
+        source={{ uri: backgroundImage }}
+        style={{
+          flex: 1,
+          backgroundColor: theme.colors.background,
+          marginBottom: insets.bottom,
+        }}>
+        {/* <View style={{ flex: 1, backgroundColor: theme.colors.background }}> */}
         <Header title="Chat with Bob" leftIcon="back" onLeftPress={() => router.back()} />
         <GiftedChat
+          placeholder={translate("chatScreen:inputPlaceholder")}
           messages={messages}
           onSend={(messages: any) => onSend(messages)}
           onInputTextChanged={setText}
@@ -191,12 +181,12 @@ const Page = () => {
                 paddingHorizontal: 14,
               }}
             >
-              {text === "" && (
+              {/* {text === "" && (
                 <>
                   <Ionicons name="camera-outline" color={theme.colors.palette.primary300} size={28} />
                   <Ionicons name="mic-outline" color={theme.colors.palette.primary300} size={28} />
                 </>
-              )}
+              )} */}
               {text !== "" && (
                 <Send
                   {...props}
@@ -209,7 +199,17 @@ const Page = () => {
               )}
             </View>
           )}
-          renderInputToolbar={renderInputToolbar}
+          renderInputToolbar={(props) => (
+            <InputToolbar
+              {...props}
+              containerStyle={{ backgroundColor: theme.colors.background }}
+              renderActions={() => (
+                <View style={{ height: 44, justifyContent: "center", alignItems: "center", left: 5 }}>
+                  <Ionicons name="add" color={theme.colors.palette.primary300} size={28} />
+                </View>
+              )}
+            />
+          )}
           renderChatFooter={() => (
             <ReplyMessageBar clearReply={() => setReplyMessage(null)} message={replyMessage} />
           )}
@@ -222,20 +222,17 @@ const Page = () => {
             />
           )}
         />
-      {/* </View> */}
-    </ImageBackground>
+        {/* </View> */}
+      </ImageBackground>
+    </Screen>
   )
 }
 
 const $composer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: "#fff",
   borderRadius: 18,
-  borderWidth: 1,
-  borderColor: colors.palette.neutral300,
+  backgroundColor: colors.border,
   paddingHorizontal: 10,
-  paddingTop: 8,
-  fontSize: 16,
-  marginVertical: 4,
+  color: colors.text,
 })
 
 // const styles = StyleSheet.create({
@@ -251,7 +248,10 @@ const $composer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 //   },
 // });
 
-export default Page
+const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  flex: 1,
+  backgroundColor: colors.background,
+})
 
 // // Page.tsx
 // const Page = () => {

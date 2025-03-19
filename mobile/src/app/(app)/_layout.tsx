@@ -52,7 +52,7 @@ export default observer(function Layout() {
       break;
   }
 
-  // bottomBarColor = "#0f0";
+  bottomBarColor = "#0f0";
   // topBarColor = "#f00";
 
   return <Stack screenOptions={{

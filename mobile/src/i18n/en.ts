@@ -61,7 +61,7 @@ const en = {
   },
   chatScreen: {
     title: "Chat with {{name}}",
-    inputPlaceholder: "Type a message...",
+    inputPlaceholder: "Write a message",
     send: "Send",
     noChats: "No chats found",
   },

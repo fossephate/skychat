@@ -291,7 +291,7 @@ export class ConvoClient {
   async getInvites(): Promise<ConvoInvite[]> {
     console.log("manager: ", this.manager);
     const invites = await this.manager.getPendingInvites();
-    console.log("invites: ", this.manager.pendingInvites);
+    console.log("invites: ", invites);
     return invites;
   }
 

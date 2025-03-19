@@ -54,7 +54,7 @@ export default function InvitesScreen() {
 
   const fetchInvites = async () => {
     // Get invites from context
-    const userInvites = /*await convoContext.getInvites() || */mockInvites
+    const userInvites = await convoContext.getInvites()
 
     if (!authContext.session) {
       setInvites(userInvites)

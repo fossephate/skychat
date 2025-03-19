@@ -8,6 +8,10 @@ use crate::wrappers::*;
 use skychat_core::manager::*;
 use skychat_core::*;
 
+
+use skychat_client::*;
+use skychat_client::client::*;
+
 // #[uniffi::export]
 // pub fn create_skychat_manager() -> skychat_core::manager::ConvoManager {
 //     let manager = skychat_core::manager::ConvoManager::new();
@@ -148,6 +152,23 @@ impl ConvoManager {
             .map(|i| i.clone().into())
             .collect();
         invites
+    }
+}
+
+
+// convo client:
+#[derive(uniffi::Object)]
+pub struct ConvoClient {
+    inner: Arc<Mutex<skychat_client::client::ConvoClient>>,
+}
+
+#[uniffi::export]
+impl ConvoClient {
+    #[uniffi::constructor]
+    pub fn new(id: String) -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(skychat_client::client::ConvoClient::new(id))),
+        }
     }
 }
 

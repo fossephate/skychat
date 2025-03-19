@@ -500,6 +500,116 @@ const FfiConverterMapStringArrayBuffer = new FfiConverterMap(
   FfiConverterArrayBuffer
 );
 
+export interface ConvoClientInterface {}
+
+export class ConvoClient
+  extends UniffiAbstractObject
+  implements ConvoClientInterface
+{
+  readonly [uniffiTypeNameSymbol] = 'ConvoClient';
+  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
+  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
+  constructor(id: string) {
+    super();
+    const pointer = uniffiCaller.rustCall(
+      /*caller:*/ (callStatus) => {
+        return nativeModule().ubrn_uniffi_foobar_fn_constructor_convoclient_new(
+          FfiConverterString.lower(id),
+          callStatus
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift
+    );
+    this[pointerLiteralSymbol] = pointer;
+    this[destructorGuardSymbol] =
+      uniffiTypeConvoClientObjectFactory.bless(pointer);
+  }
+
+  /**
+   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
+   */
+  uniffiDestroy(): void {
+    const ptr = (this as any)[destructorGuardSymbol];
+    if (ptr !== undefined) {
+      const pointer = uniffiTypeConvoClientObjectFactory.pointer(this);
+      uniffiTypeConvoClientObjectFactory.freePointer(pointer);
+      uniffiTypeConvoClientObjectFactory.unbless(ptr);
+      delete (this as any)[destructorGuardSymbol];
+    }
+  }
+
+  static instanceOf(obj: any): obj is ConvoClient {
+    return uniffiTypeConvoClientObjectFactory.isConcreteType(obj);
+  }
+}
+
+const uniffiTypeConvoClientObjectFactory: UniffiObjectFactory<ConvoClientInterface> =
+  {
+    create(pointer: UnsafeMutableRawPointer): ConvoClientInterface {
+      const instance = Object.create(ConvoClient.prototype);
+      instance[pointerLiteralSymbol] = pointer;
+      instance[destructorGuardSymbol] = this.bless(pointer);
+      instance[uniffiTypeNameSymbol] = 'ConvoClient';
+      return instance;
+    },
+
+    bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
+      return uniffiCaller.rustCall(
+        /*caller:*/ (status) =>
+          nativeModule().ubrn_uniffi_internal_fn_method_convoclient_ffi__bless_pointer(
+            p,
+            status
+          ),
+        /*liftString:*/ FfiConverterString.lift
+      );
+    },
+
+    unbless(ptr: UniffiRustArcPtr) {
+      ptr.markDestroyed();
+    },
+
+    pointer(obj: ConvoClientInterface): UnsafeMutableRawPointer {
+      if ((obj as any)[destructorGuardSymbol] === undefined) {
+        throw new UniffiInternalError.UnexpectedNullPointer();
+      }
+      return (obj as any)[pointerLiteralSymbol];
+    },
+
+    clonePointer(obj: ConvoClientInterface): UnsafeMutableRawPointer {
+      const pointer = this.pointer(obj);
+      return uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) =>
+          nativeModule().ubrn_uniffi_foobar_fn_clone_convoclient(
+            pointer,
+            callStatus
+          ),
+        /*liftString:*/ FfiConverterString.lift
+      );
+    },
+
+    freePointer(pointer: UnsafeMutableRawPointer): void {
+      uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) =>
+          nativeModule().ubrn_uniffi_foobar_fn_free_convoclient(
+            pointer,
+            callStatus
+          ),
+        /*liftString:*/ FfiConverterString.lift
+      );
+    },
+
+    isConcreteType(obj: any): obj is ConvoClientInterface {
+      return (
+        obj[destructorGuardSymbol] &&
+        obj[uniffiTypeNameSymbol] === 'ConvoClient'
+      );
+    },
+  };
+// FfiConverter for ConvoClientInterface
+const FfiConverterTypeConvoClient = new FfiConverterObject(
+  uniffiTypeConvoClientObjectFactory
+);
+
 export interface ConvoManagerInterface {
   createInvite(
     groupId: ArrayBuffer,
@@ -1061,6 +1171,14 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
+    nativeModule().ubrn_uniffi_foobar_checksum_constructor_convoclient_new() !==
+    40272
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_constructor_convoclient_new'
+    );
+  }
+  if (
     nativeModule().ubrn_uniffi_foobar_checksum_constructor_convomanager_new() !==
     51625
   ) {
@@ -1073,6 +1191,7 @@ function uniffiEnsureInitialized() {
 export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
+    FfiConverterTypeConvoClient,
     FfiConverterTypeConvoInviteWrapper,
     FfiConverterTypeConvoManager,
     FfiConverterTypeConvoMessageWrapper,

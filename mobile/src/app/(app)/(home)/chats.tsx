@@ -144,6 +144,13 @@ export default function chatsScreen() {
     }
   }
 
+  async function fetchChats() {
+    console.log("chats.tsx: fetching chats")
+    
+    // const chats = await convoContext.getChats()
+    // setChats(chats)
+  }
+
   // Helper function to format API timestamp to relative time
   function formatTimestamp(timestamp: string) {
     if (!timestamp) return ""
@@ -176,6 +183,7 @@ export default function chatsScreen() {
 
   useEffect(() => {
     fetchDms()
+    fetchChats()
   }, [convoContext, authContext])
 
   // Create a refreshable empty list component
