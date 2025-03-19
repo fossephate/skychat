@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureInitialized()
+    uniffiEnsureFoobarInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,9 +352,10 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate class UniffiHandleMap<T> {
-    private var map: [UInt64: T] = [:]
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
     private let lock = NSLock()
+    private var map: [UInt64: T] = [:]
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -474,7 +475,128 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
-public protocol ConvoManagerProtocol : AnyObject {
+public protocol ConvoClientProtocol: AnyObject, Sendable {
+    
+}
+open class ConvoClient: ConvoClientProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_foobar_fn_clone_convoclient(self.pointer, $0) }
+    }
+public convenience init(id: String) {
+    let pointer =
+        try! rustCall() {
+    uniffi_foobar_fn_constructor_convoclient_new(
+        FfiConverterString.lower(id),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_foobar_fn_free_convoclient(pointer, $0) }
+    }
+
+    
+
+    
+
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeConvoClient: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = ConvoClient
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> ConvoClient {
+        return ConvoClient(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: ConvoClient) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConvoClient {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: ConvoClient, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoClient_lift(_ pointer: UnsafeMutableRawPointer) throws -> ConvoClient {
+    return try FfiConverterTypeConvoClient.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoClient_lower(_ value: ConvoClient) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeConvoClient.lower(value)
+}
+
+
+
+
+
+
+public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
     func createInvite(groupId: Data, keyPackage: Data)  -> ConvoInviteWrapper
     
@@ -507,9 +629,7 @@ public protocol ConvoManagerProtocol : AnyObject {
     func saveState()  -> SerializedCredentialsWrapper
     
 }
-
-open class ConvoManager:
-    ConvoManagerProtocol {
+open class ConvoManager: ConvoManagerProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -523,6 +643,9 @@ open class ConvoManager:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -566,8 +689,8 @@ public convenience init(name: String) {
     
 
     
-open func createInvite(groupId: Data, keyPackage: Data) -> ConvoInviteWrapper {
-    return try!  FfiConverterTypeConvoInviteWrapper.lift(try! rustCall() {
+open func createInvite(groupId: Data, keyPackage: Data) -> ConvoInviteWrapper  {
+    return try!  FfiConverterTypeConvoInviteWrapper_lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_create_invite(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
         FfiConverterData.lower(keyPackage),$0
@@ -575,7 +698,7 @@ open func createInvite(groupId: Data, keyPackage: Data) -> ConvoInviteWrapper {
 })
 }
     
-open func createMessage(groupId: Data, message: String) -> Data {
+open func createMessage(groupId: Data, message: String) -> Data  {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_create_message(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
@@ -584,7 +707,7 @@ open func createMessage(groupId: Data, message: String) -> Data {
 })
 }
     
-open func createNewGroup(name: String) -> Data {
+open func createNewGroup(name: String) -> Data  {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_create_new_group(self.uniffiClonePointer(),
         FfiConverterString.lower(name),$0
@@ -592,29 +715,29 @@ open func createNewGroup(name: String) -> Data {
 })
 }
     
-open func getKeyPackage() -> Data {
+open func getKeyPackage() -> Data  {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_get_key_package(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func getPartialGroup(groupId: Data) -> LocalGroupWrapper {
-    return try!  FfiConverterTypeLocalGroupWrapper.lift(try! rustCall() {
+open func getPartialGroup(groupId: Data) -> LocalGroupWrapper  {
+    return try!  FfiConverterTypeLocalGroupWrapper_lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_get_partial_group(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),$0
     )
 })
 }
     
-open func getPendingInvites() -> [ConvoInviteWrapper] {
+open func getPendingInvites() -> [ConvoInviteWrapper]  {
     return try!  FfiConverterSequenceTypeConvoInviteWrapper.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_get_pending_invites(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func groupGetEpoch(groupId: Data) -> UInt64 {
+open func groupGetEpoch(groupId: Data) -> UInt64  {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_group_get_epoch(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),$0
@@ -622,7 +745,7 @@ open func groupGetEpoch(groupId: Data) -> UInt64 {
 })
 }
     
-open func groupGetIndex(groupId: Data) -> UInt64 {
+open func groupGetIndex(groupId: Data) -> UInt64  {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_group_get_index(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),$0
@@ -630,7 +753,7 @@ open func groupGetIndex(groupId: Data) -> UInt64 {
 })
 }
     
-open func groupPushMessage(groupId: Data, message: String, senderId: String) {try! rustCall() {
+open func groupPushMessage(groupId: Data, message: String, senderId: String)  {try! rustCall() {
     uniffi_foobar_fn_method_convomanager_group_push_message(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
         FfiConverterString.lower(message),
@@ -639,7 +762,7 @@ open func groupPushMessage(groupId: Data, message: String, senderId: String) {tr
 }
 }
     
-open func groupSetIndex(groupId: Data, index: UInt64) {try! rustCall() {
+open func groupSetIndex(groupId: Data, index: UInt64)  {try! rustCall() {
     uniffi_foobar_fn_method_convomanager_group_set_index(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
         FfiConverterUInt64.lower(index),$0
@@ -647,14 +770,14 @@ open func groupSetIndex(groupId: Data, index: UInt64) {try! rustCall() {
 }
 }
     
-open func loadState(state: SerializedCredentialsWrapper) {try! rustCall() {
+open func loadState(state: SerializedCredentialsWrapper)  {try! rustCall() {
     uniffi_foobar_fn_method_convomanager_load_state(self.uniffiClonePointer(),
-        FfiConverterTypeSerializedCredentialsWrapper.lower(state),$0
+        FfiConverterTypeSerializedCredentialsWrapper_lower(state),$0
     )
 }
 }
     
-open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) {try! rustCall() {
+open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?)  {try! rustCall() {
     uniffi_foobar_fn_method_convomanager_process_convo_messages(self.uniffiClonePointer(),
         FfiConverterSequenceTypeConvoMessageWrapper.lower(messages),
         FfiConverterOptionData.lower(groupId),$0
@@ -662,8 +785,8 @@ open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) 
 }
 }
     
-open func processMessage(message: Data, senderId: String?) -> ProcessedResultsWrapper {
-    return try!  FfiConverterTypeProcessedResultsWrapper.lift(try! rustCall() {
+open func processMessage(message: Data, senderId: String?) -> ProcessedResultsWrapper  {
+    return try!  FfiConverterTypeProcessedResultsWrapper_lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_process_message(self.uniffiClonePointer(),
         FfiConverterData.lower(message),
         FfiConverterOptionString.lower(senderId),$0
@@ -671,7 +794,7 @@ open func processMessage(message: Data, senderId: String?) -> ProcessedResultsWr
 })
 }
     
-open func processRawInvite(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) {try! rustCall() {
+open func processRawInvite(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?)  {try! rustCall() {
     uniffi_foobar_fn_method_convomanager_process_raw_invite(self.uniffiClonePointer(),
         FfiConverterString.lower(senderId),
         FfiConverterString.lower(groupName),
@@ -682,8 +805,8 @@ open func processRawInvite(senderId: String, groupName: String, welcomeMessage: 
 }
 }
     
-open func saveState() -> SerializedCredentialsWrapper {
-    return try!  FfiConverterTypeSerializedCredentialsWrapper.lift(try! rustCall() {
+open func saveState() -> SerializedCredentialsWrapper  {
+    return try!  FfiConverterTypeSerializedCredentialsWrapper_lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_save_state(self.uniffiClonePointer(),$0
     )
 })
@@ -691,6 +814,7 @@ open func saveState() -> SerializedCredentialsWrapper {
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -727,8 +851,6 @@ public struct FfiConverterTypeConvoManager: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -742,6 +864,8 @@ public func FfiConverterTypeConvoManager_lift(_ pointer: UnsafeMutableRawPointer
 public func FfiConverterTypeConvoManager_lower(_ value: ConvoManager) -> UnsafeMutableRawPointer {
     return FfiConverterTypeConvoManager.lower(value)
 }
+
+
 
 
 public struct ConvoInviteWrapper {
@@ -764,6 +888,9 @@ public struct ConvoInviteWrapper {
     }
 }
 
+#if compiler(>=6)
+extension ConvoInviteWrapper: Sendable {}
+#endif
 
 
 extension ConvoInviteWrapper: Equatable, Hashable {
@@ -798,6 +925,7 @@ extension ConvoInviteWrapper: Equatable, Hashable {
         hasher.combine(fanned)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -860,6 +988,9 @@ public struct ConvoMessageWrapper {
     }
 }
 
+#if compiler(>=6)
+extension ConvoMessageWrapper: Sendable {}
+#endif
 
 
 extension ConvoMessageWrapper: Equatable, Hashable {
@@ -890,6 +1021,7 @@ extension ConvoMessageWrapper: Equatable, Hashable {
         hasher.combine(invite)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -946,6 +1078,9 @@ public struct LocalGroupWrapper {
     }
 }
 
+#if compiler(>=6)
+extension LocalGroupWrapper: Sendable {}
+#endif
 
 
 extension LocalGroupWrapper: Equatable, Hashable {
@@ -968,6 +1103,7 @@ extension LocalGroupWrapper: Equatable, Hashable {
         hasher.combine(decrypted)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1020,6 +1156,9 @@ public struct MessageItemWrapper {
     }
 }
 
+#if compiler(>=6)
+extension MessageItemWrapper: Sendable {}
+#endif
 
 
 extension MessageItemWrapper: Equatable, Hashable {
@@ -1042,6 +1181,7 @@ extension MessageItemWrapper: Equatable, Hashable {
         hasher.combine(timestamp)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1092,6 +1232,9 @@ public struct ProcessedResultsWrapper {
     }
 }
 
+#if compiler(>=6)
+extension ProcessedResultsWrapper: Sendable {}
+#endif
 
 
 extension ProcessedResultsWrapper: Equatable, Hashable {
@@ -1110,6 +1253,7 @@ extension ProcessedResultsWrapper: Equatable, Hashable {
         hasher.combine(invite)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1164,6 +1308,9 @@ public struct SerializedCredentialsWrapper {
     }
 }
 
+#if compiler(>=6)
+extension SerializedCredentialsWrapper: Sendable {}
+#endif
 
 
 extension SerializedCredentialsWrapper: Equatable, Hashable {
@@ -1194,6 +1341,7 @@ extension SerializedCredentialsWrapper: Equatable, Hashable {
         hasher.combine(serializedCredentialWithKey)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1440,9 +1588,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private var initializationResult: InitializationResult = {
+private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 26
+    let bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_foobar_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -1493,6 +1641,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_foobar_checksum_method_convomanager_save_state() != 12640) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_foobar_checksum_constructor_convoclient_new() != 40272) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_foobar_checksum_constructor_convomanager_new() != 51625) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1500,7 +1651,9 @@ private var initializationResult: InitializationResult = {
     return InitializationResult.ok
 }()
 
-private func uniffiEnsureInitialized() {
+// Make the ensure init function public so that other modules which have external type references to
+// our types can call it.
+public func uniffiEnsureFoobarInitialized() {
     switch initializationResult {
     case .ok:
         break

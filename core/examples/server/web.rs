@@ -124,7 +124,7 @@ pub async fn create_group(data: Json<CreateGroup>, state: &State<ServerState>) {
     );
 }
 
-// POST /get_user_keys (json containing list of user_ids, return list of serialized_key_packages)
+// POST /get_user_keys (json containing list of user_ids, return map of serialized_key_packages)
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetUserKeys {
     pub user_ids: Vec<String>,

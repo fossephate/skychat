@@ -139,7 +139,8 @@ export class ConvoClient {
     }
 
     
-    const responseData: any = await response.json();    
+    const responseData: any = await response.json();   
+    console.log("responseData: ", responseData);
     // Convert the object to a Map
     let keyPackageMap = new Map<string, string>(Object.entries(responseData));
     if (keyPackageMap.size !== userIds.length) {

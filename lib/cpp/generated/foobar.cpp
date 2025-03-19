@@ -297,8 +297,6 @@ uint16_t uniffi_foobar_checksum_constructor_convomanager_new();
 uint32_t ffi_foobar_uniffi_contract_version();
 }
 
-// This calls into Rust.
-
 namespace uniffi::foobar {
 template <typename T> struct Bridging;
 
@@ -453,8 +451,59 @@ template <> struct Bridging<RustCallStatus> {
 };
 
 } // namespace uniffi::foobar
-  // Implementation of callback function calling from Rust to JS
-  // RustFutureContinuationCallback
+// In other uniffi bindings, it is assumed that the foreign language holds on
+// to the vtable, which the Rust just gets a pointer to.
+// Here, we need to hold on to them, but also be able to clear them at just the
+// right time so we can support hot-reloading.
+namespace uniffi::foobar::registry {
+template <typename T> class VTableHolder {
+public:
+  T vtable;
+  VTableHolder(T v) : vtable(v) {}
+};
+
+// Mutex to bind the storage and setting of vtable together.
+// We declare it here, but the lock is taken by callers of the putTable
+// method who are also sending a pointer to Rust.
+static std::mutex vtableMutex;
+
+// Registry to hold all vtables so they persist even when JS objects are GC'd.
+// The only reason this exists is to prevent a dangling pointer in the
+// Rust machinery: i.e. we don't need to access or write to this registry
+// after startup.
+// Registry to hold all vtables so they persist even when JS objects are GC'd.
+// Maps string identifiers to vtable holders using type erasure
+static std::unordered_map<std::string, std::shared_ptr<void>> vtableRegistry;
+
+// Add a vtable to the registry with an identifier
+template <typename T>
+static T *putTable(std::string_view identifier, T vtable) {
+  auto holder = std::make_shared<VTableHolder<T>>(vtable);
+  // Store the raw pointer to the vtable before type erasure
+  T *rawPtr = &(holder->vtable);
+  // Store the holder using type erasure with the string identifier
+  vtableRegistry[std::string(identifier)] = std::shared_ptr<void>(holder);
+  return rawPtr;
+}
+
+// Clear the registry.
+//
+// Conceptually, this is called after teardown of the module (i.e. after
+// teardown of the jsi::Runtime). However, because Rust is dropping callbacks
+// because the Runtime is being torn down, we must keep the registry intact
+// until after the runtime goes away.
+//
+// Therefore, in practice we should call this when the next runtime is
+// being stood up.
+static void clearRegistry() {
+  std::lock_guard<std::mutex> lock(vtableMutex);
+  vtableRegistry.clear();
+}
+} // namespace uniffi::foobar::registry
+
+// This calls into Rust.
+// Implementation of callback function calling from Rust to JS
+// RustFutureContinuationCallback
 
 // Callback function:
 // uniffi::foobar::cb::rustfuturecontinuationcallback::UniffiRustFutureContinuationCallback
@@ -529,6 +578,18 @@ makeCallbackFunction( // uniffi::foobar::cb::rustfuturecontinuationcallback
     jsi::Runtime &rt,
     std::shared_ptr<uniffi_runtime::UniffiCallInvoker> callInvoker,
     const jsi::Value &value) {
+  if (rsLambda != nullptr) {
+    // `makeCallbackFunction` is called in two circumstances:
+    //
+    // 1. at startup, when initializing callback interface vtables.
+    // 2. when polling futures. This happens at least once per future that is
+    //    exposed to Javascript. We know that this is always the same function,
+    //    `uniffiFutureContinuationCallback` in `async-rust-calls.ts`.
+    //
+    // We can therefore return the callback function without making anything
+    // new if we've been initialized already.
+    return callback;
+  }
   auto callbackFunction = value.asObject(rt).asFunction(rt);
   auto callbackValue = std::make_shared<jsi::Value>(rt, callbackFunction);
   rsLambda = [&rt, callInvoker, callbackValue](uint64_t rs_data,
@@ -662,6 +723,18 @@ makeCallbackFunction( // uniffi::foobar::st::foreignfuture::foreignfuture::free
     jsi::Runtime &rt,
     std::shared_ptr<uniffi_runtime::UniffiCallInvoker> callInvoker,
     const jsi::Value &value) {
+  if (rsLambda != nullptr) {
+    // `makeCallbackFunction` is called in two circumstances:
+    //
+    // 1. at startup, when initializing callback interface vtables.
+    // 2. when polling futures. This happens at least once per future that is
+    //    exposed to Javascript. We know that this is always the same function,
+    //    `uniffiFutureContinuationCallback` in `async-rust-calls.ts`.
+    //
+    // We can therefore return the callback function without making anything
+    // new if we've been initialized already.
+    return callback;
+  }
   auto callbackFunction = value.asObject(rt).asFunction(rt);
   auto callbackValue = std::make_shared<jsi::Value>(rt, callbackFunction);
   rsLambda = [&rt, callInvoker, callbackValue](uint64_t rs_handle) {
@@ -1582,10 +1655,8 @@ template <> struct Bridging<UniffiRustFutureContinuationCallback> {
   fromJs(jsi::Runtime &rt, std::shared_ptr<CallInvoker> callInvoker,
          const jsi::Value &value) {
     try {
-      static auto callback =
-          uniffi::foobar::cb::rustfuturecontinuationcallback::
-              makeCallbackFunction(rt, callInvoker, value);
-      return callback;
+      return uniffi::foobar::cb::rustfuturecontinuationcallback::
+          makeCallbackFunction(rt, callInvoker, value);
     } catch (const std::logic_error &e) {
       throw jsi::JSError(rt, e.what());
     }
@@ -2133,7 +2204,7 @@ void NativeFoobar::registerModule(
 }
 
 void NativeFoobar::unregisterModule(jsi::Runtime &rt) {
-  // NOOP
+  uniffi::foobar::registry::clearRegistry();
 }
 
 jsi::Value NativeFoobar::get(jsi::Runtime &rt, const jsi::PropNameID &name) {

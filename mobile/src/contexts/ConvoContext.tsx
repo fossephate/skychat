@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { ConvoClient } from "@/utils/convo";
+// import { ConvoClient } from "skychat-lib";
 
 // Define the types for our messages and groups
 interface Message {
