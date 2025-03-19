@@ -138,6 +138,9 @@ pub async fn get_user_keys(data: Json<GetUserKeys>, state: &State<ServerState>) 
     let base64_keys_map = keys_map.into_iter()
         .map(|(user_id, key)| (user_id, BufferConverter::to_base64(&key)))
         .collect::<HashMap<String, String>>();
+
+    // print the map:
+    println!("base64_keys_map: {:?}", base64_keys_map);
         
     Json(base64_keys_map)
 }
