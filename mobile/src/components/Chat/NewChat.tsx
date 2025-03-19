@@ -78,7 +78,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit }: NewChatModalProps
 
       const following = await agent.getFollows({
         actor: authContext.session.did,
-        limit: 100,
+        limit: 25,
       })
 
       const profiles = await agent.getProfiles({

@@ -67,6 +67,7 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
   const initAndConnect = useCallback(async (serverAddress: string, id: string) => {
     const newClient = new ConvoClient(id);
     setClient(newClient);
+    console.log("CLIENT INITIALIZED");
     await newClient.connectToServer(serverAddress);
     setConnected(true);
   }, [client]);

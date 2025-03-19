@@ -41,7 +41,7 @@ export default function UsersScreen() {
       // Get the user's following list
       const following = await agent.getFollows({
         actor: session.did,
-        limit: 100,
+        limit: 25,
       })
 
       // Get detailed profiles for each followed user

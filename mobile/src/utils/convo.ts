@@ -175,7 +175,7 @@ export class ConvoClient {
     // console.log("response.ok: ", response.ok);
 
     if (!response.ok) {
-      // console.error("Failed to connect to server", response);
+      console.error("Failed to connect to server", response);
       throw new Error("Failed to connect to server");
     }
 
