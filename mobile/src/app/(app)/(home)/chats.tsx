@@ -12,7 +12,7 @@ import {
   ScrollView,
   RefreshControl,
 } from "react-native"
-import { Screen, Text, ListItem, TextField } from "src/components"
+import { Screen, Text, ListItem, TextField, Button } from "src/components"
 import { useRouter } from "expo-router"
 import { router } from "expo-router"
 import { Chat, ChatItem, User } from "src/components/Chat/ChatItem"
@@ -21,6 +21,7 @@ import { useAppTheme } from "src/utils/useAppTheme"
 import { useConvo } from "@/contexts/ConvoContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Agent } from "@atproto/api"
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 // Generate realistic chats data
 
@@ -99,6 +100,7 @@ export default function chatsScreen() {
             displayName: member.displayName || member.handle,
             avatar: member.avatar || `https://i.pravatar.cc/150?u=${member.did}`,
             verified: !!member.verified,
+            handle: member.handle,
           }))
 
         // Include self user for consistency with existing chat model
@@ -197,6 +199,17 @@ export default function chatsScreen() {
         </TouchableOpacity> */}
       </View>
 
+
+      <Button style={themed($invitesBanner)} onPress={() => { router.push("/invites") }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", flex: 1, width: "100%" }}>
+          <View style={{ flexDirection: "row" }}>
+            <FontAwesome name="envelope" size={24} style={themed($invitesBannerIcon)} />
+            <Text tx="chatsScreen:chatRequests" preset="bold" />
+          </View>
+          <FontAwesome name="chevron-right" size={24} style={themed($invitesBannerIcon)} />
+        </View>
+      </Button>
+
       <View style={themed($searchContainer)}>
         <TextField
           style={themed($searchInput)}
@@ -205,6 +218,8 @@ export default function chatsScreen() {
           onChangeText={setSearchQuery}
         />
       </View>
+
+
 
       {chats.length > 0 ? (
         <FlatList
@@ -228,6 +243,23 @@ export default function chatsScreen() {
 const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
   flex: 1,
   backgroundColor: colors.background,
+})
+
+const $invitesBanner: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.sm,
+  paddingVertical: spacing.xs,
+  marginBottom: spacing.md,
+  border: "none",
+  backgroundColor: colors.palette.neutral700,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  width: "100%",
+})
+
+const $invitesBannerIcon: ThemedStyle<TextStyle> = ({ colors }) => ({
+  marginRight: spacing.sm,
+  color: colors.text,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -259,7 +291,7 @@ const $searchInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
 })
 
 const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.md,
   paddingBottom: spacing.lg,
   flexGrow: 1, // Ensure it fills the space for proper pull to refresh
 })

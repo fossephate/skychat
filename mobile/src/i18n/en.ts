@@ -18,6 +18,7 @@ const en = {
   chatsScreen: {
     title: "Chats",
     searchPlaceholder: "Search chats...",
+    chatRequests: "Chat requests",
   },
   welcomeScreen: {
     readyForLaunch: "Welcome to SkyChat!",

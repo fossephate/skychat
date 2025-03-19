@@ -48,6 +48,14 @@ const getChatName = (chat: Chat, currentUserId: string): string => {
   return otherMembers.slice(0, 3).map(m => m.displayName).join(", ")
 }
 
+const getChatHandle = (chat: Chat, currentUserId: string): string | undefined => {
+  const otherMembers = chat.members.filter(member => member.id !== currentUserId)
+  if (chat.members.length === 2) {
+    return otherMembers[0].handle
+  }
+  return undefined;
+}
+
 const renderChatAvatar = (chat: Chat) => {
   const { themed } = useAppTheme();
   const isDM = chat.members.length === 2
@@ -100,6 +108,8 @@ const renderChatAvatar = (chat: Chat) => {
 // Convert to a proper React component
 const ChatItem = ({ item: chat }: { item: Chat }) => {
   const { themed } = useAppTheme();
+  let chatHandle = getChatHandle(chat, SELF_USER.id)
+  let chatName = getChatName(chat, SELF_USER.id)
   return (
     <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
       <ListItem
@@ -137,7 +147,8 @@ const ChatItem = ({ item: chat }: { item: Chat }) => {
         style={themed($listItem)}
       >
         <View style={{ flexDirection: "column" }}>
-          <Text>{getChatName(chat, SELF_USER.id)}</Text>
+          <Text>{chatName}</Text>
+          {chatHandle && chatHandle !== chatName && <Text style={themed($chatHandle)}>{"@" + chatHandle}</Text>}
           {chat.lastMessage && (
             <Text numberOfLines={1} style={themed($lastMessage)}>{chat.lastMessage?.text}</Text>
           )}
@@ -178,51 +189,31 @@ const $verifiedBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({
 })
 
 // Styles
-const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  flex: 1,
-  backgroundColor: colors.background,
-})
-
-const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingVertical: spacing.md,
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-})
 
 const $lastMessage: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 14,
   color: colors.palette.neutral600,
-  marginTop: spacing.xs,
+  // marginTop: spacing.xs,
   textOverflow: "ellipsis",
   overflow: "hidden",
   // marginBottom: spacing.xs,
   // maxWidth: 240,
 })
 
-const $headerText: ThemedStyle<TextStyle> = () => ({
-  fontSize: 32,
-})
-
-const $composeButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: colors.palette.primary100,
-  justifyContent: "center",
-  alignItems: "center",
+const $chatHandle: ThemedStyle<TextStyle> = ({ colors }) => ({
+  fontSize: 14,
+  color: colors.palette.neutral600,
 })
 
 const $chatCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.palette.neutral100,
+  // backgroundColor: colors.palette.neutral100,
+  // marginBottom: spacing.sm,
   borderRadius: 16,
-  marginBottom: spacing.sm,
   shadowColor: "#000",
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.1,
   shadowRadius: 8,
-  elevation: 3,
+  // elevation: 3,
 })
 
 const $pinnedChat: ThemedStyle<ViewStyle> = ({ colors }) => ({
@@ -231,18 +222,19 @@ const $pinnedChat: ThemedStyle<ViewStyle> = ({ colors }) => ({
 })
 
 const $listItem: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.sm,
+  // paddingVertical: spacing.xs,
   paddingHorizontal: spacing.md,
 })
 
 const $avatarContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   position: "relative",
   marginRight: spacing.sm,
+  paddingTop: spacing.sm,
 })
 
 const $avatar: ThemedStyle<ViewStyle> = () => ({
-  width: 50,
-  height: 50,
+  width: 48,
+  height: 48,
   borderRadius: 25,
 })
 
@@ -290,31 +282,6 @@ const $unreadChatName: ThemedStyle<TextStyle> = () => ({
   fontWeight: "bold",
 })
 
-const $messageContainer: ThemedStyle<ViewStyle> = () => ({
-  flexDirection: "row",
-  alignItems: "center",
-})
-
-const $messageText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  fontSize: 14,
-  color: colors.palette.neutral600,
-  flex: 1,
-})
-
-const $unreadMessageText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.text,
-  fontWeight: "500",
-})
-
-const $mutedText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.palette.neutral600,
-  opacity: 0.6,
-})
-
-const $senderName: ThemedStyle<TextStyle> = () => ({
-  fontWeight: "bold",
-})
-
 const $rightContainer: ThemedStyle<ViewStyle> = () => ({
   alignItems: "flex-end",
 })
@@ -323,11 +290,6 @@ const $timestamp: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 12,
   color: colors.palette.neutral600,
   marginBottom: spacing.xs,
-})
-
-const $unreadTimestamp: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.palette.primary500,
-  fontWeight: "500",
 })
 
 const $unreadBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({
@@ -349,119 +311,4 @@ const $unreadText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.background,
   fontSize: 13,
   fontWeight: "bold",
-})
-
-const $mutedIcon: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  fontSize: 12,
-  marginTop: spacing.xs,
-})
-
-const $pinnedIcon: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  fontSize: 12,
-  marginTop: spacing.xs,
-})
-
-const $modalOverlay: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  backgroundColor: "rgba(0, 0, 0, 0.5)",
-  justifyContent: "flex-end",
-})
-
-const $drawerContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  backgroundColor: colors.background,
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  maxHeight: "80%",
-})
-
-const $drawerContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  padding: spacing.md,
-})
-
-const $drawerHeader: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingBottom: spacing.md,
-  borderBottomWidth: 1,
-  borderBottomColor: colors.palette.neutral200,
-})
-
-const $drawerTitle: ThemedStyle<TextStyle> = () => ({
-  fontSize: 20,
-  fontWeight: "bold",
-})
-
-const $createButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.palette.primary500,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.xs,
-  borderRadius: 16,
-})
-
-const $createButtonText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.background,
-  fontWeight: "bold",
-})
-
-const $userList: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingTop: spacing.sm,
-})
-
-const $userSelectItem: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  paddingVertical: spacing.sm,
-})
-
-const $checkboxContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginRight: spacing.sm,
-})
-
-const $checkbox: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  width: 24,
-  height: 24,
-  borderRadius: 12,
-  borderWidth: 2,
-  borderColor: colors.palette.neutral400,
-  justifyContent: "center",
-  alignItems: "center",
-})
-
-const $checkboxSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  backgroundColor: colors.palette.primary500,
-  borderColor: colors.palette.primary500,
-})
-
-const $checkmark: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.background,
-  fontSize: 14,
-  fontWeight: "bold",
-})
-
-const $selectAvatar: ThemedStyle<ImageStyle> = ({ spacing }) => ({
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  marginRight: spacing.sm,
-})
-
-const $userInfo: ThemedStyle<ViewStyle> = () => ({
-  flexDirection: "row",
-  alignItems: "center",
-  flex: 1,
-})
-
-const $userName: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  fontSize: 16,
-  marginRight: spacing.xs,
-})
-
-const $verifiedBadgeSmall: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.palette.primary500,
-  fontSize: 14,
-})
-
-const $drawerScroll: ThemedStyle<ViewStyle> = () => ({
-  maxHeight: 400,
 })

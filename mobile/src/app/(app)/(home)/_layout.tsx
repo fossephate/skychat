@@ -59,7 +59,7 @@ export default observer(function Layout() {
           ),
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="invites"
         options={{
           href: "/invites",
@@ -70,7 +70,7 @@ export default observer(function Layout() {
             <FontAwesome name="users" size={28} color={color} />
           ),
         }}
-      />
+      /> */}
       <Tabs.Screen
         name="settings"
         options={{
