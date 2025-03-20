@@ -8,6 +8,8 @@ use rocket::serde::{de::DeserializeOwned, Deserialize, Serialize};
 use rocket::State;
 use rocket::{get, post};
 
+use skychat_core::utils::BufferConverter;
+
 use skychat_core::manager::{ConvoInvite, ConvoMessage};
 use skychat_server::server::{ConvoServer, ConvoUser};
 
@@ -23,58 +25,58 @@ impl Clone for ServerState {
     }
 }
 
-// base64 utils:
+// // base64 utils:
 type EncodedBase64 = String;
-use base64::{engine::general_purpose, Engine as _};
-use std::error::Error;
-pub struct BufferConverter;
-impl BufferConverter {
-    /// Converts a byte slice to a base64 string
-    ///
-    /// # Arguments
-    /// * `buffer` - The byte slice to convert
-    ///
-    /// # Returns
-    /// A String containing the base64 encoded data
-    pub fn to_base64(buffer: &[u8]) -> String {
-        general_purpose::STANDARD.encode(buffer)
-    }
+// use base64::{engine::general_purpose, Engine as _};
+// use std::error::Error;
+// pub struct BufferConverter;
+// impl BufferConverter {
+//     /// Converts a byte slice to a base64 string
+//     ///
+//     /// # Arguments
+//     /// * `buffer` - The byte slice to convert
+//     ///
+//     /// # Returns
+//     /// A String containing the base64 encoded data
+//     pub fn to_base64(buffer: &[u8]) -> String {
+//         general_purpose::STANDARD.encode(buffer)
+//     }
 
-    /// Converts a base64 string back to a Vec<u8>
-    ///
-    /// # Arguments
-    /// * `base64` - The base64 string to convert
-    ///
-    /// # Returns
-    /// Result containing either the decoded bytes or an error
-    pub fn from_base64(base64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(general_purpose::STANDARD.decode(base64)?)
-    }
+//     /// Converts a base64 string back to a Vec<u8>
+//     ///
+//     /// # Arguments
+//     /// * `base64` - The base64 string to convert
+//     ///
+//     /// # Returns
+//     /// Result containing either the decoded bytes or an error
+//     pub fn from_base64(base64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+//         Ok(general_purpose::STANDARD.decode(base64)?)
+//     }
 
-    /// Serializes a JSON-serializable type to a base64 string
-    ///
-    /// # Arguments
-    /// * `value` - The value to serialize
-    ///
-    /// # Returns
-    /// Result containing either the base64 encoded string or an error
-    pub fn to_base64_json<T: Serialize>(value: &T) -> Result<String, Box<dyn Error>> {
-        let json = serde_json::to_vec(value)?;
-        Ok(Self::to_base64(&json))
-    }
+//     /// Serializes a JSON-serializable type to a base64 string
+//     ///
+//     /// # Arguments
+//     /// * `value` - The value to serialize
+//     ///
+//     /// # Returns
+//     /// Result containing either the base64 encoded string or an error
+//     pub fn to_base64_json<T: Serialize>(value: &T) -> Result<String, Box<dyn Error>> {
+//         let json = serde_json::to_vec(value)?;
+//         Ok(Self::to_base64(&json))
+//     }
 
-    /// Deserializes a base64 string to a JSON-serializable type
-    ///
-    /// # Arguments
-    /// * `base64` - The base64 string to deserialize
-    ///
-    /// # Returns
-    /// Result containing either the deserialized value or an error
-    pub fn from_base64_json<T: DeserializeOwned>(base64: &str) -> Result<T, Box<dyn Error>> {
-        let bytes = Self::from_base64(base64)?;
-        Ok(serde_json::from_slice(&bytes)?)
-    }
-}
+//     /// Deserializes a base64 string to a JSON-serializable type
+//     ///
+//     /// # Arguments
+//     /// * `base64` - The base64 string to deserialize
+//     ///
+//     /// # Returns
+//     /// Result containing either the deserialized value or an error
+//     pub fn from_base64_json<T: DeserializeOwned>(base64: &str) -> Result<T, Box<dyn Error>> {
+//         let bytes = Self::from_base64(base64)?;
+//         Ok(serde_json::from_slice(&bytes)?)
+//     }
+// }
 
 // POST /api/connect (json containing name and user_id)
 
@@ -208,9 +210,11 @@ pub async fn get_new_messages_bin(
         data.sender_id.clone(),
         data.index.clone(),
     );
-    // // convert each message object to a base64 encoded string:
-    // let base64_messages = messages.unwrap().into_iter().map(|m| BufferConverter::to_base64(&m)).collect();
-    // Json(base64_messages)
+
+    // if messages is empty, just return an empty vector
+    if messages.is_empty() {
+        return Json(vec![]);
+    }
 
     // Convert each message to a base64 encoded JSON string
     let base64_messages = messages

@@ -276,7 +276,7 @@ export class ConvoClient {
       index = await this.manager.groupGetIndex(groupId);
     }
 
-    const response = await fetch(`${this.serverAddress}/api/get_new_messages`, {
+    const response = await fetch(`${this.serverAddress}/api/get_new_messages_bin`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -290,6 +290,8 @@ export class ConvoClient {
     });
 
     const messages: string[] = await response.json();
+
+    console.log("messages: ", messages);
 
     // messages is a list of base64 encoded strings:
     this.manager.processConvoMessagesBin(messages, groupId);

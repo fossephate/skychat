@@ -25,6 +25,8 @@ pub struct ConvoManager {
 type GroupId = Vec<u8>;
 type GroupEpoch = Vec<u8>;
 
+
+
 #[uniffi::export]
 impl ConvoManager {
     #[uniffi::constructor]
@@ -105,7 +107,7 @@ impl ConvoManager {
         );
     }
 
-    pub fn process_convo_messages_bin(&mut self, messages: Vec<u8>, group_id: Option<&GroupId>) {
+    pub fn process_convo_messages_bin(&mut self, messages: Vec<EncodedBase64>, group_id: Option<&GroupId>) {
         let mut inner = self.inner.lock().unwrap();
 
         // convert Option<GroupId> to Option<&GroupId>

@@ -13,6 +13,8 @@ skychat_core = { path = "../../../../../core/core" }
 
 skychat_client = { path = "../../../../../core/client" }
 
+serde_json = "1.0"
+
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }
 
