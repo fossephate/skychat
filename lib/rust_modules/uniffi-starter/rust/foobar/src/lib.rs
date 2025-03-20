@@ -20,6 +20,9 @@ use skychat_client::client::*;
 //     manager
 // }
 
+use tokio::task;
+use futures::executor;
+
 #[derive(uniffi::Object)]
 pub struct ConvoManager {
     inner: Arc<Mutex<skychat_core::manager::ConvoManager>>,
@@ -113,7 +116,7 @@ impl ConvoManager {
         &self,
         messages: Vec<EncodedBase64>,
         group_id: Option<GroupId>,
-    ) {
+    ) -> u64 {
         let mut inner = self.inner.lock().unwrap();
 
         // convert Option<GroupId> to Option<&GroupId>
@@ -135,7 +138,20 @@ impl ConvoManager {
             })
             .collect();
 
-        inner.process_convo_messages(messages_bin, group_id_ref);
+        inner.process_convo_messages(messages_bin.clone(), group_id_ref);
+
+        // return the size of the messages_bin just so we know we processed them:
+        messages_bin.clone().len() as u64
+    }
+
+    pub fn accept_pending_invite(&self, welcome_message: Vec<u8>) -> Vec<u8> {
+        let mut inner = self.inner.lock().unwrap();
+        inner.accept_pending_invite(welcome_message)
+    }
+
+    pub fn reject_pending_invite(&self, welcome_message: Vec<u8>) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.reject_pending_invite(welcome_message);
     }
 
     pub fn get_key_package(&self) -> Vec<u8> {
@@ -195,12 +211,186 @@ pub struct ConvoClient {
 
 #[uniffi::export]
 impl ConvoClient {
-    #[uniffi::constructor]
-    pub fn new(id: String) -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(skychat_client::client::ConvoClient::new(id))),
-        }
-    }
+  #[uniffi::constructor]
+  pub fn new(id: String) -> Self {
+      Self {
+          inner: Arc::new(Mutex::new(skychat_client::client::ConvoClient::new(id))),
+      }
+  }
+
+  pub async fn connect_to_server(&self, server_address: String) -> Result<(), String> {
+    // Release the lock before .await
+    let client = {
+        let inner = self.inner.lock().unwrap();
+        inner.user_id.clone()
+    };
+
+    // Clone the Arc to move it into the future
+    let inner_arc = Arc::clone(&self.inner);
+
+    // Spawn a blocking task that acquires the lock
+    let result = tokio::task::spawn_blocking(move || {
+        let mut client = inner_arc.lock().unwrap();
+        // Run the future to completion in this blocking context
+        futures::executor::block_on(client.connect_to_server(server_address))
+            .map_err(|e| e.to_string()) // Convert the error to String
+    }).await
+    .unwrap_or_else(|e| Err(format!("Task join error: {}", e)));
+
+    result
+  }
+
+  pub fn get_pending_invites(&self) -> Vec<ConvoInviteWrapper> {
+    let mut inner = self.inner.lock().unwrap();
+    let invites = inner
+        .manager
+        .pending_invites
+        .iter()
+        .map(|i| i.clone().into())
+        .collect();
+    invites
+  }
+
+  pub async fn create_group(&self, group_name: String) -> GroupId {
+      let inner_arc = Arc::clone(&self.inner);
+
+      // Spawn a blocking task to handle the operation
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(async {
+              client.create_group(group_name.clone()).await;
+              client.get_group_id(group_name).await
+          })
+      }).await.unwrap_or_default()
+  }
+
+  pub async fn get_group_id(&self, group_name: String) -> GroupId {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let client = inner_arc.lock().unwrap();
+          futures::executor::block_on(client.get_group_id(group_name))
+      }).await.unwrap_or_default()
+  }
+
+  // pub async fn list_users(&self) -> Vec<UserWrapper> {
+  //     let inner_arc = Arc::clone(&self.inner);
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         let users = futures::executor::block_on(client.list_users());
+  //         users.into_iter().map(|u| u.into()).collect()
+  //     }).await.unwrap_or_default()
+  // }
+
+  pub async fn invite_user_to_group(
+      &self,
+      receiver_id: String,
+      group_id: GroupId,
+      key_package: Vec<u8>,
+  ) {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(
+              client.invite_user_to_group(receiver_id, group_id, key_package)
+          )
+      }).await.ok();
+  }
+
+  pub async fn create_group_with_users(&self, group_name: String, user_ids: Vec<String>) {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(client.create_group_with_users(group_name, user_ids))
+      }).await.ok();
+  }
+
+  pub async fn process_invite(&self, invite: ConvoInviteWrapper) {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(client.process_invite(invite.into()))
+      }).await.ok();
+  }
+
+  pub async fn accept_current_invites(&self) {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(client.accept_current_invites())
+      }).await.ok();
+  }
+
+  pub async fn check_incoming_messages(
+      &self,
+      group_id: Option<GroupId>,
+  ) -> Vec<ConvoMessageWrapper> {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          let group_id_ref = group_id.as_ref();
+          let messages = futures::executor::block_on(client.check_incoming_messages(group_id_ref));
+          messages.into_iter().map(|m| m.into()).collect()
+      }).await.unwrap_or_default()
+  }
+
+  pub async fn get_group_index(&self, group_id: GroupId) -> u64 {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(client.get_group_index(&group_id))
+      }).await.unwrap_or_default()
+  }
+
+  pub async fn sync_group(&self, group_id: GroupId) {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(client.sync_group(&group_id))
+      }).await.ok();
+  }
+
+  pub async fn send_message(&self, group_id: GroupId, text: String) {
+      let inner_arc = Arc::clone(&self.inner);
+
+      tokio::task::spawn_blocking(move || {
+          let mut client = inner_arc.lock().unwrap();
+          futures::executor::block_on(client.send_message(&group_id, text))
+      }).await.ok();
+  }
+
+  pub fn get_group_messages(&self, group_id: GroupId) -> Vec<MessageItemWrapper> {
+      let inner = self.inner.lock().unwrap();
+      let messages = inner.get_group_messages(&group_id);
+      messages.iter().map(|m| m.into()).collect()
+  }
+
+  pub fn get_renderable_messages(&self, group_id: GroupId) -> Vec<String> {
+      let inner = self.inner.lock().unwrap();
+      inner.get_renderable_messages(&group_id)
+  }
+
+  pub fn name_to_id(&self, user_name: String) -> String {
+      let inner = self.inner.lock().unwrap();
+      inner.name_to_id(user_name)
+  }
+
+  pub fn save_state(&self) -> SerializedCredentialsWrapper {
+      let inner = self.inner.lock().unwrap();
+      inner.manager.save_state().into()
+  }
+
+  pub fn load_state(&self, state: SerializedCredentialsWrapper) {
+      let mut inner = self.inner.lock().unwrap();
+      inner.manager.load_state(state.into());
+  }
 }
 
 // // examples / testing:

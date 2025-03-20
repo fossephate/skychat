@@ -6,7 +6,9 @@ cd ../lib
 yarn ubrn:ios
 cd ./rust_modules/uniffi-starter/rust/
 ./build-ios.sh
-cd ../../../../
+cd ../../../
+yarn prepare
+cd ../
 
 
 cd ./mobile

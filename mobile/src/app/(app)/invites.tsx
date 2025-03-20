@@ -21,7 +21,8 @@ import { Agent } from "@atproto/api"
 
 interface Invite {
   senderId: string
-  senderName: string
+  senderName?: string
+  senderHandle: string
   senderAvatar?: string
   groupName: string
   timestamp: string
@@ -32,6 +33,7 @@ const mockInvites: Invite[] = [
   {
     senderId: "did:plc:cn4gldkpxj43zpuqztnwyf6h",
     senderName: "Alice",
+    senderHandle: "alice.bsky.social",
     senderAvatar: "https://i.pravatar.cc/150?u=1",
     groupName: "Alphabet Group",
     timestamp: new Date().toISOString(),
@@ -39,6 +41,7 @@ const mockInvites: Invite[] = [
   {
     senderId: "did:plc:4x3vv23ssv6fkqw6zgvqb3tl",
     senderName: "Bob",
+    senderHandle: "bob.bsky.social",
     senderAvatar: "https://i.pravatar.cc/150?u=2",
     groupName: "Design Team",
     timestamp: new Date().toISOString(),
@@ -56,13 +59,22 @@ export default function InvitesScreen() {
     // Get invites from context
     const userInvites = await convoContext.getInvites()
 
-    if (!authContext.session) {
-      setInvites(userInvites)
-      setRefreshing(false)
+    if (!authContext.session) { return }
+
+    
+
+    if (userInvites.length === 0) {
+      // only change if the mock data is not already set:
+      if (invites != mockInvites) {
+        setInvites(mockInvites)
+      }
       return
     }
 
     const inviteDids = userInvites.map(invite => invite.senderId);
+
+    console.log("userInvites: ", userInvites)
+    console.log("welcome message length: ", userInvites[0].welcomeMessage.length)
 
     try {
       const agent = new Agent(authContext.session);
@@ -77,7 +89,9 @@ export default function InvitesScreen() {
         const profile = profileData.find(p => p.did === invite.senderId);
         return {
           ...invite,
-          senderAvatar: profile?.avatar
+          senderAvatar: profile?.avatar,
+          senderHandle: profile?.handle,
+          senderName: profile?.displayName
         }
       })
       setInvites(invitesWithProfiles)
@@ -92,21 +106,21 @@ export default function InvitesScreen() {
     setRefreshing(true)
     try {
       await fetchInvites()
-      // Small delay to make refresh feel more natural
-      setTimeout(() => setRefreshing(false), 1000)
     } catch (error) {
       console.error('Error refreshing invites:', error)
-      setRefreshing(false)
     }
+    // Small delay to make refresh feel more natural
+    setTimeout(() => setRefreshing(false), 1500)
   }, [convoContext, authContext])
 
   useEffect(() => {
     fetchInvites()
+    setTimeout(() => setRefreshing(false), 1500)
   }, [convoContext, authContext])
 
   const handleAccept = (inviteId: string) => {
     // TODO: Implement accept functionality with convoContext
-    // convoContext.acceptInvite(inviteId)
+    convoContext.acceptInvite(inviteId)
 
     // For now, just remove from UI
     setInvites(current => current.filter(invite => invite.senderId !== inviteId))
@@ -123,7 +137,7 @@ export default function InvitesScreen() {
   const renderInvite = (invite: Invite) => {
     return (
       <ListItem
-        key={invite.senderId}
+        key={invite.senderId + invite.timestamp + invite.groupName}
         topSeparator
         height={72}
         bottomSeparator
@@ -157,10 +171,13 @@ export default function InvitesScreen() {
         }
       >
         <View style={themed($inviteContent)}>
+          {invite.senderName && <Text style={themed($inviteSender)} numberOfLines={1}>
+            {invite.senderName}
+          </Text>}
           <Text style={themed($inviteSender)} numberOfLines={1}>
-            {invite.groupName}
+            {invite.senderHandle}
           </Text>
-          <Text style={themed($inviteGroupName)} numberOfLines={1}>
+          <Text style={themed($inviteGroupName)} numberOfLines={2}>
             {translate("invitesScreen:inviteMessage", { sender: invite.senderName, group: invite.groupName })}
           </Text>
         </View>

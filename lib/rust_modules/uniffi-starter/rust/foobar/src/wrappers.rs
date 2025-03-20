@@ -37,8 +37,6 @@ impl From<ConvoInviteWrapper> for skychat_core::manager::ConvoInvite {
     }
 }
 
-
-
 // Wrapper for ProcessedResults
 #[derive(uniffi::Record)]
 pub struct ProcessedResultsWrapper {
@@ -84,13 +82,13 @@ impl From<skychat_core::manager::MessageItem> for MessageItemWrapper {
 
 // Add this implementation to handle references
 impl From<&skychat_core::manager::MessageItem> for MessageItemWrapper {
-  fn from(item: &skychat_core::manager::MessageItem) -> Self {
-      Self {
-          text: item.text.clone(),
-          sender_id: item.sender_id.clone(),
-          timestamp: item.timestamp,
-      }
-  }
+    fn from(item: &skychat_core::manager::MessageItem) -> Self {
+        Self {
+            text: item.text.clone(),
+            sender_id: item.sender_id.clone(),
+            timestamp: item.timestamp,
+        }
+    }
 }
 
 // Wrapper for LocalGroup
@@ -100,7 +98,6 @@ pub struct LocalGroupWrapper {
     pub global_index: u64,
     pub decrypted: Vec<MessageItemWrapper>,
 }
-
 
 // wrapper for SerializedCredentials
 #[derive(uniffi::Record)]
@@ -135,7 +132,6 @@ impl From<SerializedCredentialsWrapper> for skychat_core::manager::SerializedCre
         }
     }
 }
-
 
 // Wrapper for ConvoMessage
 // pub struct ConvoMessage {
@@ -179,3 +175,22 @@ impl From<ConvoMessageWrapper> for skychat_core::manager::ConvoMessage {
     }
 }
 
+// convo client:
+
+// // Define wrapper types needed for FFI
+// #[derive(uniffi::Record)]
+// pub struct UserWrapper {
+//     pub user_id: String,
+//     pub name: String,
+//     pub key_package: Option<Vec<u8>>,
+// }
+
+// impl From<ConvoUser> for UserWrapper {
+//     fn from(user: ConvoUser) -> Self {
+//         Self {
+//             user_id: user.user_id,
+//             name: user.name,
+//             key_package: user.key_package,
+//         }
+//     }
+// }

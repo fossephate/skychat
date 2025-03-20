@@ -209,7 +209,7 @@ impl ConvoManager {
         });
     }
 
-    pub fn process_invite(&mut self, invite: ConvoInvite) {
+    pub fn process_invite(&mut self, invite: ConvoInvite) -> GroupId {
         // bob can now de-serialize the message as an [`MlsMessageIn`] ...
         let mls_message_in = MlsMessageIn::tls_deserialize(&mut invite.welcome_message.as_slice())
             .expect("An unexpected error occurred.");
@@ -262,6 +262,7 @@ impl ConvoManager {
         let group_id = group.mls_group.group_id().to_vec();
 
         self.groups.insert(group_id.clone(), group);
+        group_id
     }
 
     pub fn create_new_group(&mut self, name: String) -> Vec<u8> {
@@ -566,6 +567,26 @@ impl ConvoManager {
         }
     }
 
+    pub fn accept_pending_invite(&mut self, welcome_message: Vec<u8>) -> GroupId {
+        // find the index of the invite in the pending_invites vector:
+        let index = self.pending_invites.iter().position(|i| i.welcome_message == welcome_message);
+        if let Some(index) = index {
+            let invite = self.pending_invites.remove(index);
+            let group_id = self.process_invite(invite);
+            group_id
+        } else {
+            panic!("Invite not found");
+        }
+    }
+
+    pub fn reject_pending_invite(&mut self, welcome_message: Vec<u8>) {
+        // find the index of the invite in the pending_invites vector:
+        let index = self.pending_invites.iter().position(|i| i.welcome_message == welcome_message);
+        if let Some(index) = index {
+            self.pending_invites.remove(index);
+        }
+    }
+ 
     // not strictly necessary but helpful functions:
     pub fn group_get_epoch(&mut self, group_id: &GroupId) -> GroupEpoch {
         let group = self.groups.get_mut(group_id).unwrap();

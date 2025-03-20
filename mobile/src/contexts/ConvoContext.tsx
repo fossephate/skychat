@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { ConvoClient } from "@/utils/convo";
-// import { ConvoClient } from "skychat-lib";
+// import { ConvoClient } from "@/utils/convo";
+import { ConvoClient } from "skychat-lib";
 
 // Define the types for our messages and groups
 interface Message {
@@ -69,13 +69,16 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     const newClient = new ConvoClient(id);
     setClient(newClient);
     console.log("CLIENT INITIALIZED");
+    // await newClient.connectToServer(serverAddress);
+
     await newClient.connectToServer(serverAddress);
+
     setConnected(true);
   }, [client]);
 
   const createGroup = useCallback(async (name: string, userids: string[]) => {
     if (!client) throw new Error("Client not initialized");
-    await client.createGroup(name, userids);
+    await client.createGroupWithUsers(name, userids);
   }, [client]);
 
   const sendMessage = useCallback(async (groupId: ArrayBuffer, text: string) => {

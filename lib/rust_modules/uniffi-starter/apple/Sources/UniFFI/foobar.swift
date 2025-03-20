@@ -622,6 +622,8 @@ public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
     func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) 
     
+    func processConvoMessagesBin(messages: [String], groupId: Data?)  -> UInt64
+    
     func processMessage(message: Data, senderId: String?)  -> ProcessedResultsWrapper
     
     func processRawInvite(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) 
@@ -783,6 +785,15 @@ open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) 
         FfiConverterOptionData.lower(groupId),$0
     )
 }
+}
+    
+open func processConvoMessagesBin(messages: [String], groupId: Data?) -> UInt64  {
+    return try!  FfiConverterUInt64.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_process_convo_messages_bin(self.uniffiClonePointer(),
+        FfiConverterSequenceString.lower(messages),
+        FfiConverterOptionData.lower(groupId),$0
+    )
+})
 }
     
 open func processMessage(message: Data, senderId: String?) -> ProcessedResultsWrapper  {
@@ -1630,6 +1641,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_process_convo_messages() != 42325) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_process_convo_messages_bin() != 50868) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_process_message() != 22503) {

@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use colored::{Color, Colorize};
 
+use anyhow::{anyhow, bail, Context, Result};
 use skychat_core::{
     manager::ConvoManager,
     manager::{ConvoInvite, ConvoMessage},
@@ -79,6 +80,161 @@ impl ConvoClient {
         }
     }
 
+    // Get user key packages with anyhow error handling
+    pub async fn get_user_key_packages(
+        &self,
+        user_ids: Vec<String>,
+    ) -> Result<HashMap<String, Vec<u8>>> {
+        let address = self
+            .server_address
+            .as_ref()
+            .context("Server address is not set")?;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("{}/api/get_user_keys", address))
+            .json(&serde_json::json!({
+                "user_ids": user_ids.clone()
+            }))
+            .send()
+            .await
+            .context("Failed to send request to get user keys")?;
+
+        if !response.status().is_success() {
+            bail!("Failed to get key packages: {}", response.status());
+        }
+
+        let key_packages: HashMap<String, Vec<u8>> = response
+            .json()
+            .await
+            .context("Failed to parse response data")?;
+
+        if key_packages.len() != user_ids.len() {
+            bail!("Failed to get key packages for all users");
+        }
+
+        Ok(key_packages)
+    }
+
+    // Create group with users using anyhow
+    pub async fn create_group_with_users(
+        &mut self,
+        group_name: String,
+        user_ids: Vec<String>,
+    ) -> Result<GroupId> {
+        // Create the group
+        self.create_group(group_name.clone()).await;
+
+        // Get the group_id
+        let group_id = self.get_group_id(group_name).await;
+
+        println!("Getting key packages for users: {:?}", user_ids);
+
+        // Get key packages with error handling
+        let key_packages_map = match self.get_user_key_packages(user_ids.clone()).await {
+            Ok(map) => map,
+            Err(e) => {
+                println!("Error getting key packages: {}", e);
+                // Add error message to the group
+                self.manager.group_push_message(
+                    &group_id,
+                    format!("<error_getting_key_packages: {}>", e),
+                    self.user_id.clone(),
+                );
+                return Err(e);
+            }
+        };
+
+        println!("Key packages map: {:?}", key_packages_map);
+
+        // Add system message that group was created
+        self.manager.group_push_message(
+            &group_id,
+            "<group_created>".to_string(),
+            self.user_id.clone(),
+        );
+
+        // Invite users and handle any errors
+        for (user_id, key_package) in key_packages_map {
+            match self
+                .invite_user_to_group(user_id.clone(), group_id.clone(), key_package)
+                .await
+            {
+                Ok(_) => {
+                    let system_message = format!("<{}> joined the group", user_id);
+                    self.manager.group_push_message(
+                        &group_id,
+                        system_message,
+                        self.user_id.clone(),
+                    );
+                }
+                Err(e) => {
+                    let error_message = format!("<failed_to_invite_user {}: {}>", user_id, e);
+                    self.manager
+                        .group_push_message(&group_id, error_message, self.user_id.clone());
+                    println!("Error inviting user {}: {}", user_id, e);
+                }
+            }
+        }
+
+        // Add finished message
+        self.manager.group_push_message(
+            &group_id,
+            "<finished_creating_group>".to_string(),
+            self.user_id.clone(),
+        );
+
+        Ok(group_id)
+    }
+
+    // Modified invite_user_to_group to use anyhow
+    pub async fn invite_user_to_group(
+        &mut self,
+        receiver_id: String,
+        group_id: Vec<u8>,
+        serialized_key_package: Vec<u8>,
+    ) -> Result<()> {
+        let address = self
+            .server_address
+            .as_ref()
+            .context("Server address is not set")?;
+
+        // Construct the invite using their key_package
+        let group_invite = self
+            .manager
+            .create_invite(&group_id, serialized_key_package);
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("{}/api/invite_user", address))
+            .json(&serde_json::json!({
+              "group_id": group_id.clone(),
+              "sender_id": self.user_id.clone(),
+              "receiver_id": receiver_id.clone(),
+              "welcome_message": group_invite.welcome_message.clone(),
+              "ratchet_tree": group_invite.ratchet_tree.clone(),
+              "fanned": group_invite.fanned.clone(),
+            }))
+            .send()
+            .await
+            .context("Failed to send invite request")?;
+
+        if response.status().is_success() {
+            // Get group and possibly update state
+            let group = self
+                .manager
+                .groups
+                .get_mut(&group_id)
+                .context("Group not found")?;
+
+            // group.global_index += 1; // Uncomment if needed
+
+            Ok(())
+        } else {
+            Err(anyhow!("Failed to send invite: {}", response.status()))
+        }
+    }
+
     pub async fn get_group_id(&self, group_name: String) -> GroupId {
         // get group where group.name == group_name:
         let (group_id, group) = self
@@ -146,54 +302,10 @@ impl ConvoClient {
         users
     }
 
-    pub async fn invite_user_to_group(
-        &mut self,
-        receiver_id: String,
-        group_id: Vec<u8>,
-        serialized_key_package: Vec<u8>,
-    ) {
-        let address = self
-            .server_address
-            .as_ref()
-            .expect("server address is not set");
-
-        // get the mls_group (as mut) and construct the invite using their key_package:
-
-        let group_invite = self
-            .manager
-            .create_invite(&group_id, serialized_key_package);
-
-        let client = reqwest::Client::new();
-        let response = client
-            .post(format!("{}/api/invite_user", address))
-            .json(&serde_json::json!({
-              "group_id": group_id.clone(),
-              "sender_id": self.user_id.clone(),
-              "receiver_id": receiver_id.clone(),
-              "welcome_message": group_invite.welcome_message.clone(),
-              "ratchet_tree": group_invite.ratchet_tree.clone(),
-              "fanned": group_invite.fanned.clone(),
-            }))
-            .send()
-            .await;
-
-        if response.is_ok() {
-            // increment the global_index of the group:
-            let group = self
-                .manager
-                .groups
-                .get_mut(&group_id)
-                .expect("group not found");
-            // group.global_index += 1;// todo: maybe should increment this?
-        } else {
-            panic!("Failed to send invite");
-        }
-    }
-
     pub async fn process_invite(&mut self, invite: ConvoInvite) {
         // add the welcome_message to the manager
         self.manager.process_invite(invite.clone());
-        
+
         // let the server know we have successfully processed the invite:
         let address = self
             .server_address
@@ -306,10 +418,9 @@ impl ConvoClient {
     }
 
     pub async fn sync_group(&mut self, group_id: &GroupId) {
-
         // get and process any incoming messages:
         let messages = self.check_incoming_messages(Some(group_id)).await;
-        
+
         let group_index = self.get_group_index(group_id).await;
 
         // set the group_index to the group_index:
