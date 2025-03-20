@@ -1,15 +1,15 @@
 // src/web.rs
 
-use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
-use rocket::{get, post};
 use rocket::serde::json::Json;
-use rocket::serde::{Deserialize, Serialize, de::DeserializeOwned};
+use rocket::serde::{de::DeserializeOwned, Deserialize, Serialize};
 use rocket::State;
+use rocket::{get, post};
 
+use skychat_core::manager::{ConvoInvite, ConvoMessage};
 use skychat_server::server::{ConvoServer, ConvoUser};
-use skychat_core::manager::{ConvoMessage, ConvoInvite};
 
 pub struct ServerState {
     pub convo_server: Arc<Mutex<ConvoServer>>,
@@ -23,18 +23,17 @@ impl Clone for ServerState {
     }
 }
 
-
 // base64 utils:
 type EncodedBase64 = String;
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 use std::error::Error;
 pub struct BufferConverter;
 impl BufferConverter {
     /// Converts a byte slice to a base64 string
-    /// 
+    ///
     /// # Arguments
     /// * `buffer` - The byte slice to convert
-    /// 
+    ///
     /// # Returns
     /// A String containing the base64 encoded data
     pub fn to_base64(buffer: &[u8]) -> String {
@@ -42,10 +41,10 @@ impl BufferConverter {
     }
 
     /// Converts a base64 string back to a Vec<u8>
-    /// 
+    ///
     /// # Arguments
     /// * `base64` - The base64 string to convert
-    /// 
+    ///
     /// # Returns
     /// Result containing either the decoded bytes or an error
     pub fn from_base64(base64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
@@ -53,22 +52,22 @@ impl BufferConverter {
     }
 
     /// Serializes a JSON-serializable type to a base64 string
-    /// 
+    ///
     /// # Arguments
     /// * `value` - The value to serialize
-    /// 
+    ///
     /// # Returns
     /// Result containing either the base64 encoded string or an error
     pub fn to_base64_json<T: Serialize>(value: &T) -> Result<String, Box<dyn Error>> {
         let json = serde_json::to_vec(value)?;
         Ok(Self::to_base64(&json))
     }
-    
+
     /// Deserializes a base64 string to a JSON-serializable type
-    /// 
+    ///
     /// # Arguments
     /// * `base64` - The base64 string to deserialize
-    /// 
+    ///
     /// # Returns
     /// Result containing either the deserialized value or an error
     pub fn from_base64_json<T: DeserializeOwned>(base64: &str) -> Result<T, Box<dyn Error>> {
@@ -76,8 +75,6 @@ impl BufferConverter {
         Ok(serde_json::from_slice(&bytes)?)
     }
 }
-
-
 
 // POST /api/connect (json containing name and user_id)
 
@@ -154,18 +151,22 @@ pub struct GetUserKeys {
     pub user_ids: Vec<String>,
 }
 #[post("/get_user_keys", format = "json", data = "<data>")]
-pub async fn get_user_keys(data: Json<GetUserKeys>, state: &State<ServerState>) -> Json<HashMap<String, String>> {
+pub async fn get_user_keys(
+    data: Json<GetUserKeys>,
+    state: &State<ServerState>,
+) -> Json<HashMap<String, String>> {
     let server = state.convo_server.lock().expect("failed to lock server!");
     let keys_map = server.client_get_user_keys(data.user_ids.clone()).unwrap();
-    
+
     // Convert the binary key packages to base64 strings while preserving the user ID mapping
-    let base64_keys_map = keys_map.into_iter()
+    let base64_keys_map = keys_map
+        .into_iter()
         .map(|(user_id, key)| (user_id, BufferConverter::to_base64(&key)))
         .collect::<HashMap<String, String>>();
 
     // print the map:
     println!("base64_keys_map: {:?}", base64_keys_map);
-        
+
     Json(base64_keys_map)
 }
 
@@ -174,8 +175,8 @@ pub async fn get_user_keys(data: Json<GetUserKeys>, state: &State<ServerState>) 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetMessages {
     pub group_id: Option<EncodedBase64>, // the group to get messages from
-    pub sender_id: String, // the user requesting the messages
-    pub index: u64,        // the index of the first message to get
+    pub sender_id: String,               // the user requesting the messages
+    pub index: u64,                      // the index of the first message to get
 }
 
 #[post("/get_new_messages", format = "json", data = "<data>")]
@@ -185,7 +186,9 @@ pub async fn get_new_messages(
 ) -> Json<Vec<ConvoMessage>> {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     let messages = server.client_get_new_messages(
-        data.group_id.as_ref().map(|g| BufferConverter::from_base64(g).unwrap()),
+        data.group_id
+            .as_ref()
+            .map(|g| BufferConverter::from_base64(g).unwrap()),
         data.sender_id.clone(),
         data.index.clone(),
     );
@@ -199,7 +202,9 @@ pub async fn get_new_messages_bin(
 ) -> Json<Vec<EncodedBase64>> {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     let messages = server.client_get_new_messages(
-        data.group_id.as_ref().map(|g| BufferConverter::from_base64(g).unwrap()),
+        data.group_id
+            .as_ref()
+            .map(|g| BufferConverter::from_base64(g).unwrap()),
         data.sender_id.clone(),
         data.index.clone(),
     );
@@ -207,26 +212,21 @@ pub async fn get_new_messages_bin(
     // let base64_messages = messages.unwrap().into_iter().map(|m| BufferConverter::to_base64(&m)).collect();
     // Json(base64_messages)
 
+    let messages = server
+        .client_get_new_messages(
+            group_id.as_ref().map(|g| g.as_slice()),
+            data.sender_id.clone(),
+            data.index.clone(),
+        )
+        .unwrap();
 
-    let messages = server.client_get_new_messages(
-        group_id.as_ref().map(|g| g.as_slice()),
-        data.sender_id.clone(),
-        data.index.clone(),
-    );
-    
-    match messages {
-        Ok(msgs) => {
-            // Convert each message to a base64 encoded JSON string
-            let base64_messages = msgs
-                .into_iter()
-                .map(|m| BufferConverter::to_base64_json(&m))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|_| Status::InternalServerError)?;
-                
-            Ok(Json(base64_messages))
-        },
-        Err(_) => Err(Status::InternalServerError)
-    }
+    // Convert each message to a base64 encoded JSON string
+    let base64_messages = messages
+        .into_iter()
+        .map(|m| BufferConverter::to_base64_json(&m).unwrap_or_default())
+        .collect::<Vec<_>>();
+
+    Json(base64_messages)
 }
 
 // POST /invite_user (json containing group_id, user_id, and welcome_message)
@@ -234,11 +234,11 @@ pub async fn get_new_messages_bin(
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InviteUser {
     pub group_id: EncodedBase64,        // the group to invite the user to
-    pub sender_id: String,        // the user sending the invite
-    pub receiver_id: String,      // the user to invite
+    pub sender_id: String,              // the user sending the invite
+    pub receiver_id: String,            // the user to invite
     pub welcome_message: EncodedBase64, // the welcome message to send to the user
     pub ratchet_tree: EncodedBase64,    // the ratchet tree to send to the user
-    pub fanned: Option<EncodedBase64>, // the fanned commit to send to all other users in the group
+    pub fanned: Option<EncodedBase64>,  // the fanned commit to send to all other users in the group
 }
 
 #[post("/invite_user", format = "json", data = "<data>")]
@@ -250,7 +250,9 @@ pub async fn invite_user(data: Json<InviteUser>, state: &State<ServerState>) {
         data.receiver_id.clone(),
         BufferConverter::from_base64(&data.welcome_message).unwrap(),
         BufferConverter::from_base64(&data.ratchet_tree).unwrap(),
-        data.fanned.as_ref().map(|f| BufferConverter::from_base64(f).unwrap()),
+        data.fanned
+            .as_ref()
+            .map(|f| BufferConverter::from_base64(f).unwrap()),
     );
 }
 
