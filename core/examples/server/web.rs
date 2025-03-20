@@ -212,14 +212,6 @@ pub async fn get_new_messages_bin(
     // let base64_messages = messages.unwrap().into_iter().map(|m| BufferConverter::to_base64(&m)).collect();
     // Json(base64_messages)
 
-    let messages = server
-        .client_get_new_messages(
-            group_id.as_ref().map(|g| g.as_slice()),
-            data.sender_id.clone(),
-            data.index.clone(),
-        )
-        .unwrap();
-
     // Convert each message to a base64 encoded JSON string
     let base64_messages = messages
         .into_iter()
