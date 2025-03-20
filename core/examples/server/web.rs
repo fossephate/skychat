@@ -211,7 +211,7 @@ pub async fn get_new_messages_bin(
         data.index.clone(),
     );
 
-    // if messages is empty, just return an empty vector
+    let messages = messages.unwrap();
     if messages.is_empty() {
         return Json(vec![]);
     }
