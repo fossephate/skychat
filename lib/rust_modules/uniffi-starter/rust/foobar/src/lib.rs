@@ -8,8 +8,11 @@ use crate::wrappers::*;
 use skychat_core::manager::*;
 use skychat_core::*;
 
+use skychat_core::utils::BufferConverter;
+
+// use skychat_client::*;  // Remove or comment this line
 use skychat_client::client::*;
-use skychat_client::*;
+// use skychat_client::*;  // Remove or comment this line
 
 // #[uniffi::export]
 // pub fn create_skychat_manager() -> skychat_core::manager::ConvoManager {
@@ -24,8 +27,7 @@ pub struct ConvoManager {
 
 type GroupId = Vec<u8>;
 type GroupEpoch = Vec<u8>;
-
-
+type EncodedBase64 = String;
 
 #[uniffi::export]
 impl ConvoManager {
@@ -107,16 +109,33 @@ impl ConvoManager {
         );
     }
 
-    pub fn process_convo_messages_bin(&mut self, messages: Vec<EncodedBase64>, group_id: Option<&GroupId>) {
+    pub fn process_convo_messages_bin(
+        &self,
+        messages: Vec<EncodedBase64>,
+        group_id: Option<GroupId>,
+    ) {
         let mut inner = self.inner.lock().unwrap();
 
         // convert Option<GroupId> to Option<&GroupId>
         let group_id_ref = group_id.as_ref();
-        let messages_bin = messages.into_iter().map(|m| m.into()).collect();
-        inner.process_convo_messages(
-            messages_bin,
-            group_id_ref,
-        );
+        // convert Vec<EncodedBase64> to Vec<ConvoMessage>
+
+        // convert Vec<EncodedBase64> to Vec<ConvoMessage>
+        let messages_bin: Vec<ConvoMessage> = messages
+            .into_iter()
+            .filter_map(|encoded| {
+                match BufferConverter::from_base64_json(&encoded) {
+                    Ok(message) => Some(message),
+                    Err(err) => {
+                        // You might want to log the error in a real application
+                        // println!("Failed to decode message: {}", err);
+                        None
+                    }
+                }
+            })
+            .collect();
+
+        inner.process_convo_messages(messages_bin, group_id_ref);
     }
 
     pub fn get_key_package(&self) -> Vec<u8> {

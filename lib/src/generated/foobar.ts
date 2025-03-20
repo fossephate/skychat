@@ -633,6 +633,10 @@ export interface ConvoManagerInterface {
     messages: Array<ConvoMessageWrapper>,
     groupId: ArrayBuffer | undefined
   ): void;
+  processConvoMessagesBin(
+    messages: Array<string>,
+    groupId: ArrayBuffer | undefined
+  ): void;
   processMessage(
     message: ArrayBuffer,
     senderId: string | undefined
@@ -848,6 +852,23 @@ export class ConvoManager
         nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_process_convo_messages(
           uniffiTypeConvoManagerObjectFactory.clonePointer(this),
           FfiConverterArrayTypeConvoMessageWrapper.lower(messages),
+          FfiConverterOptionalArrayBuffer.lower(groupId),
+          callStatus
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift
+    );
+  }
+
+  public processConvoMessagesBin(
+    messages: Array<string>,
+    groupId: ArrayBuffer | undefined
+  ): void {
+    uniffiCaller.rustCall(
+      /*caller:*/ (callStatus) => {
+        nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_process_convo_messages_bin(
+          uniffiTypeConvoManagerObjectFactory.clonePointer(this),
+          FfiConverterArrayString.lower(messages),
           FfiConverterOptionalArrayBuffer.lower(groupId),
           callStatus
         );
@@ -1144,6 +1165,14 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_process_convo_messages'
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_process_convo_messages_bin() !==
+    1136
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_method_convomanager_process_convo_messages_bin'
     );
   }
   if (

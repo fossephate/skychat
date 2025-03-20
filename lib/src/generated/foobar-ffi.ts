@@ -111,6 +111,12 @@ interface NativeModuleInterface {
     groupId: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): void;
+  ubrn_uniffi_foobar_fn_method_convomanager_process_convo_messages_bin(
+    ptr: bigint,
+    messages: Uint8Array,
+    groupId: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus
+  ): void;
   ubrn_uniffi_foobar_fn_method_convomanager_process_message(
     ptr: bigint,
     message: Uint8Array,
@@ -142,6 +148,7 @@ interface NativeModuleInterface {
   ubrn_uniffi_foobar_checksum_method_convomanager_group_set_index(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_load_state(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_process_convo_messages(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_process_convo_messages_bin(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_process_message(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_process_raw_invite(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_save_state(): number;

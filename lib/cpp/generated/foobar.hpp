@@ -86,6 +86,10 @@ protected:
   jsi::Value cpp_uniffi_foobar_fn_method_convomanager_process_convo_messages(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value
+  cpp_uniffi_foobar_fn_method_convomanager_process_convo_messages_bin(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_uniffi_foobar_fn_method_convomanager_process_message(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -130,6 +134,10 @@ protected:
       size_t count);
   jsi::Value
   cpp_uniffi_foobar_checksum_method_convomanager_process_convo_messages(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_foobar_checksum_method_convomanager_process_convo_messages_bin(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_foobar_checksum_method_convomanager_process_message(
