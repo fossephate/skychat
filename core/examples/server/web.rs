@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use rocket::{get, post};
 use rocket::serde::json::Json;
-use rocket::serde::{Deserialize, Serialize};
+use rocket::serde::{Deserialize, Serialize, de::DeserializeOwned};
 use rocket::State;
 
 use skychat_server::server::{ConvoServer, ConvoUser};
@@ -50,6 +50,30 @@ impl BufferConverter {
     /// Result containing either the decoded bytes or an error
     pub fn from_base64(base64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
         Ok(general_purpose::STANDARD.decode(base64)?)
+    }
+
+    /// Serializes a JSON-serializable type to a base64 string
+    /// 
+    /// # Arguments
+    /// * `value` - The value to serialize
+    /// 
+    /// # Returns
+    /// Result containing either the base64 encoded string or an error
+    pub fn to_base64_json<T: Serialize>(value: &T) -> Result<String, Box<dyn Error>> {
+        let json = serde_json::to_vec(value)?;
+        Ok(Self::to_base64(&json))
+    }
+    
+    /// Deserializes a base64 string to a JSON-serializable type
+    /// 
+    /// # Arguments
+    /// * `base64` - The base64 string to deserialize
+    /// 
+    /// # Returns
+    /// Result containing either the deserialized value or an error
+    pub fn from_base64_json<T: DeserializeOwned>(base64: &str) -> Result<T, Box<dyn Error>> {
+        let bytes = Self::from_base64(base64)?;
+        Ok(serde_json::from_slice(&bytes)?)
     }
 }
 
@@ -179,9 +203,30 @@ pub async fn get_new_messages_bin(
         data.sender_id.clone(),
         data.index.clone(),
     );
-    // convert each message object to a base64 encoded string:
-    let base64_messages = messages.unwrap().into_iter().map(|m| BufferConverter::to_base64(&m)).collect();
-    Json(base64_messages)
+    // // convert each message object to a base64 encoded string:
+    // let base64_messages = messages.unwrap().into_iter().map(|m| BufferConverter::to_base64(&m)).collect();
+    // Json(base64_messages)
+
+
+    let messages = server.client_get_new_messages(
+        group_id.as_ref().map(|g| g.as_slice()),
+        data.sender_id.clone(),
+        data.index.clone(),
+    );
+    
+    match messages {
+        Ok(msgs) => {
+            // Convert each message to a base64 encoded JSON string
+            let base64_messages = msgs
+                .into_iter()
+                .map(|m| BufferConverter::to_base64_json(&m))
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|_| Status::InternalServerError)?;
+                
+            Ok(Json(base64_messages))
+        },
+        Err(_) => Err(Status::InternalServerError)
+    }
 }
 
 // POST /invite_user (json containing group_id, user_id, and welcome_message)
