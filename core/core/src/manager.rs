@@ -119,8 +119,8 @@ impl ConvoManager {
 
         // let serialized_credential_with_key = TlsSerialize::tls_serialize_detached(&self.credential_with_key).unwrap();
         // let serialized_credential_with_key = Serializer::SerializeMap(&self.credential_with_key).unwrap();
-        let serialized_credential_with_key: Vec<u8> =
-            bincode::serialize(&self.credential_with_key).expect("Failed to serialize credential with key");
+        let serialized_credential_with_key: Vec<u8> = bincode::serialize(&self.credential_with_key)
+            .expect("Failed to serialize credential with key");
 
         let serialized = SerializedCredentials {
             signer: self.signer.tls_serialize_detached().unwrap(),
@@ -323,7 +323,7 @@ impl ConvoManager {
             group_name: group.name.clone(),
             welcome_message: serialized_welcome,
             ratchet_tree: Some(ratchet_tree),
-            global_index: 1,// TODO: this should be a parameter:
+            global_index: 1, // TODO: this should be a parameter:
             fanned: Some(serialized_fanned),
         }
     }
@@ -539,11 +539,19 @@ impl ConvoManager {
         messages: Vec<ConvoMessage>,
         group_id: Option<&GroupId>,
     ) {
+        // if the message's sender_id is from ourself, skip it: (make a new vector with the filtered messages):
+        let filtered_messages: Vec<ConvoMessage> = messages
+            .iter()
+            .filter(|m| m.sender_id != self.id)
+            .map(|m| m.clone())
+            .collect();
+
         // if the message is an invite, process it:
-        for message in messages {
+        for message in filtered_messages {
             if let Some(invite) = message.invite {
                 self.pending_invites.push(invite);
             }
+            
             // if the message is a message, process it:
             if let Some(msg) = message.message {
                 self.process_message(msg, Some(message.sender_id));

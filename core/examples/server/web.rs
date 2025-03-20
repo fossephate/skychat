@@ -153,6 +153,7 @@ pub struct GetMessages {
     pub sender_id: String, // the user requesting the messages
     pub index: u64,        // the index of the first message to get
 }
+
 #[post("/get_new_messages", format = "json", data = "<data>")]
 pub async fn get_new_messages(
     data: Json<GetMessages>,
@@ -165,6 +166,22 @@ pub async fn get_new_messages(
         data.index.clone(),
     );
     Json(messages.unwrap())
+}
+
+#[post("/get_new_messages_bin", format = "json", data = "<data>")]
+pub async fn get_new_messages_bin(
+    data: Json<GetMessages>,
+    state: &State<ServerState>,
+) -> Json<Vec<EncodedBase64>> {
+    let mut server = state.convo_server.lock().expect("failed to lock server!");
+    let messages = server.client_get_new_messages(
+        data.group_id.as_ref().map(|g| BufferConverter::from_base64(g).unwrap()),
+        data.sender_id.clone(),
+        data.index.clone(),
+    );
+    // convert each message object to a base64 encoded string:
+    let base64_messages = messages.unwrap().into_iter().map(|m| BufferConverter::to_base64(&m)).collect();
+    Json(base64_messages)
 }
 
 // POST /invite_user (json containing group_id, user_id, and welcome_message)

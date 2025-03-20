@@ -8,9 +8,8 @@ use crate::wrappers::*;
 use skychat_core::manager::*;
 use skychat_core::*;
 
-
-use skychat_client::*;
 use skychat_client::client::*;
+use skychat_client::*;
 
 // #[uniffi::export]
 // pub fn create_skychat_manager() -> skychat_core::manager::ConvoManager {
@@ -106,6 +105,18 @@ impl ConvoManager {
         );
     }
 
+    pub fn process_convo_messages_bin(&mut self, messages: Vec<u8>, group_id: Option<&GroupId>) {
+        let mut inner = self.inner.lock().unwrap();
+
+        // convert Option<GroupId> to Option<&GroupId>
+        let group_id_ref = group_id.as_ref();
+        let messages_bin = messages.into_iter().map(|m| m.into()).collect();
+        inner.process_convo_messages(
+            messages_bin,
+            group_id_ref,
+        );
+    }
+
     pub fn get_key_package(&self) -> Vec<u8> {
         let inner = self.inner.lock().unwrap();
         let key_package = inner.get_key_package();
@@ -154,7 +165,6 @@ impl ConvoManager {
         invites
     }
 }
-
 
 // convo client:
 #[derive(uniffi::Object)]

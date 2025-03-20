@@ -30,3 +30,21 @@ skychat/
 ├── mobile/             # React Native mobile app
 └── lib/                # React Native native module
 ```
+
+## development / building jank:
+
+to get this building you need to run the following from a clean clone of the repo:
+
+```
+cd lib && yarn install
+cd mobile && yarn install
+
+
+cd lib && yarn bob build
+# you must then edit the source to ignore the ArrayBufferLike type errors! (and run bob build again)
+
+cd mobile
+./scripts/remake-lib.sh
+cd ios && pod install
+yarn expo
+```

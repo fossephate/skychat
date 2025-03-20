@@ -45,6 +45,7 @@ async fn main() {
                 invite_user,
                 create_group,
                 get_new_messages,
+                get_new_messages_bin,
                 accept_invite,
                 send_message,
                 group_index,

@@ -1,7 +1,7 @@
 // should handle all of the complexities of dealing with the skychat server and lib, handle saving and loading state, etc.
 
 import { v4 as uuidv4 } from "uuid";
-import { ConvoManager } from "skychat-lib";
+import { ConvoManager, ConvoMessageWrapper } from "skychat-lib";
 
 // Type definitions
 type GroupId = ArrayBuffer;
@@ -32,10 +32,21 @@ interface ConvoInvite {
   fanned: ArrayBuffer;
 }
 
-interface ConvoMessage {
-  senderId: string;
-  message: SerializedMessage;
-  globalIndex: number;
+interface ConvoInviteWrapper {
+  fanned: ArrayBuffer | null;
+  global_index: number;
+  group_name: string;
+  sender_id: string;
+  ratchet_tree: ArrayBuffer;
+  welcome_message: ArrayBuffer;
+}
+
+interface ConvoMessageWrapper {
+  global_index: number;
+  message: SerializedMessage | null;
+  sender_id: string;
+  unix_timestamp: number;
+  invite: ConvoInviteWrapper | undefined;
 }
 
 export class ConvoClient {
@@ -54,10 +65,7 @@ export class ConvoClient {
     }
   }
 
-  toB64(buffer: ArrayBuffer | undefined): string | undefined {
-    if (!buffer) {
-      return undefined;
-    }
+  toB64(buffer: ArrayBuffer): string {
     return Buffer.from(buffer).toString("base64");
   }
 
@@ -258,7 +266,7 @@ export class ConvoClient {
   //   this.manager.pendingInvites = [];
   // }
 
-  async checkIncomingMessages(groupId?: GroupId): Promise<ConvoMessage[]> {
+  async checkIncomingMessages(groupId?: GroupId): Promise<[]> {
     if (!this.serverAddress) {
       throw new Error("Server address is not set");
     }
@@ -281,12 +289,11 @@ export class ConvoClient {
       })
     });
 
-    const messages: ConvoMessage[] = await response.json();
-    // filter out any messages from our own user_id:
-    const filteredMessages = messages.filter(msg => msg.senderId !== this.id);
+    const messages: string[] = await response.json();
 
-    this.manager.processConvoMessages(filteredMessages, groupId);
-    return filteredMessages;
+    // messages is a list of base64 encoded strings:
+    this.manager.processConvoMessagesBin(messages, groupId);
+    return messages;
   }
 
   async getInvites(): Promise<ConvoInvite[]> {
