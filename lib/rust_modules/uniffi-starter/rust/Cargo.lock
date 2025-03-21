@@ -595,6 +595,7 @@ name = "foobar"
 version = "0.1.0"
 dependencies = [
  "futures",
+ "reqwest",
  "serde_json",
  "skychat_client",
  "skychat_core",

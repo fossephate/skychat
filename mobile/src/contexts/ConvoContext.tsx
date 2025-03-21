@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-// import { ConvoClient } from "@/utils/convo";
-import { ConvoClient } from "skychat-lib";
+import { ConvoClient } from "@/utils/convo";
+// import { ConvoClient } from "skychat-lib";
 
 // Define the types for our messages and groups
 interface Message {
@@ -34,6 +34,8 @@ interface ConvoContextType {
   createGroup: (name: string, userids: string[]) => Promise<void>;
   sendMessage: (groupId: Uint8Array, text: string) => Promise<void>;
   getGroups: () => Promise<void>;
+  acceptPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<ArrayBuffer>;
+  rejectPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<void>;
 }
 
 // Create the context with a default value
@@ -68,11 +70,9 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
   const initAndConnect = useCallback(async (serverAddress: string, id: string) => {
     const newClient = new ConvoClient(id);
     setClient(newClient);
-    console.log("CLIENT INITIALIZED");
+    console.log("CLIENT INITIALIZED, connecting to: ", serverAddress);
     // await newClient.connectToServer(serverAddress);
-
     await newClient.connectToServer(serverAddress);
-
     setConnected(true);
   }, [client]);
 
@@ -95,14 +95,32 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
 
   const getInvites = useCallback(async () => {
     if (!client) throw new Error("Client not initialized");
-    const invites = await client.getInvites();
+    const invites = await client.getPendingInvites();
     return invites;
   }, [client]);
 
-
-  const getAllChats = useCallback(async () => {
+  const acceptPendingInvite = useCallback(async (welcomeMessage: ArrayBuffer) => {
     if (!client) throw new Error("Client not initialized");
-    // get bluesky dms:
+    await client.acceptPendingInvite(welcomeMessage);
+  }, [client]);
+
+  const rejectPendingInvite = useCallback(async (welcomeMessage: ArrayBuffer) => {
+    if (!client) throw new Error("Client not initialized");
+    await client.rejectPendingInvite(welcomeMessage);
+  }, [client]);
+
+
+  const getChats = useCallback(async () => {
+    if (!client) throw new Error("Client not initialized");
+    // list of all chats:
+  }, [client]);
+
+  const getChatMessages = useCallback(async (groupId: string) => {
+    if (!client) throw new Error("Client not initialized");
+    // list of messages in a chat:
+
+    
+
   }, [client]);
 
   // Computed property
@@ -120,6 +138,10 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     sendMessage,
     getGroups,
     getInvites,
+    acceptPendingInvite,
+    rejectPendingInvite,
+    getChats,
+    getChatMessages
   };
 
   return <ConvoContext.Provider value={value}>{children}</ConvoContext.Provider>;

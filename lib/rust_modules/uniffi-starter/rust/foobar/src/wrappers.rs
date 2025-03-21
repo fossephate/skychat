@@ -1,11 +1,16 @@
 use skychat_core::manager::*;
 use std::collections::HashMap;
+
+use skychat_core::utils::BufferConverter;
+
+type EncodedBase64 = String;
+
 // Wrapper for ConvoInvite
 #[derive(uniffi::Record)]
 pub struct ConvoInviteWrapper {
     pub sender_id: String,
     pub group_name: String,
-    pub welcome_message: Vec<u8>,
+    pub welcome_message: EncodedBase64,// todo: changed from Vec<u8> to String
     pub ratchet_tree: Option<Vec<u8>>,
     pub global_index: u64,
     pub fanned: Option<Vec<u8>>,
@@ -16,7 +21,7 @@ impl From<skychat_core::manager::ConvoInvite> for ConvoInviteWrapper {
         Self {
             sender_id: invite.sender_id,
             group_name: invite.group_name,
-            welcome_message: invite.welcome_message,
+            welcome_message: BufferConverter::to_base64(&invite.welcome_message),
             ratchet_tree: invite.ratchet_tree,
             global_index: invite.global_index,
             fanned: invite.fanned,
@@ -29,7 +34,7 @@ impl From<ConvoInviteWrapper> for skychat_core::manager::ConvoInvite {
         Self {
             sender_id: wrapper.sender_id,
             group_name: wrapper.group_name,
-            welcome_message: wrapper.welcome_message,
+            welcome_message: BufferConverter::from_base64(&wrapper.welcome_message).unwrap(),
             ratchet_tree: wrapper.ratchet_tree,
             global_index: wrapper.global_index,
             fanned: wrapper.fanned,

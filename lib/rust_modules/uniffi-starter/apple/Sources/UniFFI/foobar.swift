@@ -477,6 +477,14 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 public protocol ConvoClientProtocol: AnyObject, Sendable {
     
+    func connectToServer(serverAddress: String) async  -> UInt64
+    
+    func createGroup(groupName: String) async  -> Data
+    
+    func getGroupId(groupName: String) async  -> Data
+    
+    func getPendingInvites()  -> [ConvoInviteWrapper]
+    
 }
 open class ConvoClient: ConvoClientProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -538,6 +546,67 @@ public convenience init(id: String) {
     
 
     
+open func connectToServer(serverAddress: String)async  -> UInt64  {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_foobar_fn_method_convoclient_connect_to_server(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(serverAddress)
+                )
+            },
+            pollFunc: ffi_foobar_rust_future_poll_u64,
+            completeFunc: ffi_foobar_rust_future_complete_u64,
+            freeFunc: ffi_foobar_rust_future_free_u64,
+            liftFunc: FfiConverterUInt64.lift,
+            errorHandler: nil
+            
+        )
+}
+    
+open func createGroup(groupName: String)async  -> Data  {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_foobar_fn_method_convoclient_create_group(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(groupName)
+                )
+            },
+            pollFunc: ffi_foobar_rust_future_poll_rust_buffer,
+            completeFunc: ffi_foobar_rust_future_complete_rust_buffer,
+            freeFunc: ffi_foobar_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterData.lift,
+            errorHandler: nil
+            
+        )
+}
+    
+open func getGroupId(groupName: String)async  -> Data  {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_foobar_fn_method_convoclient_get_group_id(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(groupName)
+                )
+            },
+            pollFunc: ffi_foobar_rust_future_poll_rust_buffer,
+            completeFunc: ffi_foobar_rust_future_complete_rust_buffer,
+            freeFunc: ffi_foobar_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterData.lift,
+            errorHandler: nil
+            
+        )
+}
+    
+open func getPendingInvites() -> [ConvoInviteWrapper]  {
+    return try!  FfiConverterSequenceTypeConvoInviteWrapper.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convoclient_get_pending_invites(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 
 }
 
@@ -598,6 +667,8 @@ public func FfiConverterTypeConvoClient_lower(_ value: ConvoClient) -> UnsafeMut
 
 public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
+    func acceptPendingInvite(welcomeMessage: Data)  -> Data
+    
     func createInvite(groupId: Data, keyPackage: Data)  -> ConvoInviteWrapper
     
     func createMessage(groupId: Data, message: String)  -> Data
@@ -628,7 +699,11 @@ public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
     func processRawInvite(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) 
     
+    func rejectPendingInvite(welcomeMessage: Data) 
+    
     func saveState()  -> SerializedCredentialsWrapper
+    
+    func testPostRequest()  -> String
     
 }
 open class ConvoManager: ConvoManagerProtocol, @unchecked Sendable {
@@ -690,6 +765,14 @@ public convenience init(name: String) {
 
     
 
+    
+open func acceptPendingInvite(welcomeMessage: Data) -> Data  {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_accept_pending_invite(self.uniffiClonePointer(),
+        FfiConverterData.lower(welcomeMessage),$0
+    )
+})
+}
     
 open func createInvite(groupId: Data, keyPackage: Data) -> ConvoInviteWrapper  {
     return try!  FfiConverterTypeConvoInviteWrapper_lift(try! rustCall() {
@@ -816,9 +899,23 @@ open func processRawInvite(senderId: String, groupName: String, welcomeMessage: 
 }
 }
     
+open func rejectPendingInvite(welcomeMessage: Data)  {try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_reject_pending_invite(self.uniffiClonePointer(),
+        FfiConverterData.lower(welcomeMessage),$0
+    )
+}
+}
+    
 open func saveState() -> SerializedCredentialsWrapper  {
     return try!  FfiConverterTypeSerializedCredentialsWrapper_lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_save_state(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func testPostRequest() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_test_post_request(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -1394,6 +1491,89 @@ public func FfiConverterTypeSerializedCredentialsWrapper_lower(_ value: Serializ
     return FfiConverterTypeSerializedCredentialsWrapper.lower(value)
 }
 
+
+public enum ConvoError: Swift.Error {
+
+    
+    
+    case ConnectionError(String
+    )
+    case ProcessingError(String
+    )
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeConvoError: FfiConverterRustBuffer {
+    typealias SwiftType = ConvoError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConvoError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .ConnectionError(
+            try FfiConverterString.read(from: &buf)
+            )
+        case 2: return .ProcessingError(
+            try FfiConverterString.read(from: &buf)
+            )
+
+         default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: ConvoError, into buf: inout [UInt8]) {
+        switch value {
+
+        
+
+        
+        
+        case let .ConnectionError(v1):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(v1, into: &buf)
+            
+        
+        case let .ProcessingError(v1):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(v1, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoError_lift(_ buf: RustBuffer) throws -> ConvoError {
+    return try FfiConverterTypeConvoError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoError_lower(_ value: ConvoError) -> RustBuffer {
+    return FfiConverterTypeConvoError.lower(value)
+}
+
+
+extension ConvoError: Equatable, Hashable {}
+
+
+
+extension ConvoError: Foundation.LocalizedError {
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+}
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1591,6 +1771,52 @@ fileprivate struct FfiConverterDictionaryStringData: FfiConverterRustBuffer {
         return dict
     }
 }
+private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
+private let UNIFFI_RUST_FUTURE_POLL_MAYBE_READY: Int8 = 1
+
+fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
+
+fileprivate func uniffiRustCallAsync<F, T>(
+    rustFutureFunc: () -> UInt64,
+    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> (),
+    completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
+    freeFunc: (UInt64) -> (),
+    liftFunc: (F) throws -> T,
+    errorHandler: ((RustBuffer) throws -> Swift.Error)?
+) async throws -> T {
+    // Make sure to call the ensure init function since future creation doesn't have a
+    // RustCallStatus param, so doesn't use makeRustCall()
+    uniffiEnsureFoobarInitialized()
+    let rustFuture = rustFutureFunc()
+    defer {
+        freeFunc(rustFuture)
+    }
+    var pollResult: Int8;
+    repeat {
+        pollResult = await withUnsafeContinuation {
+            pollFunc(
+                rustFuture,
+                uniffiFutureContinuationCallback,
+                uniffiContinuationHandleMap.insert(obj: $0)
+            )
+        }
+    } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
+
+    return try liftFunc(makeRustCall(
+        { completeFunc(rustFuture, $0) },
+        errorHandler: errorHandler
+    ))
+}
+
+// Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
+// lift the return value or error and resume the suspended function.
+fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
+    if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
+        continuation.resume(returning: pollResult)
+    } else {
+        print("uniffiFutureContinuationCallback invalid handle")
+    }
+}
 
 private enum InitializationResult {
     case ok
@@ -1606,6 +1832,21 @@ private let initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_foobar_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_foobar_checksum_method_convoclient_connect_to_server() != 61290) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convoclient_create_group() != 27060) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convoclient_get_group_id() != 4211) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convoclient_get_pending_invites() != 44809) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_accept_pending_invite() != 47504) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_create_invite() != 50076) {
         return InitializationResult.apiChecksumMismatch
@@ -1652,7 +1893,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_foobar_checksum_method_convomanager_process_raw_invite() != 54618) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_foobar_checksum_method_convomanager_reject_pending_invite() != 20535) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_foobar_checksum_method_convomanager_save_state() != 12640) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_test_post_request() != 58236) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_constructor_convoclient_new() != 40272) {

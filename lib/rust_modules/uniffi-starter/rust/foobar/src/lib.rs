@@ -201,12 +201,63 @@ impl ConvoManager {
             .collect();
         invites
     }
+
+    pub fn get_invite_welcome(&self) -> Vec<u8> {
+        let mut inner = self.inner.lock().unwrap();
+        // get pending invites:
+        let invites = inner.pending_invites.clone();
+        // get welcome message from first invite:
+        let welcome_message = invites[0].welcome_message.clone();
+        welcome_message
+    }
+
+    // this works:
+    pub async fn test_post_request(&self) -> String {
+      // Create a new runtime
+      let runtime = tokio::runtime::Runtime::new()
+          .expect("Failed to create Tokio runtime");
+
+      // Use the runtime to execute the async block
+      runtime.block_on(async {
+          let server_address = "https://skychat.fosse.co";
+
+          // Create client and make request
+          let client = reqwest::Client::new();
+          match client
+              .post(format!("{}/api/connect", server_address))
+              .json(&serde_json::json!({
+                  "user_id": "test".to_string(),
+                  "serialized_key_package": "test2".to_string()
+              }))
+              .send()
+              .await
+          {
+              Ok(response) => {
+                  if response.status().is_success() {
+                      "success".to_string()
+                  } else {
+                      format!("error: HTTP status {}", response.status())
+                  }
+              }
+              Err(e) => format!("error: {}", e),
+          }
+      })
+  }
 }
 
 // convo client:
 #[derive(uniffi::Object)]
 pub struct ConvoClient {
     inner: Arc<Mutex<skychat_client::client::ConvoClient>>,
+}
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum ConvoError {
+    #[error("Connection error: {0}")]
+    ConnectionError(String),
+    #[error("Processing error: {0}")]
+    ProcessingError(String),
+    // Add other error variants as needed
 }
 
 #[uniffi::export]
@@ -218,26 +269,39 @@ impl ConvoClient {
       }
   }
 
-  pub async fn connect_to_server(&self, server_address: String) -> Result<(), String> {
-    // Release the lock before .await
-    let client = {
-        let inner = self.inner.lock().unwrap();
-        inner.user_id.clone()
-    };
+  pub async fn connect_to_server(&self, server_address: String) -> u64 {
+    // // Release the lock before .await
+    // let client = {
+    //     let inner = self.inner.lock().unwrap();
+    //     inner.user_id.clone()
+    // };
 
-    // Clone the Arc to move it into the future
-    let inner_arc = Arc::clone(&self.inner);
+    // // Clone the Arc to move it into the future
+    // let inner_arc = Arc::clone(&self.inner);
 
-    // Spawn a blocking task that acquires the lock
-    let result = tokio::task::spawn_blocking(move || {
-        let mut client = inner_arc.lock().unwrap();
-        // Run the future to completion in this blocking context
-        futures::executor::block_on(client.connect_to_server(server_address))
-            .map_err(|e| e.to_string()) // Convert the error to String
-    }).await
-    .unwrap_or_else(|e| Err(format!("Task join error: {}", e)));
+    // // Spawn a blocking task that acquires the lock
+    // let result = tokio::task::spawn_blocking(move || {
+    //     let mut client = inner_arc.lock().unwrap();
+    //     // Run the future to completion in this blocking context
+    //     futures::executor::block_on(client.connect_to_server(server_address))
+    //         .map_err(|e| ConvoError::ConnectionError(e.to_string()))
+    // }).await
+    // // .unwrap_or_else(|e| Err(format!("Task join error: {}", e)));
+    // .expect("Task join error");
 
-    result
+    // Create a new runtime
+    let runtime = tokio::runtime::Runtime::new()
+    .expect("Failed to create Tokio runtime");
+
+    // Use the runtime to execute the async block
+    runtime.block_on(async {
+
+      let mut client = self.inner.lock().unwrap();
+      client.connect_to_server(server_address).await;
+
+    });
+
+    return 2;
   }
 
   pub fn get_pending_invites(&self) -> Vec<ConvoInviteWrapper> {
@@ -282,115 +346,115 @@ impl ConvoClient {
   //     }).await.unwrap_or_default()
   // }
 
-  pub async fn invite_user_to_group(
-      &self,
-      receiver_id: String,
-      group_id: GroupId,
-      key_package: Vec<u8>,
-  ) {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn invite_user_to_group(
+  //     &self,
+  //     receiver_id: String,
+  //     group_id: GroupId,
+  //     key_package: Vec<u8>,
+  // ) {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          futures::executor::block_on(
-              client.invite_user_to_group(receiver_id, group_id, key_package)
-          )
-      }).await.ok();
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         futures::executor::block_on(
+  //             client.invite_user_to_group(receiver_id, group_id, key_package)
+  //         )
+  //     }).await.ok();
+  // }
 
-  pub async fn create_group_with_users(&self, group_name: String, user_ids: Vec<String>) {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn create_group_with_users(&self, group_name: String, user_ids: Vec<String>) {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          futures::executor::block_on(client.create_group_with_users(group_name, user_ids))
-      }).await.ok();
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         futures::executor::block_on(client.create_group_with_users(group_name, user_ids))
+  //     }).await.ok();
+  // }
 
-  pub async fn process_invite(&self, invite: ConvoInviteWrapper) {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn process_invite(&self, invite: ConvoInviteWrapper) {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          futures::executor::block_on(client.process_invite(invite.into()))
-      }).await.ok();
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         futures::executor::block_on(client.process_invite(invite.into()))
+  //     }).await.ok();
+  // }
 
-  pub async fn accept_current_invites(&self) {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn accept_current_invites(&self) {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          futures::executor::block_on(client.accept_current_invites())
-      }).await.ok();
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         futures::executor::block_on(client.accept_current_invites())
+  //     }).await.ok();
+  // }
 
-  pub async fn check_incoming_messages(
-      &self,
-      group_id: Option<GroupId>,
-  ) -> Vec<ConvoMessageWrapper> {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn check_incoming_messages(
+  //     &self,
+  //     group_id: Option<GroupId>,
+  // ) -> Vec<ConvoMessageWrapper> {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          let group_id_ref = group_id.as_ref();
-          let messages = futures::executor::block_on(client.check_incoming_messages(group_id_ref));
-          messages.into_iter().map(|m| m.into()).collect()
-      }).await.unwrap_or_default()
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         let group_id_ref = group_id.as_ref();
+  //         let messages = futures::executor::block_on(client.check_incoming_messages(group_id_ref));
+  //         messages.into_iter().map(|m| m.into()).collect()
+  //     }).await.unwrap_or_default()
+  // }
 
-  pub async fn get_group_index(&self, group_id: GroupId) -> u64 {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn get_group_index(&self, group_id: GroupId) -> u64 {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          futures::executor::block_on(client.get_group_index(&group_id))
-      }).await.unwrap_or_default()
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         futures::executor::block_on(client.get_group_index(&group_id))
+  //     }).await.unwrap_or_default()
+  // }
 
-  pub async fn sync_group(&self, group_id: GroupId) {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn sync_group(&self, group_id: GroupId) {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          futures::executor::block_on(client.sync_group(&group_id))
-      }).await.ok();
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         futures::executor::block_on(client.sync_group(&group_id))
+  //     }).await.ok();
+  // }
 
-  pub async fn send_message(&self, group_id: GroupId, text: String) {
-      let inner_arc = Arc::clone(&self.inner);
+  // pub async fn send_message(&self, group_id: GroupId, text: String) {
+  //     let inner_arc = Arc::clone(&self.inner);
 
-      tokio::task::spawn_blocking(move || {
-          let mut client = inner_arc.lock().unwrap();
-          futures::executor::block_on(client.send_message(&group_id, text))
-      }).await.ok();
-  }
+  //     tokio::task::spawn_blocking(move || {
+  //         let mut client = inner_arc.lock().unwrap();
+  //         futures::executor::block_on(client.send_message(&group_id, text))
+  //     }).await.ok();
+  // }
 
-  pub fn get_group_messages(&self, group_id: GroupId) -> Vec<MessageItemWrapper> {
-      let inner = self.inner.lock().unwrap();
-      let messages = inner.get_group_messages(&group_id);
-      messages.iter().map(|m| m.into()).collect()
-  }
+  // pub fn get_group_messages(&self, group_id: GroupId) -> Vec<MessageItemWrapper> {
+  //     let inner = self.inner.lock().unwrap();
+  //     let messages = inner.get_group_messages(&group_id);
+  //     messages.iter().map(|m| m.into()).collect()
+  // }
 
-  pub fn get_renderable_messages(&self, group_id: GroupId) -> Vec<String> {
-      let inner = self.inner.lock().unwrap();
-      inner.get_renderable_messages(&group_id)
-  }
+  // pub fn get_renderable_messages(&self, group_id: GroupId) -> Vec<String> {
+  //     let inner = self.inner.lock().unwrap();
+  //     inner.get_renderable_messages(&group_id)
+  // }
 
-  pub fn name_to_id(&self, user_name: String) -> String {
-      let inner = self.inner.lock().unwrap();
-      inner.name_to_id(user_name)
-  }
+  // pub fn name_to_id(&self, user_name: String) -> String {
+  //     let inner = self.inner.lock().unwrap();
+  //     inner.name_to_id(user_name)
+  // }
 
-  pub fn save_state(&self) -> SerializedCredentialsWrapper {
-      let inner = self.inner.lock().unwrap();
-      inner.manager.save_state().into()
-  }
+  // pub fn save_state(&self) -> SerializedCredentialsWrapper {
+  //     let inner = self.inner.lock().unwrap();
+  //     inner.manager.save_state().into()
+  // }
 
-  pub fn load_state(&self, state: SerializedCredentialsWrapper) {
-      let mut inner = self.inner.lock().unwrap();
-      inner.manager.load_state(state.into());
-  }
+  // pub fn load_state(&self, state: SerializedCredentialsWrapper) {
+  //     let mut inner = self.inner.lock().unwrap();
+  //     inner.manager.load_state(state.into());
+  // }
 }
 
 // // examples / testing:

@@ -26,6 +26,7 @@ interface Invite {
   senderAvatar?: string
   groupName: string
   timestamp: string
+  welcomeMessage: ArrayBuffer
 }
 
 // Mock data - will be replaced with actual data from API
@@ -37,6 +38,7 @@ const mockInvites: Invite[] = [
     senderAvatar: "https://i.pravatar.cc/150?u=1",
     groupName: "Alphabet Group",
     timestamp: new Date().toISOString(),
+    welcomeMessage: new ArrayBuffer(0)
   },
   {
     senderId: "did:plc:4x3vv23ssv6fkqw6zgvqb3tl",
@@ -45,6 +47,7 @@ const mockInvites: Invite[] = [
     senderAvatar: "https://i.pravatar.cc/150?u=2",
     groupName: "Design Team",
     timestamp: new Date().toISOString(),
+    welcomeMessage: new ArrayBuffer(0)
   },
 ]
 
@@ -91,7 +94,8 @@ export default function InvitesScreen() {
           ...invite,
           senderAvatar: profile?.avatar,
           senderHandle: profile?.handle,
-          senderName: profile?.displayName
+          senderName: profile?.displayName,
+          welcomeMessage: invite.welcomeMessage
         }
       })
       setInvites(invitesWithProfiles)
@@ -120,7 +124,7 @@ export default function InvitesScreen() {
 
   const handleAccept = (inviteId: string) => {
     // TODO: Implement accept functionality with convoContext
-    convoContext.acceptInvite(inviteId)
+    convoContext.acceptPendingInvite(inviteId)
 
     // For now, just remove from UI
     setInvites(current => current.filter(invite => invite.senderId !== inviteId))
@@ -155,7 +159,7 @@ export default function InvitesScreen() {
               name="check"
               backgroundColor="transparent"
               color={themed($acceptIcon).color}
-              onPress={() => handleAccept(invite.senderId)}
+              onPress={() => handleAccept(invite.welcomeMessage)}
               style={themed($actionButton)}
               iconStyle={themed($icon)}
             />

@@ -1,402 +1,425 @@
-// // should handle all of the complexities of dealing with the skychat server and lib, handle saving and loading state, etc.
+// should handle all of the complexities of dealing with the skychat server and lib, handle saving and loading state, etc.
 
-// import { v4 as uuidv4 } from "uuid";
-// import { ConvoInviteWrapper, ConvoManager, ConvoMessageWrapper } from "skychat-lib";
+import { v4 as uuidv4 } from "uuid";
+import { ConvoInviteWrapper, ConvoManager, ConvoMessageWrapper } from "skychat-lib";
 
-// // Type definitions
-// type GroupId = ArrayBuffer;
-// type SerializedMessage = ArrayBuffer;
-// type EncodedGroupId = string;
+// Type definitions
+type GroupId = ArrayBuffer;
+type SerializedMessage = ArrayBuffer;
+type EncodedGroupId = string;
 
-// interface MessageItem {
-//   text: string;
-//   senderId: string;
-//   timestamp: number;
-// }
+interface MessageItem {
+  text: string;
+  senderId: string;
+  timestamp: number;
+}
 
-// interface ConvoGroup {
-//   name: string;
-//   globalIndex: number;
-//   decrypted: MessageItem[];
-// }
+interface ConvoGroup {
+  name: string;
+  globalIndex: number;
+  decrypted: MessageItem[];
+}
 
-// interface ConvoUser {
-//   userId: string;
-//   name: string;
-// }
+interface ConvoUser {
+  userId: string;
+  name: string;
+}
 
-// interface ConvoInvite {
-//   groupName: string;
-//   welcomeMessage: ArrayBuffer;
-//   ratchetTree: ArrayBuffer;
-//   fanned: ArrayBuffer;
-// }
+interface ConvoInvite {
+  groupName: string;
+  welcomeMessage: ArrayBuffer;
+  ratchetTree: ArrayBuffer;
+  fanned: ArrayBuffer;
+}
 
-// // interface ConvoInviteWrapper {
-// //   fanned: ArrayBuffer | null;
-// //   global_index: number;
-// //   group_name: string;
-// //   sender_id: string;
-// //   ratchet_tree: ArrayBuffer;
-// //   welcome_message: ArrayBuffer;
-// // }
-
-// interface ConvoMessageWrapper {
+// interface ConvoInviteWrapper {
+//   fanned: ArrayBuffer | null;
 //   global_index: number;
-//   message: SerializedMessage | null;
+//   group_name: string;
 //   sender_id: string;
-//   unix_timestamp: number;
-//   invite: ConvoInviteWrapper | undefined;
+//   ratchet_tree: ArrayBuffer;
+//   welcome_message: ArrayBuffer;
 // }
 
-// export class ConvoClient {
-//   public id: string;
-//   public manager: ConvoManager;
-//   public serverAddress: string | null;
-//   public idToName: Map<string, string>;
+interface ConvoMessageWrapper {
+  global_index: number;
+  message: SerializedMessage | null;
+  sender_id: string;
+  unix_timestamp: number;
+  invite: ConvoInviteWrapper | undefined;
+}
 
-//   constructor(id: string, state?: any) {
-//     this.id = id;
-//     this.manager = new ConvoManager(id);
-//     this.serverAddress = null;
-//     this.idToName = new Map();
-//     if (state) {
-//       this.manager.loadState(state);
-//     }
-//   }
+export class ConvoClient {
+  public id: string;
+  public manager: ConvoManager;
+  public serverAddress: string | null;
+  public idToName: Map<string, string>;
 
-//   toB64(buffer: ArrayBuffer): string {
-//     return Buffer.from(buffer).toString("base64");
-//   }
+  constructor(id: string, state?: any) {
+    this.id = id;
+    this.manager = new ConvoManager(id);
+    this.serverAddress = null;
+    this.idToName = new Map();
+    if (state) {
+      this.manager.loadState(state);
+    }
+  }
 
-//   fromB64(b64: string): ArrayBuffer {
-//     // Create a buffer from the base64 string
-//     const buffer = Buffer.from(b64, "base64");
-//     // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
-//     const arrayBuffer = new ArrayBuffer(buffer.length);
-//     const view = new Uint8Array(arrayBuffer);
-//     for (let i = 0; i < buffer.length; i++) {
-//       view[i] = buffer[i];
-//     }
-//     return arrayBuffer;
-//   }
+  toB64(buffer: ArrayBuffer): string {
+    return Buffer.from(buffer).toString("base64");
+  }
 
-//   async createGroup(groupName: string, userIds: string[]): Promise<EncodedGroupId> {
-//     console.log("convo.ts: createGroup()");
-//     if (!this.serverAddress) {
-//       throw new Error("Server address is not set");
-//     }
+  fromB64(b64: string): ArrayBuffer {
+    // Create a buffer from the base64 string
+    const buffer = Buffer.from(b64, "base64");
+    // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
+    const arrayBuffer = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < buffer.length; i++) {
+      view[i] = buffer[i];
+    }
+    return arrayBuffer;
+  }
 
-//     const groupId = this.manager.createNewGroup(groupName);
-//     const encodedGroupId = this.toB64(groupId);
+  async createGroupWithUsers(groupName: string, userIds: string[]): Promise<EncodedGroupId> {
+    console.log("convo.ts: createGroupWithUsers()");
+    if (!this.serverAddress) {
+      throw new Error("Server address is not set");
+    }
 
-//     const response = await fetch(`${this.serverAddress}/api/create_group`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json"
-//       },
-//       body: JSON.stringify({
-//         group_id: encodedGroupId,
-//         group_name: groupName,
-//         sender_id: this.id
-//       })
-//     });
+    const groupId = this.manager.createNewGroup(groupName);
+    const encodedGroupId = this.toB64(groupId);
 
-//     if (!response.ok) {
-//       console.error("Failed to create group", response);
-//       throw new Error("Failed to create group");
-//     }
+    const response = await fetch(`${this.serverAddress}/api/create_group`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        group_id: encodedGroupId,
+        group_name: groupName,
+        sender_id: this.id
+      })
+    });
 
-//     console.log("getting key packages for users: ", userIds);
+    if (!response.ok) {
+      console.error("Failed to create group", response);
+      throw new Error("Failed to create group");
+    }
 
-//     // get the serialized key packages for all of the users in the group:
-//     // map of userId to key package:
-//     const keyPackagesMap = await this.getUserKeyPackages(userIds);
+    console.log("getting key packages for users: ", userIds);
 
-//     console.log("keyPackagesMap: ", keyPackagesMap);
+    // get the serialized key packages for all of the users in the group:
+    // map of userId to key package:
+    const keyPackagesMap = await this.getUserKeyPackages(userIds);
 
-//     await this.manager.groupPushMessage(groupId, "<group_created>", this.id);
+    console.log("keyPackagesMap: ", keyPackagesMap);
 
-//     // invite the users 1 by 1:
-//     for (const [userId, keyPackage] of keyPackagesMap.entries()) {
-//       await this.inviteUserToGroup(userId, groupId, keyPackage);
-//       let systemMessage = `<${userId}> joined the group`;
-//       await this.manager.groupPushMessage(groupId, systemMessage, this.id);
-//     }
+    await this.manager.groupPushMessage(groupId, "<group_created>", this.id);
 
-//     await this.manager.groupPushMessage(groupId, "<finished_creating_group>", this.id);
+    // invite the users 1 by 1:
+    for (const [userId, keyPackage] of keyPackagesMap.entries()) {
+      await this.inviteUserToGroup(userId, groupId, keyPackage);
+      let systemMessage = `<${userId}> joined the group`;
+      await this.manager.groupPushMessage(groupId, systemMessage, this.id);
+    }
 
-//     return encodedGroupId;
-//   }
+    await this.manager.groupPushMessage(groupId, "<finished_creating_group>", this.id);
 
-//   async getUserKeyPackages(userIds: string[]): Promise<Map<string, ArrayBuffer>> {
-//     const response = await fetch(`${this.serverAddress}/api/get_user_keys`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json"
-//       },
-//       body: JSON.stringify({
-//         user_ids: userIds
-//       })
-//     });
+    return encodedGroupId;
+  }
 
-//     if (!response.ok) {
-//       // the user is not on skychat :(
-//       console.error("Failed to get key packages", response);
-//       throw new Error("failed_get_key_packages");
-//     }
+  async getUserKeyPackages(userIds: string[]): Promise<Map<string, ArrayBuffer>> {
+    const response = await fetch(`${this.serverAddress}/api/get_user_keys`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        user_ids: userIds
+      })
+    });
+
+    if (!response.ok) {
+      // the user is not on skychat :(
+      console.error("Failed to get key packages", response);
+      throw new Error("failed_get_key_packages");
+    }
 
     
-//     const responseData: any = await response.json();   
-//     console.log("responseData: ", responseData);
-//     // Convert the object to a Map
-//     let keyPackageMap = new Map<string, string>(Object.entries(responseData));
-//     if (keyPackageMap.size !== userIds.length) {
-//       throw new Error("failed_get_some_key_packages");
-//     }
+    const responseData: any = await response.json();   
+    console.log("responseData: ", responseData);
+    // Convert the object to a Map
+    let keyPackageMap = new Map<string, string>(Object.entries(responseData));
+    if (keyPackageMap.size !== userIds.length) {
+      throw new Error("failed_get_some_key_packages");
+    }
 
-//     // convert the base64 strings to ArrayBuffers and map them to the userIds:
-//     let convertedKeyPackageMap = new Map<string, ArrayBuffer>();
-//     for (const [key, value] of keyPackageMap.entries()) {
-//       convertedKeyPackageMap.set(key, this.fromB64(value));
-//     }
-//     return convertedKeyPackageMap;
-//   }
+    // convert the base64 strings to ArrayBuffers and map them to the userIds:
+    let convertedKeyPackageMap = new Map<string, ArrayBuffer>();
+    for (const [key, value] of keyPackageMap.entries()) {
+      convertedKeyPackageMap.set(key, this.fromB64(value));
+    }
+    return convertedKeyPackageMap;
+  }
 
-//   async connectToServer(address: string): Promise<void> {
-//     console.log("convo.ts: connectToServer()");
-//     this.serverAddress = address;
+  async connectToServer(address: string): Promise<void> {
+    console.log("convo.ts: connectToServer()");
+    this.serverAddress = address;
 
-//     const response = await fetch(`${address}/api/connect`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json"
-//       },
-//       body: JSON.stringify({
-//         user_id: this.id,
-//         serialized_key_package: this.toB64(this.manager.getKeyPackage())
-//       })
-//     });
+    // test the rust backend:
+    // try {
+    //   const res = await this.manager.testPostRequest();
+    //   console.log("res: ", res);
+    // } catch (error) {
+    //   console.log("error: ", error);
+    // }
 
-//     // console.log("address: ", address);
-//     // console.log("serialized_key_package: ", this.manager.getKeyPackage());
-//     // console.log("response: ", response);
-//     // console.log("response.ok: ", response.ok);
+    const response = await fetch(`${address}/api/connect`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        user_id: this.id,
+        serialized_key_package: this.toB64(this.manager.getKeyPackage())
+      })
+    });
 
-//     if (!response.ok) {
-//       console.error("Failed to connect to server", response);
-//       throw new Error("Failed to connect to server");
-//     }
+    // console.log("address: ", address);
+    // console.log("serialized_key_package: ", this.manager.getKeyPackage());
+    // console.log("response: ", response);
+    // console.log("response.ok: ", response.ok);
 
-//     // every 10 seconds, get any new messages and process them
-//     setInterval(() => {
-//       this.checkIncomingMessages();
-//     }, 10000);
-//   }
+    if (!response.ok) {
+      console.error("Failed to connect to server", response);
+      throw new Error("Failed to connect to server");
+    }
 
-//   // async listUsers(): Promise<ConvoUser[]> {
-//   //   if (!this.serverAddress) {
-//   //     throw new Error("Server address is not set");
-//   //   }
-//   //   const response = await fetch(`${this.serverAddress}/api/list_users`);
-//   //   const users: ConvoUser[] = await response.json();
-//   //   users.forEach(user => {
-//   //     this.idToName.set(user.userId, user.name);
-//   //   });
-//   //   this.idToName.set("system", "system");
-//   //   return users;
-//   // }
+    // every 10 seconds, get any new messages and process them
+    setInterval(() => {
+      this.checkIncomingMessages();
+    }, 10000);
+  }
 
-//   async inviteUserToGroup(receiverId: string, groupId: GroupId, serializedKeyPackage: ArrayBuffer): Promise<void> {
-//     if (!this.serverAddress) {
-//       throw new Error("Server address is not set");
-//     }
+  // async listUsers(): Promise<ConvoUser[]> {
+  //   if (!this.serverAddress) {
+  //     throw new Error("Server address is not set");
+  //   }
+  //   const response = await fetch(`${this.serverAddress}/api/list_users`);
+  //   const users: ConvoUser[] = await response.json();
+  //   users.forEach(user => {
+  //     this.idToName.set(user.userId, user.name);
+  //   });
+  //   this.idToName.set("system", "system");
+  //   return users;
+  // }
 
-//     console.log(`inviting user to group: ${receiverId}, ${groupId.byteLength}, ${serializedKeyPackage.byteLength}`);
+  async inviteUserToGroup(receiverId: string, groupId: GroupId, serializedKeyPackage: ArrayBuffer): Promise<void> {
+    if (!this.serverAddress) {
+      throw new Error("Server address is not set");
+    }
 
-//     const groupInvite = this.manager.createInvite(groupId, serializedKeyPackage);
+    console.log(`inviting user to group: ${receiverId}, ${groupId.byteLength}, ${serializedKeyPackage.byteLength}`);
 
-//     const response = await fetch(`${this.serverAddress}/api/invite_user`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json"
-//       },
-//       body: JSON.stringify({
-//         group_id: this.toB64(groupId),
-//         sender_id: this.id,
-//         receiver_id: receiverId,
-//         welcome_message: this.toB64(groupInvite.welcomeMessage),
-//         ratchet_tree: this.toB64(groupInvite.ratchetTree),
-//         fanned: this.toB64(groupInvite.fanned)
-//       })
-//     });
+    const groupInvite = this.manager.createInvite(groupId, serializedKeyPackage);
 
-//     if (!response.ok) {
-//       throw new Error("Failed to send invite");
-//     }
-//   }
+    const response = await fetch(`${this.serverAddress}/api/invite_user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        group_id: this.toB64(groupId),
+        sender_id: this.id,
+        receiver_id: receiverId,
+        welcome_message: this.toB64(groupInvite.welcomeMessage),
+        ratchet_tree: this.toB64(groupInvite.ratchetTree),
+        fanned: this.toB64(groupInvite.fanned)
+      })
+    });
 
-//   async processInvite(invite: ConvoInviteWrapper): Promise<void> {
-//     // this.manager.processInvite(invite);
-//     // if (!this.serverAddress) {
-//     //   throw new Error("Server address is not set");
-//     // }
-//     // // const groupId = Array.from(this.findGroupIdByName(invite.groupName));
-//     // const groupId = invite.groupId;
-//     // const response = await fetch(`${this.serverAddress}/api/accept_invite`, {
-//     //   method: 'POST',
-//     //   headers: {
-//     //     'Content-Type': 'application/json'
-//     //   },
-//     //   body: JSON.stringify({
-//     //     group_id: groupId,
-//     //     sender_id: this.id
-//     //   })
-//     // });
-//     // if (!response.ok) {
-//     //   throw new Error("Failed to accept invite");
-//     // }
-//   }
+    if (!response.ok) {
+      throw new Error("Failed to send invite");
+    }
+  }
 
-//   // async acceptCurrentInvites(): Promise<void> {
-//   //   const invites = [...this.manager.pendingInvites];
-//   //   for (const invite of invites) {
-//   //     await this.processInvite(invite);
-//   //   }
-//   //   this.manager.pendingInvites = [];
-//   // }
+  async processInvite(invite: ConvoInviteWrapper): Promise<void> {
+    // this.manager.processInvite(invite);
+    // if (!this.serverAddress) {
+    //   throw new Error("Server address is not set");
+    // }
+    // // const groupId = Array.from(this.findGroupIdByName(invite.groupName));
+    // const groupId = invite.groupId;
+    // const response = await fetch(`${this.serverAddress}/api/accept_invite`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json'
+    //   },
+    //   body: JSON.stringify({
+    //     group_id: groupId,
+    //     sender_id: this.id
+    //   })
+    // });
+    // if (!response.ok) {
+    //   throw new Error("Failed to accept invite");
+    // }
+  }
 
-//   async checkIncomingMessages(groupId?: GroupId): Promise<void> {
-//     if (!this.serverAddress) {
-//       throw new Error("Server address is not set");
-//     }
+  // async acceptCurrentInvites(): Promise<void> {
+  //   const invites = [...this.manager.pendingInvites];
+  //   for (const invite of invites) {
+  //     await this.processInvite(invite);
+  //   }
+  //   this.manager.pendingInvites = [];
+  // }
 
-//     let index = 0;
-//     if (groupId) {
-//       index = Number(await this.manager.groupGetIndex(groupId));
-//     }
+  async acceptPendingInvite(welcomeMessage: ArrayBuffer): Promise<ArrayBuffer> {
+    const groupId = this.manager.acceptPendingInvite(welcomeMessage);
+    // await this.syncGroup(groupId);
+    return groupId;
+  }
 
-//     const response = await fetch(`${this.serverAddress}/api/get_new_messages_bin`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json"
-//       },
-//       body: JSON.stringify({
-//         group_id: groupId,
-//         sender_id: this.id,
-//         index
-//         // TODO: this should need to be signed by the userid or some other auth
-//       })
-//     });
+  async rejectPendingInvite(welcomeMessage: ArrayBuffer): Promise<void> {
+    const groupId = this.manager.rejectPendingInvite(welcomeMessage);
+    // await this.syncGroup(groupId);
+  }
 
-//     const messages: string[] = await response.json();
+  async checkIncomingMessages(groupId?: GroupId): Promise<void> {
+    if (!this.serverAddress) {
+      throw new Error("Server address is not set");
+    }
 
-//     console.log("messages: ", messages);
+    let index = 0;
+    if (groupId) {
+      index = Number(await this.manager.groupGetIndex(groupId));
+    }
 
-//     // messages is a list of base64 encoded strings:
-//     try {
-//       this.manager.processConvoMessagesBin(messages, groupId);
-//     } catch (error) {
-//       console.error("error: ", error);
-//     }
-//   }
+    const response = await fetch(`${this.serverAddress}/api/get_new_messages_bin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        group_id: groupId,
+        sender_id: this.id,
+        index
+        // TODO: this should need to be signed by the userid or some other auth
+      })
+    });
 
-//   async getInvites(): Promise<ConvoInviteWrapper[]> {
-//     const invites = await this.manager.getPendingInvites();
-//     return invites;
-//   }
+    const messages: string[] = await response.json();
 
-//   async syncGroup(groupId: GroupId): Promise<void> {
-//     await this.checkIncomingMessages(groupId);
-//     const groupIndex = await this.manager.groupGetIndex(groupId);
+    console.log("messages: ", messages);
 
-//     this.manager.groupSetIndex(groupId, groupIndex);
-//   }
+    // messages is a list of base64 encoded strings:
+    try {
+      this.manager.processConvoMessagesBin(messages, groupId);
+    } catch (error) {
+      console.error("error: ", error);
+    }
+  }
 
-//   async sendMessage(groupId: GroupId, text: string): Promise<void> {
-//     // always sync before sending a message:
-//     await this.syncGroup(groupId);
+  async getPendingInvites(): Promise<ConvoInviteWrapper[]> {
+    const invites = await this.manager.getPendingInvites();
 
-//     const msg = this.manager.createMessage(groupId, text);
-//     // const group = this.manager.getGroup(groupId);
-//     const group = true;
-//     const groupIndex = await this.manager.groupGetIndex(groupId);
+    // const welcomeMessage = this.manager.getInviteWelcome();
+    // console.log("welcomeMessage: ", welcomeMessage);
+    // console.log("welcomeMessage.byteLength: ", welcomeMessage.byteLength);
+    return invites;
+  }
 
-//     if (!group || !this.serverAddress) {
-//       throw new Error("Group not found or server address not set");
-//     }
+  async syncGroup(groupId: GroupId): Promise<void> {
+    await this.checkIncomingMessages(groupId);
+    const groupIndex = await this.manager.groupGetIndex(groupId);
 
-//     const response = await fetch(`${this.serverAddress}/api/send_message`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json"
-//       },
-//       body: JSON.stringify({
-//         group_id: groupId,
-//         sender_id: this.id,
-//         message: msg,
-//         global_index: groupIndex + 1n
-//       })
-//     });
+    this.manager.groupSetIndex(groupId, groupIndex);
+  }
 
-//     if (response.ok) {
-//       await this.manager.groupSetIndex(groupId, groupIndex + 1n);
-//       await this.manager.groupPushMessage(groupId, text, this.id);
-//     } else {
-//       await this.manager.groupPushMessage(groupId, "<message_failed to send!>", this.id);
-//     }
-//   }
+  async sendMessage(groupId: GroupId, text: string): Promise<void> {
+    // always sync before sending a message:
+    await this.syncGroup(groupId);
 
-//   // getGroupMessages(groupId: GroupId): MessageItem[] {
-//   //   const group = this.manager.getGroup(groupId);
-//   //   if (!group) {
-//   //     throw new Error("Group not found");
-//   //   }
-//   //   return group.decrypted;
-//   // }
+    const msg = this.manager.createMessage(groupId, text);
+    // const group = this.manager.getGroup(groupId);
+    const group = true;
+    const groupIndex = await this.manager.groupGetIndex(groupId);
 
-//   // getRenderableMessages(groupId: GroupId): string[] {
-//   //   const messages = this.getGroupMessages(groupId);
-//   //   return messages.map(msg => {
-//   //     const senderName = this.idToName.get(msg.senderId) || msg.senderId;
-//   //     return `${senderName}: ${msg.text}`;
-//   //   });
-//   // }
+    if (!group || !this.serverAddress) {
+      throw new Error("Group not found or server address not set");
+    }
 
-//   // private async getGroupIndex(groupId: GroupId): Promise<number> {
-//   //   if (!this.serverAddress) {
-//   //     throw new Error("Server address is not set");
-//   //   }
+    const response = await fetch(`${this.serverAddress}/api/send_message`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        group_id: groupId,
+        sender_id: this.id,
+        message: msg,
+        global_index: groupIndex + 1n
+      })
+    });
 
-//   //   const response = await fetch(`${this.serverAddress}/api/group_index`, {
-//   //     method: 'POST',
-//   //     headers: {
-//   //       'Content-Type': 'application/json'
-//   //     },
-//   //     body: JSON.stringify({
-//   //       group_id: Array.from(groupId),
-//   //       sender_id: this.userId
-//   //     })
-//   //   });
+    if (response.ok) {
+      await this.manager.groupSetIndex(groupId, groupIndex + 1n);
+      await this.manager.groupPushMessage(groupId, text, this.id);
+    } else {
+      await this.manager.groupPushMessage(groupId, "<message_failed to send!>", this.id);
+    }
+  }
 
-//   //   return await response.json();
-//   // }
+  // getGroupMessages(groupId: GroupId): MessageItem[] {
+  //   const group = this.manager.getGroup(groupId);
+  //   if (!group) {
+  //     throw new Error("Group not found");
+  //   }
+  //   return group.decrypted;
+  // }
 
-//   // private findGroupIdByName(groupName: string): GroupId {
-//   //   // for (const [idHex, group] of this.manager.groups) {
-//   //   //   if (group.name === groupName) {
-//   //   //     return new Uint8Array(Buffer.from(idHex, 'hex'));
-//   //   //   }
-//   //   // }
-//   //   throw new Error("Group not found");
-//   // }
+  // getRenderableMessages(groupId: GroupId): string[] {
+  //   const messages = this.getGroupMessages(groupId);
+  //   return messages.map(msg => {
+  //     const senderName = this.idToName.get(msg.senderId) || msg.senderId;
+  //     return `${senderName}: ${msg.text}`;
+  //   });
+  // }
 
-//   // nameToId(userName: string): string {
-//   //   for (const [id, name] of this.idToName) {
-//   //     if (name === userName) {
-//   //       return id;
-//   //     }
-//   //   }
-//   //   throw new Error("User not found");
-//   // }
-// }
+  // private async getGroupIndex(groupId: GroupId): Promise<number> {
+  //   if (!this.serverAddress) {
+  //     throw new Error("Server address is not set");
+  //   }
+
+  //   const response = await fetch(`${this.serverAddress}/api/group_index`, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json'
+  //     },
+  //     body: JSON.stringify({
+  //       group_id: Array.from(groupId),
+  //       sender_id: this.userId
+  //     })
+  //   });
+
+  //   return await response.json();
+  // }
+
+  // private findGroupIdByName(groupName: string): GroupId {
+  //   // for (const [idHex, group] of this.manager.groups) {
+  //   //   if (group.name === groupName) {
+  //   //     return new Uint8Array(Buffer.from(idHex, 'hex'));
+  //   //   }
+  //   // }
+  //   throw new Error("Group not found");
+  // }
+
+  // nameToId(userName: string): string {
+  //   for (const [id, name] of this.idToName) {
+  //     if (name === userName) {
+  //       return id;
+  //     }
+  //   }
+  //   throw new Error("User not found");
+  // }
+}

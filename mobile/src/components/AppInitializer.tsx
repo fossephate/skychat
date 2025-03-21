@@ -38,7 +38,7 @@ export function AppInitializer() {
         handleResolver: 'https://bsky.social'
       });
 
-      console.log("initializing client");
+      console.log("initializing auth client");
       authContext.setClient(authClient);
 
       const result = await authClient.init();
