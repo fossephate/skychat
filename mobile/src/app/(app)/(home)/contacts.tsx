@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { View, ViewStyle, TextStyle, Image, ImageStyle, TextInput, TouchableOpacity, RefreshControl } from "react-native"
+import { View, ViewStyle, TextStyle, Image, ImageStyle, TextInput, TouchableOpacity, RefreshControl, Alert } from "react-native"
 import { Button, Icon, ListView, Screen, Text, TextField } from "src/components"
 import { colors, ThemedStyle } from "src/theme"
 import { Agent } from '@atproto/api'
@@ -83,9 +83,11 @@ export default function UsersScreen() {
     try {
       const encodedGroupId = await convoContext.createGroup(groupName, selectedUsers)
       console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)
-      router.push(`/chats/${encodedGroupId}`)
+      return encodedGroupId
     } catch (error) {
-      console.error('Error creating chat:', error)
+      // console.error('Error creating chat:', error)
+      // pop up an error modal:
+      Alert.alert('Error creating chat', 'This user is not on Skychat (yet!)')
     }
   }
   

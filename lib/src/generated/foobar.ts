@@ -70,6 +70,84 @@ const uniffiIsDebug =
   false;
 // Public interface members begin here.
 
+export type ConvoChatWrapper = {
+  id: ArrayBuffer;
+  name: string;
+  lastMessage: string | undefined;
+  unreadMessages: /*u64*/ bigint;
+  globalIndex: /*u64*/ bigint;
+  participants: Array<string>;
+  decrypted: Array<MessageItemWrapper>;
+};
+
+/**
+ * Generated factory for {@link ConvoChatWrapper} record objects.
+ */
+export const ConvoChatWrapper = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<ConvoChatWrapper, ReturnType<typeof defaults>>(
+      defaults
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link ConvoChatWrapper}, with defaults specified
+     * in Rust, in the {@link foobar} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link ConvoChatWrapper}, with defaults specified
+     * in Rust, in the {@link foobar} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link foobar} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<ConvoChatWrapper>,
+  });
+})();
+
+const FfiConverterTypeConvoChatWrapper = (() => {
+  type TypeName = ConvoChatWrapper;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        id: FfiConverterArrayBuffer.read(from),
+        name: FfiConverterString.read(from),
+        lastMessage: FfiConverterOptionalString.read(from),
+        unreadMessages: FfiConverterUInt64.read(from),
+        globalIndex: FfiConverterUInt64.read(from),
+        participants: FfiConverterArrayString.read(from),
+        decrypted: FfiConverterArrayTypeMessageItemWrapper.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterArrayBuffer.write(value.id, into);
+      FfiConverterString.write(value.name, into);
+      FfiConverterOptionalString.write(value.lastMessage, into);
+      FfiConverterUInt64.write(value.unreadMessages, into);
+      FfiConverterUInt64.write(value.globalIndex, into);
+      FfiConverterArrayString.write(value.participants, into);
+      FfiConverterArrayTypeMessageItemWrapper.write(value.decrypted, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterArrayBuffer.allocationSize(value.id) +
+        FfiConverterString.allocationSize(value.name) +
+        FfiConverterOptionalString.allocationSize(value.lastMessage) +
+        FfiConverterUInt64.allocationSize(value.unreadMessages) +
+        FfiConverterUInt64.allocationSize(value.globalIndex) +
+        FfiConverterArrayString.allocationSize(value.participants) +
+        FfiConverterArrayTypeMessageItemWrapper.allocationSize(value.decrypted)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
 export type ConvoInviteWrapper = {
   senderId: string;
   groupName: string;
@@ -907,6 +985,7 @@ export interface ConvoManagerInterface {
   ): ConvoInviteWrapper;
   createMessage(groupId: ArrayBuffer, message: string): ArrayBuffer;
   createNewGroup(name: string): ArrayBuffer;
+  getChats(): Array<ConvoChatWrapper>;
   getInviteWelcome(): ArrayBuffer;
   getKeyPackage(): ArrayBuffer;
   getPartialGroup(groupId: ArrayBuffer): LocalGroupWrapper;
@@ -1024,6 +1103,20 @@ export class ConvoManager
           return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_create_new_group(
             uniffiTypeConvoManagerObjectFactory.clonePointer(this),
             FfiConverterString.lower(name),
+            callStatus
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift
+      )
+    );
+  }
+
+  public getChats(): Array<ConvoChatWrapper> {
+    return FfiConverterArrayTypeConvoChatWrapper.lift(
+      uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_chats(
+            uniffiTypeConvoManagerObjectFactory.clonePointer(this),
             callStatus
           );
         },
@@ -1400,6 +1493,11 @@ const FfiConverterOptionalTypeConvoInviteWrapper = new FfiConverterOptional(
 // FfiConverter for string | undefined
 const FfiConverterOptionalString = new FfiConverterOptional(FfiConverterString);
 
+// FfiConverter for Array<ConvoChatWrapper>
+const FfiConverterArrayTypeConvoChatWrapper = new FfiConverterArray(
+  FfiConverterTypeConvoChatWrapper
+);
+
 // FfiConverter for Array<ConvoInviteWrapper>
 const FfiConverterArrayTypeConvoInviteWrapper = new FfiConverterArray(
   FfiConverterTypeConvoInviteWrapper
@@ -1502,6 +1600,14 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_create_new_group'
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_get_chats() !==
+    34049
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_method_convomanager_get_chats'
     );
   }
   if (
@@ -1653,6 +1759,7 @@ function uniffiEnsureInitialized() {
 export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
+    FfiConverterTypeConvoChatWrapper,
     FfiConverterTypeConvoClient,
     FfiConverterTypeConvoInviteWrapper,
     FfiConverterTypeConvoManager,

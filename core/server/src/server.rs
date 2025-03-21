@@ -178,7 +178,7 @@ impl ConvoServer {
                 global_index: group.global_index + 1,
                 sender_id: sender_id.clone(),
                 message: Some(fanned),
-                unix_timestamp: 0,
+                unix_timestamp: utils::current_timestamp(),
                 invite: None,
             });
             group.global_index += 1;
@@ -197,7 +197,7 @@ impl ConvoServer {
                 global_index: group.global_index,
                 sender_id: sender_id.clone(),
                 message: None,
-                unix_timestamp: 0,
+                unix_timestamp: utils::current_timestamp(),
                 invite: Some(ConvoInvite {
                     sender_id: sender_id.clone(),
                     global_index: group.global_index,
@@ -229,7 +229,7 @@ impl ConvoServer {
                 global_index: correct_new_gi,
                 sender_id: sender_id.clone(),
                 message: Some(message.clone()),
-                unix_timestamp: 0,
+                unix_timestamp: utils::current_timestamp(),
                 invite: None,
             });
             group.global_index = correct_new_gi;

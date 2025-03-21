@@ -31,7 +31,7 @@ interface ConvoContextType {
   // initClient: (id: string) => void;
   // connect: (serverAddress: string) => Promise<void>;
   initAndConnect: (serverAddress: string, id: string) => Promise<void>;
-  createGroup: (name: string, userids: string[]) => Promise<void>;
+  createGroup: (name: string, userids: string[]) => Promise<string>;
   sendMessage: (groupId: Uint8Array, text: string) => Promise<void>;
   getGroups: () => Promise<void>;
   acceptPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<ArrayBuffer>;
@@ -101,7 +101,11 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
 
   const acceptPendingInvite = useCallback(async (welcomeMessage: ArrayBuffer) => {
     if (!client) throw new Error("Client not initialized");
-    await client.acceptPendingInvite(welcomeMessage);
+    try {
+      await client.acceptPendingInvite(welcomeMessage);
+    } catch (error) {
+      console.error("Error accepting pending invite: ", error);
+    }
   }, [client]);
 
   const rejectPendingInvite = useCallback(async (welcomeMessage: ArrayBuffer) => {
@@ -113,13 +117,14 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
   const getChats = useCallback(async () => {
     if (!client) throw new Error("Client not initialized");
     // list of all chats:
+    return await client.getChats();
   }, [client]);
 
   const getChatMessages = useCallback(async (groupId: string) => {
     if (!client) throw new Error("Client not initialized");
     // list of messages in a chat:
 
-    
+
 
   }, [client]);
 

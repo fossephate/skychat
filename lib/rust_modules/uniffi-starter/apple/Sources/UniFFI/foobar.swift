@@ -675,6 +675,10 @@ public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
     func createNewGroup(name: String)  -> Data
     
+    func getChats()  -> [ConvoChatWrapper]
+    
+    func getInviteWelcome()  -> Data
+    
     func getKeyPackage()  -> Data
     
     func getPartialGroup(groupId: Data)  -> LocalGroupWrapper
@@ -703,7 +707,7 @@ public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
     func saveState()  -> SerializedCredentialsWrapper
     
-    func testPostRequest()  -> String
+    func testPostRequest() async  -> String
     
 }
 open class ConvoManager: ConvoManagerProtocol, @unchecked Sendable {
@@ -796,6 +800,20 @@ open func createNewGroup(name: String) -> Data  {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_create_new_group(self.uniffiClonePointer(),
         FfiConverterString.lower(name),$0
+    )
+})
+}
+    
+open func getChats() -> [ConvoChatWrapper]  {
+    return try!  FfiConverterSequenceTypeConvoChatWrapper.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_get_chats(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func getInviteWelcome() -> Data  {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_get_invite_welcome(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -913,11 +931,22 @@ open func saveState() -> SerializedCredentialsWrapper  {
 })
 }
     
-open func testPostRequest() -> String  {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_foobar_fn_method_convomanager_test_post_request(self.uniffiClonePointer(),$0
-    )
-})
+open func testPostRequest()async  -> String  {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_foobar_fn_method_convomanager_test_post_request(
+                    self.uniffiClonePointer()
+                    
+                )
+            },
+            pollFunc: ffi_foobar_rust_future_poll_rust_buffer,
+            completeFunc: ffi_foobar_rust_future_complete_rust_buffer,
+            freeFunc: ffi_foobar_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: nil
+            
+        )
 }
     
 
@@ -976,17 +1005,127 @@ public func FfiConverterTypeConvoManager_lower(_ value: ConvoManager) -> UnsafeM
 
 
 
+public struct ConvoChatWrapper {
+    public var id: Data
+    public var name: String
+    public var lastMessage: String?
+    public var unreadMessages: UInt64
+    public var globalIndex: UInt64
+    public var participants: [String]
+    public var decrypted: [MessageItemWrapper]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: Data, name: String, lastMessage: String?, unreadMessages: UInt64, globalIndex: UInt64, participants: [String], decrypted: [MessageItemWrapper]) {
+        self.id = id
+        self.name = name
+        self.lastMessage = lastMessage
+        self.unreadMessages = unreadMessages
+        self.globalIndex = globalIndex
+        self.participants = participants
+        self.decrypted = decrypted
+    }
+}
+
+#if compiler(>=6)
+extension ConvoChatWrapper: Sendable {}
+#endif
+
+
+extension ConvoChatWrapper: Equatable, Hashable {
+    public static func ==(lhs: ConvoChatWrapper, rhs: ConvoChatWrapper) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.lastMessage != rhs.lastMessage {
+            return false
+        }
+        if lhs.unreadMessages != rhs.unreadMessages {
+            return false
+        }
+        if lhs.globalIndex != rhs.globalIndex {
+            return false
+        }
+        if lhs.participants != rhs.participants {
+            return false
+        }
+        if lhs.decrypted != rhs.decrypted {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(lastMessage)
+        hasher.combine(unreadMessages)
+        hasher.combine(globalIndex)
+        hasher.combine(participants)
+        hasher.combine(decrypted)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeConvoChatWrapper: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConvoChatWrapper {
+        return
+            try ConvoChatWrapper(
+                id: FfiConverterData.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                lastMessage: FfiConverterOptionString.read(from: &buf), 
+                unreadMessages: FfiConverterUInt64.read(from: &buf), 
+                globalIndex: FfiConverterUInt64.read(from: &buf), 
+                participants: FfiConverterSequenceString.read(from: &buf), 
+                decrypted: FfiConverterSequenceTypeMessageItemWrapper.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ConvoChatWrapper, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.id, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterOptionString.write(value.lastMessage, into: &buf)
+        FfiConverterUInt64.write(value.unreadMessages, into: &buf)
+        FfiConverterUInt64.write(value.globalIndex, into: &buf)
+        FfiConverterSequenceString.write(value.participants, into: &buf)
+        FfiConverterSequenceTypeMessageItemWrapper.write(value.decrypted, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoChatWrapper_lift(_ buf: RustBuffer) throws -> ConvoChatWrapper {
+    return try FfiConverterTypeConvoChatWrapper.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoChatWrapper_lower(_ value: ConvoChatWrapper) -> RustBuffer {
+    return FfiConverterTypeConvoChatWrapper.lower(value)
+}
+
+
 public struct ConvoInviteWrapper {
     public var senderId: String
     public var groupName: String
-    public var welcomeMessage: Data
+    public var welcomeMessage: String
     public var ratchetTree: Data?
     public var globalIndex: UInt64
     public var fanned: Data?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, globalIndex: UInt64, fanned: Data?) {
+    public init(senderId: String, groupName: String, welcomeMessage: String, ratchetTree: Data?, globalIndex: UInt64, fanned: Data?) {
         self.senderId = senderId
         self.groupName = groupName
         self.welcomeMessage = welcomeMessage
@@ -1045,7 +1184,7 @@ public struct FfiConverterTypeConvoInviteWrapper: FfiConverterRustBuffer {
             try ConvoInviteWrapper(
                 senderId: FfiConverterString.read(from: &buf), 
                 groupName: FfiConverterString.read(from: &buf), 
-                welcomeMessage: FfiConverterData.read(from: &buf), 
+                welcomeMessage: FfiConverterString.read(from: &buf), 
                 ratchetTree: FfiConverterOptionData.read(from: &buf), 
                 globalIndex: FfiConverterUInt64.read(from: &buf), 
                 fanned: FfiConverterOptionData.read(from: &buf)
@@ -1055,7 +1194,7 @@ public struct FfiConverterTypeConvoInviteWrapper: FfiConverterRustBuffer {
     public static func write(_ value: ConvoInviteWrapper, into buf: inout [UInt8]) {
         FfiConverterString.write(value.senderId, into: &buf)
         FfiConverterString.write(value.groupName, into: &buf)
-        FfiConverterData.write(value.welcomeMessage, into: &buf)
+        FfiConverterString.write(value.welcomeMessage, into: &buf)
         FfiConverterOptionData.write(value.ratchetTree, into: &buf)
         FfiConverterUInt64.write(value.globalIndex, into: &buf)
         FfiConverterOptionData.write(value.fanned, into: &buf)
@@ -1674,6 +1813,31 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeConvoChatWrapper: FfiConverterRustBuffer {
+    typealias SwiftType = [ConvoChatWrapper]
+
+    public static func write(_ value: [ConvoChatWrapper], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeConvoChatWrapper.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ConvoChatWrapper] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ConvoChatWrapper]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeConvoChatWrapper.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeConvoInviteWrapper: FfiConverterRustBuffer {
     typealias SwiftType = [ConvoInviteWrapper]
 
@@ -1857,6 +2021,12 @@ private let initializationResult: InitializationResult = {
     if (uniffi_foobar_checksum_method_convomanager_create_new_group() != 44787) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_foobar_checksum_method_convomanager_get_chats() != 34049) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_get_invite_welcome() != 37437) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_foobar_checksum_method_convomanager_get_key_package() != 58549) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1899,7 +2069,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_foobar_checksum_method_convomanager_save_state() != 12640) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_test_post_request() != 58236) {
+    if (uniffi_foobar_checksum_method_convomanager_test_post_request() != 16168) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_constructor_convoclient_new() != 40272) {

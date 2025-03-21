@@ -199,3 +199,17 @@ impl From<ConvoMessageWrapper> for skychat_core::manager::ConvoMessage {
 //         }
 //     }
 // }
+
+// Wrapper for ConvoChat
+
+#[derive(uniffi::Record)]
+pub struct ConvoChatWrapper {
+  pub id: Vec<u8>,
+  pub name: String,
+  pub last_message: Option<String>,
+  pub unread_messages: u64,
+  pub global_index: u64,
+  pub participants: Vec<String>,
+  pub decrypted: Vec<MessageItemWrapper>,
+}
+

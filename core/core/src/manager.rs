@@ -25,6 +25,7 @@ pub struct MessageItem {
 
 #[derive(Debug)]
 pub struct LocalGroup {
+    pub id: Vec<u8>,
     pub name: String,
     pub global_index: u64,
     pub mls_group: MlsGroup,
@@ -34,6 +35,7 @@ pub struct LocalGroup {
 impl LocalGroup {
     pub fn new(name: String, mls_group: MlsGroup) -> Self {
         Self {
+            id: mls_group.group_id().to_vec(),
             name,
             global_index: 0,
             mls_group: mls_group,
@@ -253,6 +255,7 @@ impl ConvoManager {
 
         // create the group:
         let group = LocalGroup {
+            id: new_group.group_id().to_vec(),
             global_index: invite.global_index.clone(),
             name: invite.group_name.clone(),
             mls_group: new_group,
@@ -275,6 +278,7 @@ impl ConvoManager {
         .expect("An unexpected error occurred.");
 
         let group = LocalGroup {
+            id: alice_group.group_id().to_vec(),
             name: name.clone(),
             mls_group: alice_group,
             global_index: 0,

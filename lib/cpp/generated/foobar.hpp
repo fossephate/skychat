@@ -74,6 +74,9 @@ protected:
   jsi::Value cpp_uniffi_foobar_fn_method_convomanager_create_new_group(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value cpp_uniffi_foobar_fn_method_convomanager_get_chats(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_uniffi_foobar_fn_method_convomanager_get_invite_welcome(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -348,6 +351,9 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_foobar_checksum_method_convomanager_create_new_group(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_foobar_checksum_method_convomanager_get_chats(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_foobar_checksum_method_convomanager_get_invite_welcome(

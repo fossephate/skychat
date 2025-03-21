@@ -1,7 +1,7 @@
 // should handle all of the complexities of dealing with the skychat server and lib, handle saving and loading state, etc.
 
 import { v4 as uuidv4 } from "uuid";
-import { ConvoInviteWrapper, ConvoManager, ConvoMessageWrapper } from "skychat-lib";
+import { ConvoChatWrapper, ConvoInviteWrapper, ConvoManager, ConvoMessageWrapper } from "skychat-lib";
 
 // Type definitions
 type GroupId = ArrayBuffer;
@@ -327,6 +327,11 @@ export class ConvoClient {
     // console.log("welcomeMessage: ", welcomeMessage);
     // console.log("welcomeMessage.byteLength: ", welcomeMessage.byteLength);
     return invites;
+  }
+
+  getChats(): ConvoChatWrapper[] {
+    const chats = this.manager.getChats();
+    return chats;
   }
 
   async syncGroup(groupId: GroupId): Promise<void> {

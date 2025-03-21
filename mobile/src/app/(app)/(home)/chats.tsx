@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
   RefreshControl,
+  SectionList,
 } from "react-native"
 import { Screen, Text, ListItem, TextField, Button } from "src/components"
 import { useRouter } from "expo-router"
@@ -61,7 +62,8 @@ const SELF_USER: User = {
 
 export default function chatsScreen() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [chats, setChats] = useState<Chat[]>([])
+  const [bskychats, setBskychats] = useState<Chat[]>([])
+  const [skychats, setSkychats] = useState<Chat[]>([])
   const [users] = useState(generateUsers())
   const [composeDrawerOpen, setComposeDrawerOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -69,7 +71,7 @@ export default function chatsScreen() {
   const convoContext = useConvo()
   const authContext = useAuth()
 
-  async function fetchDms() {
+  async function fetchBskychats() {
     console.log("chats.tsx: fetching dms")
 
     // get bluesky dm ids:
@@ -138,17 +140,40 @@ export default function chatsScreen() {
         }
       }))
 
-      setChats(transformedChats as Chat[])
+      setBskychats(transformedChats as Chat[])
     } catch (error) {
       console.error("Error fetching conversations:", error)
     }
   }
 
-  async function fetchChats() {
-    console.log("chats.tsx: fetching chats")
-    
-    // const chats = await convoContext.getChats()
-    // setChats(chats)
+  async function fetchSkychats() {
+    console.log("chats.tsx: fetching skychats")
+    // Placeholder for future implementation
+    // For now, generate some dummy data for SkyChats
+    const mockSkyChats = users.slice(0, 5).map((user, index) => ({
+      id: `sky-${index}`,
+      name: user.displayName,
+      members: [SELF_USER, user],
+      lastMessage: {
+        text: `Latest message from ${user.displayName}`,
+        sender: user,
+        timestamp: formatTimestamp(new Date(Date.now() - Math.random() * 86400000 * 3).toISOString()),
+        read: Math.random() > 0.3,
+      },
+      unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 5) + 1 : 0,
+      muted: Math.random() > 0.9,
+      pinned: Math.random() > 0.8,
+      isBsky: false,
+    }));
+
+    setSkychats(mockSkyChats);
+    // Alternatively, fetch from your API or context:
+    const chats = await convoContext.getChats()
+    // setSkyChats(chats)
+
+    for (const chat of chats) {
+      console.log("chat", chat)
+    }
   }
 
   // Helper function to format API timestamp to relative time
@@ -172,7 +197,7 @@ export default function chatsScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     try {
-      await fetchDms()
+      await Promise.all([fetchBskychats(), fetchSkychats()])
       // Simulate a successful refresh with a small delay
       setTimeout(() => setRefreshing(false), 1000)
     } catch (error) {
@@ -182,9 +207,37 @@ export default function chatsScreen() {
   }, [convoContext, authContext])
 
   useEffect(() => {
-    fetchDms()
-    fetchChats()
+    fetchBskychats()
+    fetchSkychats()
   }, [convoContext, authContext])
+
+  // Filter chats based on search query
+  const filteredBskyChats = searchQuery
+    ? bskychats.filter(chat =>
+      chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      chat.lastMessage?.text.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    : bskychats
+
+  const filteredSkyChats = searchQuery
+    ? skychats.filter(chat =>
+      chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      chat.lastMessage?.text?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    : skychats
+
+  // Create sections for the SectionList
+  const sections = [
+    { title: 'Skychats', data: filteredSkyChats, type: 'sky' },
+    { title: 'Bsky DMs', data: filteredBskyChats, type: 'bsky' },
+  ].filter(section => section.data.length > 0) // Only include sections with data
+
+  // Render the section header
+  const renderSectionHeader = ({ section }: { section: any }) => (
+    <View style={themed($sectionHeader)}>
+      <Text preset="bold" style={themed($sectionHeaderText)}>{section.title}</Text>
+    </View>
+  )
 
   // Create a refreshable empty list component
   const EmptyListComponent = () => (
@@ -207,7 +260,6 @@ export default function chatsScreen() {
         </TouchableOpacity> */}
       </View>
 
-
       <Button style={themed($invitesBanner)} onPress={() => { router.push("/invites") }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", flex: 1, width: "100%" }}>
           <View style={{ flexDirection: "row" }}>
@@ -218,27 +270,27 @@ export default function chatsScreen() {
         </View>
       </Button>
 
-      <View style={themed($searchContainer)}>
+      {/* <View style={themed($searchContainer)}>
         <TextField
           style={themed($searchInput)}
           placeholderTx="chatsScreen:searchPlaceholder"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-      </View>
+      </View> */}
 
-
-
-      {chats.length > 0 ? (
-        <FlatList
-          data={chats}
+      {sections.length > 0 ? (
+        <SectionList
+          sections={sections}
           renderItem={({ item }) => <ChatItem item={item} />}
+          renderSectionHeader={renderSectionHeader}
           keyExtractor={(item) => item.id}
           contentContainerStyle={themed($listContent)}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          stickySectionHeadersEnabled={true}
         />
       ) : (
         <EmptyListComponent />
@@ -257,8 +309,8 @@ const $invitesBanner: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingHorizontal: spacing.sm,
   paddingVertical: spacing.xs,
   marginBottom: spacing.md,
-  border: "none",
-  backgroundColor: colors.palette.neutral700,
+  // border: 0,
+  backgroundColor: colors.border,
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
@@ -276,6 +328,19 @@ const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
+})
+
+const $sectionHeader: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.background,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
+  borderBottomWidth: 1,
+  borderBottomColor: colors.palette.neutral300,
+})
+
+const $sectionHeaderText: ThemedStyle<TextStyle> = ({ colors }) => ({
+  fontSize: 18,
+  color: colors.text,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({ colors }) => ({

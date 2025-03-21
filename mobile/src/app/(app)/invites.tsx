@@ -122,12 +122,26 @@ export default function InvitesScreen() {
     setTimeout(() => setRefreshing(false), 1500)
   }, [convoContext, authContext])
 
-  const handleAccept = (inviteId: string) => {
+  function refreshInvites() {
+    fetchInvites();
+    setTimeout(() => setRefreshing(false), 1500)
+  }
+
+  const handleAccept = async (inviteWelcomeMessage: ArrayBuffer) => {
+    console.log("handleAccept: ", inviteWelcomeMessage);
     // TODO: Implement accept functionality with convoContext
-    convoContext.acceptPendingInvite(inviteId)
+    const groupId = await convoContext.acceptPendingInvite(inviteWelcomeMessage);
+
+    // convert groupId (ArrayBuffer) to base64 string:
+    let groupIdBase64 = Buffer.from(groupId).toString('base64');
+
+    console.log("groupIdBase64: ", groupIdBase64);
+    // navigate to the group (/chats/group/:groupId)
 
     // For now, just remove from UI
-    setInvites(current => current.filter(invite => invite.senderId !== inviteId))
+    // setInvites(current => current.filter(invite => invite.senderId !== inviteId))
+    
+    refreshInvites();
   }
 
   const handleDecline = (inviteId: string) => {

@@ -100,15 +100,15 @@ export default function Page() {
 
   let backgroundImage;
   if (theme.isDark) {
-    backgroundImage = "https://images.unsplash.com/photo-1534841090574-cba2d662b62e?q=80&w=3987&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    backgroundImage = require("assets/images/splash-dark.png")
   } else {
-    backgroundImage = "https://images.unsplash.com/photo-1599435214324-d71096238079?q=80&w=3987&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+    backgroundImage = require("assets/images/splash.png")
   }
 
   return (
     <Screen preset="fixed" contentContainerStyle={themed($screenContainer)}>
       <ImageBackground
-        source={{ uri: backgroundImage }}
+        source={backgroundImage}
         style={{
           flex: 1,
           backgroundColor: theme.colors.background,

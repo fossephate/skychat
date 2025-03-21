@@ -144,6 +144,36 @@ impl ConvoManager {
         messages_bin.clone().len() as u64
     }
 
+    pub fn get_chats(&self) -> Vec<ConvoChatWrapper> {
+      let mut inner = self.inner.lock().unwrap();
+      // map all groups to ConvoChatWrapper:
+      let chats = inner.groups.iter().map(|(group_id, group)| {
+        ConvoChatWrapper {
+            name: group.name.clone(),
+            global_index: group.global_index,
+            id: group_id.clone(),
+            last_message: None,
+            unread_messages: 0,
+            participants: vec![],
+            decrypted: vec![],
+        }
+      }).collect();
+      chats
+    }
+
+    // pub fn get_group_chat(&self, group_id: GroupId) -> ConvoChatWrapper {
+    //     let mut inner = self.inner.lock().unwrap();
+    //     let group = inner.groups.get(&group_id).unwrap();
+    //     ConvoChatWrapper {
+    //         group_id: group.id.clone(),
+    //         group_name: group.name.clone(),
+    //         last_message: None,
+    //         unread_messages: 0,
+    //         participants: group.participants.clone(),
+    //         decrypted: g.decrypted.iter().map(|m| m.into()).collect(),
+    //     }
+    // }
+
     pub fn accept_pending_invite(&self, welcome_message: Vec<u8>) -> Vec<u8> {
         let mut inner = self.inner.lock().unwrap();
         inner.accept_pending_invite(welcome_message)
