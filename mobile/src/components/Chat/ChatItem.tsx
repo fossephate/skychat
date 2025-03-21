@@ -192,7 +192,8 @@ const $verifiedBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({
 
 const $lastMessage: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 14,
-  color: colors.palette.neutral600,
+  // color: colors.palette.neutral600,
+  color: colors.text,
   // marginTop: spacing.xs,
   textOverflow: "ellipsis",
   overflow: "hidden",

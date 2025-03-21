@@ -310,7 +310,7 @@ const $invitesBanner: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.xs,
   marginBottom: spacing.md,
   // border: 0,
-  backgroundColor: colors.border,
+  backgroundColor: colors.palette.secondary400,
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
