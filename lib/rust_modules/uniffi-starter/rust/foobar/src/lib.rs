@@ -1,18 +1,17 @@
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+// use std::time::{Duration, Instant};
 // You must call this once
 uniffi::setup_scaffolding!();
 
 pub mod wrappers;
 use crate::wrappers::*;
 use skychat_core::manager::*;
-use skychat_core::*;
+// use skychat_core::*;
 
 use skychat_core::utils::BufferConverter;
 
-// use skychat_client::*;  // Remove or comment this line
-use skychat_client::client::*;
-// use skychat_client::*;  // Remove or comment this line
+
+// use skychat_client::client::*;
 
 // #[uniffi::export]
 // pub fn create_skychat_manager() -> skychat_core::manager::ConvoManager {
@@ -20,8 +19,8 @@ use skychat_client::client::*;
 //     manager
 // }
 
-use futures::executor;
-use tokio::task;
+// use futures::executor;
+// use tokio::task;
 
 #[derive(uniffi::Object)]
 pub struct ConvoManager {
@@ -41,35 +40,43 @@ impl ConvoManager {
         }
     }
 
-    pub fn get_partial_group(&self, group_id: &GroupId) -> LocalGroupWrapper {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let group = inner.groups.get(group_id).unwrap();
-        LocalGroupWrapper {
+    pub fn get_partial_group(&self, group_id: &GroupId) -> Result<LocalGroupWrapper, String> {
+        let inner = self.inner.lock().expect("Error locking inner");
+
+        let group = inner.groups.get(group_id).expect("Error getting group");
+        let group_wrapper = LocalGroupWrapper {
             name: group.name.clone(),
             global_index: group.global_index,
             decrypted: group.decrypted.iter().map(|item| item.into()).collect(),
-        }
+        };
+        Ok(group_wrapper)
     }
 
-    pub fn create_new_group(&self, name: String) -> GroupId {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let gid = inner.create_new_group(name);
-        gid
+    pub fn create_group(&self, name: String) -> Result<GroupId, String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        let gid = inner.create_group(name).expect("Error creating group");
+        Ok(gid)
     }
 
-    pub fn create_invite(&self, group_id: &GroupId, key_package: Vec<u8>) -> ConvoInviteWrapper {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let invite = inner.create_invite(group_id, key_package);
-        invite.into() // Use From/Into trait
+    pub fn delete_group(&self, group_id: GroupId) -> Result<(), String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        inner.delete_group(&group_id);
+        Ok(())
+    }
+
+    pub fn create_invite(
+        &self,
+        group_id: &GroupId,
+        key_package: Vec<u8>,
+    ) -> Result<ConvoInviteWrapper, String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        let invite = inner
+            .create_invite(group_id, key_package)
+            .expect("Error creating invite");
+        Ok(invite.into())
     }
 
     pub fn process_raw_invite(
@@ -80,10 +87,8 @@ impl ConvoManager {
         ratchet_tree: Option<Vec<u8>>,
         key_package: Option<Vec<u8>>,
     ) {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
         inner.process_raw_invite(
             sender_id,
             group_name,
@@ -93,59 +98,56 @@ impl ConvoManager {
         );
     }
 
-    pub fn create_message(&self, group_id: &GroupId, message: String) -> Vec<u8> {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let message = inner.create_message(group_id, message);
-        message
+    pub fn create_message(&self, group_id: &GroupId, message: String) -> Result<Vec<u8>, String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        let message = inner
+            .create_message(group_id, message)
+            .expect("Error creating message");
+        Ok(message)
     }
 
     pub fn process_message(
         &self,
         message: Vec<u8>,
         sender_id: Option<String>,
-    ) -> ProcessedResultsWrapper {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let results = inner.process_message(message, sender_id);
-        results.into() // Use From/Into trait
+    ) -> Result<ProcessedResultsWrapper, String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        let results = inner
+            .process_message(message, sender_id)
+            .expect("Error processing message");
+        Ok(results.into())
     }
 
     pub fn process_convo_messages(
         &self,
         messages: Vec<ConvoMessageWrapper>,
         group_id: Option<GroupId>,
-    ) {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
+    ) -> Result<(), String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
 
         // convert Option<GroupId> to Option<&GroupId>
         let group_id_ref = group_id.as_ref();
-        inner.process_convo_messages(
-            messages.into_iter().map(|m| m.into()).collect(),
-            group_id_ref,
-        );
+        inner
+            .process_convo_messages(
+                messages.into_iter().map(|m| m.into()).collect(),
+                group_id_ref,
+            )
+            .expect("Error processing convo messages");
+        Ok(())
     }
 
     pub fn process_convo_messages_bin(
         &self,
         messages: Vec<EncodedBase64>,
         group_id: Option<GroupId>,
-    ) -> u64 {
+    ) -> Result<u64, String> {
         if messages.is_empty() {
-            return 0; // don't bother
+            return Ok(0); // don't bother
         }
 
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
+        let mut inner = self.inner.lock().expect("Error locking inner");
 
         // convert Option<GroupId> to Option<&GroupId>
         let group_id_ref = group_id.as_ref();
@@ -154,35 +156,35 @@ impl ConvoManager {
         // convert Vec<EncodedBase64> to Vec<ConvoMessage>
         let messages_bin: Vec<ConvoMessage> = messages
             .into_iter()
-            .filter_map(|encoded| {
-                match BufferConverter::from_base64_json(&encoded) {
+            .filter_map(
+                |encoded| match BufferConverter::from_base64_json(&encoded) {
                     Ok(message) => Some(message),
+                    // Err(err) => anyhow::bail!(err),
                     Err(err) => {
-                        // You might want to log the error in a real application
-                        // println!("Failed to decode message: {}", err);
+                        println!("Error from_base64_json: {}", err);
                         None
                     }
-                }
-            })
+                },
+            )
             .collect();
 
-        inner.process_convo_messages(messages_bin.clone(), group_id_ref);
+        inner
+            .process_convo_messages(messages_bin.clone(), group_id_ref)
+            .expect("Error processing convo messages");
 
         // return the size of the messages_bin just so we know we processed them:
-        messages_bin.clone().len() as u64
+        Ok(messages_bin.clone().len() as u64)
     }
 
-    pub fn get_chats(&self) -> Vec<ConvoChatWrapper> {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
+    pub fn get_chats(&self) -> Result<Vec<ConvoChatWrapper>, String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
         // map all groups to ConvoChatWrapper:
-        let chats = inner
+        let chats: Vec<ConvoChatWrapper> = inner
             .groups
             .iter()
             .map(|(group_id, group)| {
-                let member_ids = inner.group_get_member_ids(&group_id);
+                let member_ids = inner.group_get_member_ids(&group_id).expect("Error getting member ids");
                 ConvoChatWrapper {
                     id: group_id.clone(),
                     name: group.name.clone(),
@@ -194,18 +196,22 @@ impl ConvoManager {
                 }
             })
             .collect();
-        chats
+        Ok(chats)
     }
 
-    pub fn get_group_chat(&self, group_id: EncodedBase64) -> ConvoChatWrapper {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let group_id_bin = BufferConverter::from_base64(&group_id).unwrap();
-        let group = inner.groups.get(&group_id_bin).unwrap();
-        let member_ids = inner.group_get_member_ids(&group_id_bin);
-        ConvoChatWrapper {
+    pub fn get_group_chat(&self, group_id: EncodedBase64) -> Result<ConvoChatWrapper, String> {
+        let inner = self.inner.lock().expect("Error locking inner");
+
+        let group_id_bin =
+            BufferConverter::from_base64(&group_id).expect("Error b64 decoding group id");
+        let group = inner
+            .groups
+            .get(&group_id_bin)
+            .expect("Error getting group");
+        let member_ids = inner
+            .group_get_member_ids(&group_id_bin)
+            .expect("Error getting member ids");
+        let chat = ConvoChatWrapper {
             id: group.id.clone(),
             name: group.name.clone(),
             global_index: group.global_index.clone(),
@@ -213,144 +219,146 @@ impl ConvoManager {
             unread_messages: 0,
             members: member_ids.clone(),
             decrypted: group.decrypted.iter().map(|m| m.into()).collect(),
-        }
+        };
+        Ok(chat)
     }
 
-    pub fn accept_pending_invite(&self, welcome_message: EncodedBase64) -> Vec<u8> {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let welcome_message_bin = BufferConverter::from_base64(&welcome_message).unwrap();
-        inner.accept_pending_invite(welcome_message_bin)
+    pub fn accept_pending_invite(&self, welcome_message: EncodedBase64) -> Result<Vec<u8>, String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+        let welcome_message_bin = BufferConverter::from_base64(&welcome_message)
+            .expect("Error b64 decoding welcome message");
+        let res = inner
+            .accept_pending_invite(welcome_message_bin)
+            .expect("Error accepting pending invite");
+        Ok(res)
     }
 
-    pub fn reject_pending_invite(&self, welcome_message: Vec<u8>) {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        inner.reject_pending_invite(welcome_message);
+    pub fn reject_pending_invite(&self, welcome_message: Vec<u8>) -> Result<(), String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        inner
+            .reject_pending_invite(welcome_message);
+        Ok(())
     }
 
-    pub fn get_key_package(&self) -> Vec<u8> {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let key_package = inner.get_key_package();
-        key_package
+    pub fn get_key_package(&self) -> Result<Vec<u8>, String> {
+        let inner = self.inner.lock().expect("Error locking inner");
+
+        let key_package = inner.get_key_package().expect("Error getting key package");
+        Ok(key_package)
     }
 
-    pub fn group_set_index(&self, group_id: GroupId, index: u64) {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        inner.group_set_index(&group_id, index);
+    pub fn group_set_index(&self, group_id: GroupId, index: u64) -> Result<(), String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        inner
+            .group_set_index(&group_id, index)
+            .expect("Error setting index");
+        Ok(())
     }
 
-    pub fn group_get_index(&self, group_id: GroupId) -> u64 {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        inner.group_get_index(&group_id)
+    pub fn group_get_index(&self, group_id: GroupId) -> Result<u64, String> {
+        let inner = self.inner.lock().expect("Error locking inner");
+
+        let index = inner
+            .group_get_index(&group_id)
+            .expect("Error getting index");
+        Ok(index)
     }
 
-    pub fn group_get_epoch(&self, group_id: GroupId) -> u64 {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let epoch = inner.group_get_epoch(&group_id);
-        epoch.as_u64()
+    pub fn group_get_epoch(&self, group_id: GroupId) -> Result<u64, String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        let epoch = inner
+            .group_get_epoch(&group_id)
+            .expect("Error getting epoch");
+        Ok(epoch.as_u64())
     }
 
-    pub fn group_push_message(&self, group_id: GroupId, message: String, sender_id: String) {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        inner.group_push_message(&group_id, message, sender_id);
+    pub fn group_push_message(
+        &self,
+        group_id: GroupId,
+        message: String,
+        sender_id: String,
+    ) -> Result<(), String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        inner
+            .group_push_message(&group_id, message, sender_id)
+            .expect("Error pushing message");
+        Ok(())
     }
 
-    pub fn get_pending_invites(&self) -> Vec<ConvoInviteWrapper> {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
+    pub fn get_pending_invites(&self) -> Result<Vec<ConvoInviteWrapper>, String> {
+        let inner = self.inner.lock().expect("Error locking inner");
 
         let invites = inner
             .pending_invites
             .iter()
             .map(|i| i.clone().into())
             .collect();
-        invites
+        Ok(invites)
     }
 
-    pub fn get_group_id_with_users(&self, user_ids: Vec<String>) -> EncodedBase64 {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
+    pub fn get_group_id_with_users(&self, user_ids: Vec<String>) -> Result<EncodedBase64, String> {
+        let inner = self.inner.lock().expect("Error locking inner");
 
         println!("user_ids: {:?}", user_ids);
-        let group_id = inner.get_group_id_with_users(user_ids);
+        let group_id = inner
+            .get_group_id_with_users(user_ids)
+            .expect("Error getting group id");
 
-        println!("group_id: {:?}", group_id);
         let encoded_group_id = BufferConverter::to_base64(&group_id);
-        encoded_group_id
+        Ok(encoded_group_id)
     }
 
-    pub fn save_state(&self) -> SerializedCredentialsWrapper {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        let state = inner.save_state();
-        state.into()
+    pub fn save_state(&self) -> Result<SerializedCredentialsWrapper, String> {
+        let inner = self.inner.lock().expect("Error locking inner");
+
+        let result = inner.save_state().expect("Error saving state");
+        Ok(result.into())
     }
 
-    pub fn load_state(&self, state: SerializedCredentialsWrapper) {
-        let mut inner = match self.inner.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(), // Recover and continue with the poisoned data
-        };
-        inner.load_state(state.into());
+    pub fn load_state(&self, state: SerializedCredentialsWrapper) -> Result<(), String> {
+        let mut inner = self.inner.lock().expect("Error locking inner");
+
+        inner
+            .load_state(state.into())
+            .expect("Error loading state");
+        Ok(())
     }
 
-    // this works:
-    pub async fn test_post_request(&self) -> String {
-        // Create a new runtime
-        let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+    // // this works:
+    // pub async fn test_post_request(&self) -> Result<String> {
+    //     // Create a new runtime
+    //     let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
 
-        // Use the runtime to execute the async block
-        runtime.block_on(async {
-            let server_address = "https://skychat.fosse.co";
+    //     // Use the runtime to execute the async block
+    //     runtime.block_on(async {
+    //         let server_address = "https://skychat.fosse.co";
 
-            // Create client and make request
-            let client = reqwest::Client::new();
-            match client
-                .post(format!("{}/api/connect", server_address))
-                .json(&serde_json::json!({
-                    "user_id": "test".to_string(),
-                    "serialized_key_package": "test2".to_string()
-                }))
-                .send()
-                .await
-            {
-                Ok(response) => {
-                    if response.status().is_success() {
-                        "success".to_string()
-                    } else {
-                        format!("error: HTTP status {}", response.status())
-                    }
-                }
-                Err(e) => format!("error: {}", e),
-            }
-        })
-    }
+    //         // Create client and make request
+    //         let client = reqwest::Client::new();
+    //         match client
+    //             .post(format!("{}/api/connect", server_address))
+    //             .json(&serde_json::json!({
+    //                 "user_id": "test".to_string(),
+    //                 "serialized_key_package": "test2".to_string()
+    //             }))
+    //             .send()
+    //             .await
+    //         {
+    //             Ok(response) => {
+    //                 if response.status().is_success() {
+    //                     Ok("success".to_string())
+    //                 } else {
+    //                     Err(format!("error: HTTP status {}", response.status()))
+    //                 }
+    //             }
+    //             Err(e) => Err(format!("error: {}", e)),
+    //         }
+    //     })
+    // }
 }
 
 // // convo client:

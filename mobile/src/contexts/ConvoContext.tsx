@@ -38,7 +38,8 @@ interface ConvoContextType {
   // initClient: (id: string) => void;
   // connect: (serverAddress: string) => Promise<void>;
   initAndConnect: (serverAddress: string, id: string) => Promise<void>;
-  createGroup: (name: string, userids: string[]) => Promise<string>;
+  createGroupWithUsers: (name: string, userids: string[]) => Promise<string>;
+  deleteGroup: (groupId: ArrayBuffer) => void;
   sendMessage: (groupId: ArrayBuffer, text: string) => void;
   getGroups: () => Promise<void>;
   acceptPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<ArrayBuffer>;
@@ -93,9 +94,14 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const createGroup = useCallback(async (name: string, userids: string[]) => {
+  const createGroupWithUsers = useCallback(async (name: string, userids: string[]) => {
     if (!client) throw new Error("Client not initialized");
     return await client.createGroupWithUsers(name, userids);
+  }, [client]);
+
+  const deleteGroup = useCallback(async (groupId: ArrayBuffer) => {
+    if (!client) throw new Error("Client not initialized");
+    await client.deleteGroup(groupId);
   }, [client]);
 
   const sendMessage = useCallback(async (groupId: ArrayBuffer, text: string) => {
@@ -169,7 +175,7 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     isConnected,
     initAndConnect,
     // connect,
-    createGroup,
+    createGroupWithUsers,
     sendMessage,
     getInvites,
     acceptPendingInvite,

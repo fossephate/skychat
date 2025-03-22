@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use serde_json;
-
+use anyhow::{Context, Result};
 // A helper to create and store credentials.
 pub fn generate_credential_with_key(
     identity: Vec<u8>,
@@ -74,8 +74,10 @@ impl BufferConverter {
     ///
     /// # Returns
     /// Result containing either the decoded bytes or an error
-    pub fn from_base64(base64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(general_purpose::URL_SAFE.decode(base64)?)
+    pub fn from_base64(base64: &str) -> Result<Vec<u8>> {
+        general_purpose::URL_SAFE
+            .decode(base64)
+            .context("Failed to decode base64 string")
     }
 
     /// Serializes a JSON-serializable type to a base64 string
@@ -85,8 +87,9 @@ impl BufferConverter {
     ///
     /// # Returns
     /// Result containing either the base64 encoded string or an error
-    pub fn to_base64_json<T: Serialize>(value: &T) -> Result<String, Box<dyn Error>> {
-        let json = serde_json::to_vec(value)?;
+    pub fn to_base64_json<T: Serialize>(value: &T) -> Result<String> {
+        let json = serde_json::to_vec(value)
+            .context("Failed to serialize value to JSON")?;
         Ok(Self::to_base64(&json))
     }
 
@@ -97,8 +100,9 @@ impl BufferConverter {
     ///
     /// # Returns
     /// Result containing either the deserialized value or an error
-    pub fn from_base64_json<T: DeserializeOwned>(base64: &str) -> Result<T, Box<dyn Error>> {
+    pub fn from_base64_json<T: DeserializeOwned>(base64: &str) -> Result<T> {
         let bytes = Self::from_base64(base64)?;
-        Ok(serde_json::from_slice(&bytes)?)
+        serde_json::from_slice(&bytes)
+            .context("Failed to deserialize JSON from base64 string")
     }
 }

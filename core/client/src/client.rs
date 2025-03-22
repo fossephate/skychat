@@ -41,15 +41,17 @@ impl ConvoClient {
         }
     }
 
-    pub async fn create_group(&mut self, group_name: String) {
+    pub async fn create_group(&mut self, group_name: String) -> Result<GroupId> {
         let address = self
             .server_address
             .as_ref()
-            .expect("server address is not set");
+            .context("Server address is not set")?;
 
         // create the local group:
-        // TODO: ensure the group_id is truly unique!
-        let group_id = self.manager.create_new_group(group_name.clone());
+        let group_id = self
+            .manager
+            .create_group(group_name.clone())
+            .context("Failed to create new group")?;
 
         // send a POST request to the server/api/create_group
         let client = reqwest::Client::new();
@@ -61,22 +63,21 @@ impl ConvoClient {
               "sender_id": self.user_id.clone(),
             }))
             .send()
-            .await;
+            .await
+            .context("Failed to send create_group request")?;
 
-        if response.is_ok() {
-            let group = self
-                .manager
-                .groups
-                .get_mut(&group_id)
-                .expect("group not found");
-            group.decrypted.push(MessageItem {
-                text: "<group_created>".to_string(),
-                sender_id: "system".to_string(),
-                timestamp: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-            });
+        if response.status().is_success() {
+            self.manager
+                .group_push_message(
+                    &group_id,
+                    "<group_created>".to_string(),
+                    "system".to_string(),
+                )
+                .context("Failed to add system message")?;
+
+            Ok(group_id)
+        } else {
+            Err(anyhow!("Failed to create group: {}", response.status()))
         }
     }
 
@@ -126,7 +127,7 @@ impl ConvoClient {
         self.create_group(group_name.clone()).await;
 
         // Get the group_id
-        let group_id = self.get_group_id(group_name).await;
+        let group_id = self.get_group_id(group_name).await.expect("Failed to get group id");
 
         println!("Getting key packages for users: {:?}", user_ids);
 
@@ -187,7 +188,6 @@ impl ConvoClient {
         Ok(group_id)
     }
 
-    // Modified invite_user_to_group to use anyhow
     pub async fn invite_user_to_group(
         &mut self,
         receiver_id: String,
@@ -202,7 +202,8 @@ impl ConvoClient {
         // Construct the invite using their key_package
         let group_invite = self
             .manager
-            .create_invite(&group_id, serialized_key_package);
+            .create_invite(&group_id, serialized_key_package)
+            .context("Failed to create group invite")?;
 
         let client = reqwest::Client::new();
         let response = client
@@ -221,13 +222,11 @@ impl ConvoClient {
 
         if response.status().is_success() {
             // Get group and possibly update state
-            let group = self
+            let _group = self
                 .manager
                 .groups
                 .get_mut(&group_id)
                 .context("Group not found")?;
-
-            // group.global_index += 1; // Uncomment if needed
 
             Ok(())
         } else {
@@ -235,82 +234,85 @@ impl ConvoClient {
         }
     }
 
-    pub async fn get_group_id(&self, group_name: String) -> GroupId {
+    pub async fn get_group_id(&self, group_name: String) -> Result<GroupId> {
         // get group where group.name == group_name:
-        let (group_id, group) = self
+        let (group_id, _group) = self
             .manager
             .groups
             .iter()
             .find(|(_, group)| group.name == group_name)
-            .expect("group not found");
-        group_id.clone()
+            .context(format!("Group not found with name: {}", group_name))?;
+
+        Ok(group_id.clone())
     }
 
-    pub async fn connect_to_server(
-        &mut self,
-        server_address: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn connect_to_server(&mut self, server_address: String) -> Result<()> {
         self.server_address = Some(server_address.clone());
         // use reqwest to send a POST request to the server/api/connect
         let client = reqwest::Client::new();
+
+        // Get key package with error handling
+        let key_package = self
+            .manager
+            .get_key_package()
+            .context("Failed to get key package")?;
+
         let response = client
             .post(format!("{}/api/connect", server_address.clone()))
             .json(&serde_json::json!({
               "user_id": self.user_id.clone(),
-              "serialized_key_package": self.manager.get_key_package()
+              "serialized_key_package": key_package
             }))
             .send()
-            .await;
+            .await
+            .context("Failed to send connect request")?;
 
-        if response.is_ok() {
+        if response.status().is_success() {
             Ok(())
         } else {
-            Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Failed to connect to server",
-            )))
+            Err(anyhow!(
+                "Failed to connect to server: {}",
+                response.status()
+            ))
         }
     }
 
-    pub async fn list_users(&mut self) -> Vec<ConvoUser> {
+    pub async fn list_users(&mut self) -> Result<Vec<ConvoUser>> {
         let address = self
             .server_address
             .as_ref()
-            .expect("server address is not set");
+            .context("Server address is not set")?;
 
         let client = reqwest::Client::new();
         let response = client
             .get(format!("{}/api/list_users", address))
             .send()
-            .await;
-        // println!("Response: {:?}", response);
+            .await
+            .context("Failed to send list_users request")?;
 
         let users: Vec<ConvoUser> = response
-            .expect("failed to get response")
             .json()
             .await
-            .expect("failed to parse response");
+            .context("Failed to parse response data")?;
 
-        // // populate the id_to_name map:
-        // for user in &users {
-        //     self.id_to_name
-        //         .insert(user.user_id.clone(), user.name.clone());
-        // }
         self.id_to_name
             .insert("system".to_string(), "system".to_string());
 
-        users
+        Ok(users)
     }
 
-    pub async fn process_invite(&mut self, invite: ConvoInvite) {
+    pub async fn process_invite(&mut self, invite: ConvoInvite) -> Result<GroupId> {
         // add the welcome_message to the manager
-        let group_id = self.manager.process_invite(invite.clone());
+        let group_id = self
+            .manager
+            .process_invite(invite.clone())
+            .context("Failed to process invite")?;
 
         // let the server know we have successfully processed the invite:
         let address = self
             .server_address
             .as_ref()
-            .expect("server address is not set");
+            .context("Server address is not set")?;
 
         let client = reqwest::Client::new();
         let response = client
@@ -320,28 +322,33 @@ impl ConvoClient {
               "sender_id": self.user_id.clone(),
             }))
             .send()
-            .await;
-        if response.is_ok() {
-            // TODO: probably add a system message here:
+            .await
+            .context("Failed to send accept_invite request")?;
+
+        if !response.status().is_success() {
+            bail!("Failed to accept invite: {}", response.status());
         }
+
+        Ok(group_id)
     }
 
-    pub async fn accept_current_invites(&mut self) {
+    pub async fn accept_current_invites(&mut self) -> Result<()> {
         let invites = self.manager.pending_invites.clone();
         for invite in invites {
-            self.process_invite(invite).await;
+            self.process_invite(invite).await?;
         }
         self.manager.pending_invites.clear();
+        Ok(())
     }
 
     pub async fn check_incoming_messages(
         &mut self,
         group_id: Option<&GroupId>,
-    ) -> Vec<ConvoMessage> {
+    ) -> Result<Vec<ConvoMessage>> {
         let address = self
             .server_address
             .as_ref()
-            .expect("server address is not set");
+            .context("Server address is not set")?;
 
         let mut index = 0;
         if let Some(group_id) = group_id {
@@ -354,21 +361,19 @@ impl ConvoClient {
         let response = client
             .post(format!("{}/api/get_new_messages", address))
             .json(&serde_json::json!({
-              "group_id": Some(group_id.clone()),
+              "group_id": group_id,
               "sender_id": self.user_id.clone(),
               "index": index,
             }))
             .send()
-            .await;
+            .await
+            .context("Failed to send get_new_messages request")?;
 
         // should be a Vec<ConvoMessage>
         let messages: Vec<ConvoMessage> = response
-            .expect("failed to get response")
             .json()
             .await
-            .expect("failed to parse response");
-
-        // println!("got messages length: {:?}", messages);
+            .context("Failed to parse response data")?;
 
         // exclude any messages from our own user_id:
         let messages: Vec<ConvoMessage> = messages
@@ -377,15 +382,17 @@ impl ConvoClient {
             .collect();
 
         self.manager
-            .process_convo_messages(messages.clone(), group_id);
-        messages
+            .process_convo_messages(messages.clone(), group_id)
+            .context("Failed to process messages")?;
+
+        Ok(messages)
     }
 
-    pub async fn get_group_index(&mut self, group_id: &GroupId) -> u64 {
+    pub async fn get_group_index(&mut self, group_id: &GroupId) -> Result<u64> {
         let address = self
             .server_address
             .as_ref()
-            .expect("server address is not set");
+            .context("Server address is not set")?;
 
         let client = reqwest::Client::new();
         let response = client
@@ -395,53 +402,56 @@ impl ConvoClient {
               "sender_id": self.user_id.clone(),
             }))
             .send()
-            .await;
+            .await
+            .context("Failed to send group_index request")?;
 
         let group_index: u64 = response
-            .expect("failed to get response")
             .json()
             .await
-            .expect("failed to parse response");
+            .context("Failed to parse response data")?;
 
-        // println!("Group index: {:?}", group_index);
-        group_index
+        Ok(group_index)
     }
 
-    pub async fn sync_group(&mut self, group_id: &GroupId) {
+    pub async fn sync_group(&mut self, group_id: &GroupId) -> Result<()> {
         // get and process any incoming messages:
-        let messages = self.check_incoming_messages(Some(group_id)).await;
+        let _messages = self.check_incoming_messages(Some(group_id)).await?;
 
-        let group_index = self.get_group_index(group_id).await;
+        let group_index = self.get_group_index(group_id).await?;
 
         // set the group_index to the group_index:
         let group = self
             .manager
             .groups
             .get_mut(group_id)
-            .expect("group not found");
+            .context(format!("Group not found for ID: {:?}", group_id))?;
 
         if group_index != group.global_index {
-            // println!("Group index mismatch, updating...");
             group.global_index = group_index;
         }
+
+        Ok(())
     }
 
-    pub async fn send_message(&mut self, group_id: &GroupId, text: String) {
+    pub async fn send_message(&mut self, group_id: &GroupId, text: String) -> Result<()> {
         // we must always sync the group before sending a message:
-        self.sync_group(&group_id).await;
+        self.sync_group(group_id).await?;
 
-        let msg = self.manager.create_message(&group_id, text.clone());
+        let msg = self
+            .manager
+            .create_message(group_id, text.clone())
+            .context("Failed to create message")?;
 
         let mut group = self
             .manager
             .groups
             .get_mut(group_id)
-            .expect("group not found");
+            .context(format!("Group not found for ID: {:?}", group_id))?;
 
         let address = self
             .server_address
             .as_ref()
-            .expect("server address is not set");
+            .context("Server address is not set")?;
 
         let client = reqwest::Client::new();
         let response = client
@@ -453,41 +463,46 @@ impl ConvoClient {
               "global_index": group.global_index + 1,
             }))
             .send()
-            .await;
+            .await
+            .context("Failed to send message request")?;
 
-        if response.is_ok() {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .context("Failed to get current timestamp")?
+            .as_millis() as u64;
+
+        if response.status().is_success() {
             // add this message to our own message list:
             // increment the global_index of the group:
             group.global_index += 1;
             group.decrypted.push(MessageItem {
                 text: text.clone(),
                 sender_id: self.user_id.clone(),
-                timestamp: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
+                timestamp,
             });
+            Ok(())
         } else {
             group.decrypted.push(MessageItem {
                 text: "<message_failed to send!>".to_string(),
                 sender_id: self.user_id.clone(),
-                timestamp: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
+                timestamp,
             });
+            Err(anyhow!("Failed to send message: {}", response.status()))
         }
     }
 
-    pub fn get_group_messages(&self, group_id: &GroupId) -> &Vec<MessageItem> {
-        let group = self.manager.groups.get(group_id).expect("group not found");
-        &group.decrypted
+    pub fn get_group_messages(&self, group_id: &GroupId) -> Result<&Vec<MessageItem>> {
+        let group = self
+            .manager
+            .groups
+            .get(group_id)
+            .context(format!("Group not found for ID: {:?}", group_id))?;
+
+        Ok(&group.decrypted)
     }
 
-    pub fn get_renderable_messages(&self, group_id: &GroupId) -> Vec<String> {
-        let messages = self.get_group_messages(group_id);
-        // println!("{}", format!("Group messages: {:?}", messages).green());
-        // loop through all the messages and print them, color coding the sender:
+    pub fn get_renderable_messages(&self, group_id: &GroupId) -> Result<Vec<String>> {
+        let messages = self.get_group_messages(group_id)?;
 
         // assign a color to each sender:
         let mut sender_colors = HashMap::new();
@@ -512,28 +527,17 @@ impl ConvoClient {
             let sender_name = self
                 .id_to_name
                 .get(&message.sender_id)
-                .expect("sender not found");
-            // let color = sender_colors
-            //     .get(&message.sender_id)
-            //     .expect("color not found");
+                .context(format!("Sender not found: {}", message.sender_id))?;
 
-            // display_messages.push(format!(
-            //     "{}: {}",
-            //     sender_name.color(*color).bold(),
-            //     message.text
-            // ));
             display_messages.push(format!("{}: {}", sender_name, message.text));
         }
 
-        display_messages
+        Ok(display_messages)
     }
 
-    pub fn print_group_messages(&self, group_id: &GroupId) -> Vec<String> {
-        let messages = self.get_group_messages(group_id);
-        // println!("{}", format!("Group messages: {:?}", messages).green());
-        // loop through all the messages and print them, color coding the sender:
+    pub fn print_group_messages(&self, group_id: &GroupId) -> Result<Vec<String>> {
+        let messages = self.get_group_messages(group_id)?;
 
-        // assign a color to each sender:
         // assign a color to each sender:
         let mut sender_colors = HashMap::new();
         let mut color_index = 0;
@@ -557,10 +561,11 @@ impl ConvoClient {
             let sender_name = self
                 .id_to_name
                 .get(&message.sender_id)
-                .expect("sender not found");
+                .context(format!("Sender not found: {}", message.sender_id))?;
+
             let color = sender_colors
                 .get(&message.sender_id)
-                .expect("color not found");
+                .context(format!("Color not found for sender: {}", message.sender_id))?;
 
             display_messages.push(format!(
                 "{}: {}",
@@ -572,14 +577,14 @@ impl ConvoClient {
             println!("{}: {}", sender_name.color(*color).bold(), message.text);
         }
 
-        display_messages
+        Ok(display_messages)
     }
 
-    pub fn name_to_id(&self, user_name: String) -> String {
+    pub fn name_to_id(&self, user_name: String) -> Result<String> {
         self.id_to_name
             .iter()
             .find(|(_, name)| **name == user_name)
             .map(|(id, _)| id.clone())
-            .unwrap()
+            .context(format!("User not found with name: {}", user_name))
     }
 }

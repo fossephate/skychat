@@ -11,3 +11,4 @@ resolver = "2"
 uniffi = "0.29.0"
 serde = { version = "1.0.217", features = ["derive"] }
 base64 = "0.22.1"
+anyhow = "1.0"

@@ -124,12 +124,18 @@ export class ConvoClient {
       throw new Error("Server address is not set");
     }
 
+    console.log("getting key packages for users: ", userIds);
+    // get the serialized key packages for all of the users in the group:
+    // map of userId to key package:
+    const keyPackagesMap = await this.getUserKeyPackages(userIds);
+    console.log("keyPackagesMap: ", keyPackagesMap);
+
     var groupId;
     try {
-      groupId = this.manager.createNewGroup(groupName);
+      groupId = this.manager.createGroup(groupName);
     } catch (error) {
       console.error("Failed to create group", error);
-      throw new Error("Failed to create group" + error);
+      throw error;
     }
 
     const encodedGroupId = this.toUrlSafeB64(groupId);
@@ -151,26 +157,31 @@ export class ConvoClient {
       throw new Error("Failed to create group");
     }
 
-    console.log("getting key packages for users: ", userIds);
-
-    // get the serialized key packages for all of the users in the group:
-    // map of userId to key package:
-    const keyPackagesMap = await this.getUserKeyPackages(userIds);
-
-    console.log("keyPackagesMap: ", keyPackagesMap);
-
     await this.manager.groupPushMessage(groupId, "<group_created>", this.id);
 
-    // invite the users 1 by 1:
-    for (const [userId, keyPackage] of keyPackagesMap.entries()) {
-      await this.inviteUserToGroup(userId, groupId, keyPackage);
-      let systemMessage = `<${userId}> joined the group`;
-      await this.manager.groupPushMessage(groupId, systemMessage, this.id);
+    try {
+
+      // invite the users 1 by 1:
+      for (const [userId, keyPackage] of keyPackagesMap.entries()) {
+        await this.inviteUserToGroup(userId, groupId, keyPackage);
+        let systemMessage = `<${userId}> joined the group`;
+        await this.manager.groupPushMessage(groupId, systemMessage, this.id);
+      }
+      
+      await this.manager.groupPushMessage(groupId, "<finished_creating_group>", this.id);
+    } catch (error) {
+      console.error("Failed to invite all users", error);
+      // TODO: delete the group:
+      await this.manager.deleteGroup(groupId);
+      throw error;
     }
 
-    await this.manager.groupPushMessage(groupId, "<finished_creating_group>", this.id);
-
     return encodedGroupId;
+  }
+
+  async deleteGroup(groupId: ArrayBuffer): Promise<void> {
+    const encodedGroupId = this.toUrlSafeB64(groupId);
+    await this.manager.deleteGroup(encodedGroupId);
   }
 
   async getUserKeyPackages(userIds: string[]): Promise<Map<string, ArrayBuffer>> {
