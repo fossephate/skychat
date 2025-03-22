@@ -2,10 +2,16 @@ import { router, useLocalSearchParams } from "expo-router";
 import { observer } from "mobx-react-lite"
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import { useConvo } from "@/contexts/ConvoContext";
 
 export default function LoadingScreen() {
   const authContext = useAuth();
   const params = useLocalSearchParams();
+
+  const convoContext = useConvo();
+
+  // TODO: move this to env:
+  const SKYCHAT_SERVER_URL = "https://skychat.fosse.co";
 
 
   useEffect(() => {
@@ -19,7 +25,20 @@ export default function LoadingScreen() {
         const { session, state } = await client.callback(urlParams)
         console.log(`logged in as ${session.sub}!`)
         authContext.setSession(session)
-        router.replace("/chats")
+
+
+        // TODO: this is some duplicated code from the AppInitializer:
+        // router.replace("/chats")
+        authContext.setDidAuthenticate(true);
+        let userId = session.sub;
+
+        try {
+          await convoContext.initAndConnect(SKYCHAT_SERVER_URL, userId);
+        } catch (e) {
+          console.error("Failed to initialize convo client", e);
+          // TODO: handle this better: ¯\_(ツ)_/¯
+          router.replace("/welcome" as any);
+        }
         return;
       }
     })()

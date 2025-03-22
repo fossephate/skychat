@@ -104,12 +104,6 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     // The message will be added to the group's messages via the client
   }, [client]);
 
-  const getGroups = useCallback(async () => {
-    // TODO: Implement this
-    // const fetchedGroups = await client?.getGroups();
-    // if (fetchedGroups) setGroups(fetchedGroups);
-  }, [client]);
-
   const getInvites = useCallback(async () => {
     if (!client) throw new Error("Client not initialized");
     const invites = await client.getPendingInvites();
@@ -177,7 +171,6 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     // connect,
     createGroup,
     sendMessage,
-    getGroups,
     getInvites,
     acceptPendingInvite,
     rejectPendingInvite,

@@ -1,4 +1,4 @@
-import { save, load, remove } from "@/utils/storage";
+import { save, load, remove, clear } from "@/utils/storage";
 import { SerializedCredentialsWrapper } from 'skychat-lib';
 
 // Constants for storage keys
@@ -123,10 +123,13 @@ export const loadManagerStateFromStorage = async (): Promise<SerializedCredentia
  * Clear manager state from storage
  */
 export const clearManagerStateFromStorage = async (): Promise<void> => {
-  try {
-    remove(MANAGER_STATE_KEY);
-    console.log('Manager state cleared from storage');
-  } catch (error) {
-    console.error('Error clearing manager state from storage:', error);
-  }
+  // try {
+  //   remove(MANAGER_STATE_KEY);
+  //   console.log('Manager state cleared from storage');
+  // } catch (error) {
+  //   console.error('Error clearing manager state from storage:', error);
+  // }
+  // TODO: this is nuclear, we should only clear the manager state
+  console.log('Clearing all storage!');
+  clear()
 };
