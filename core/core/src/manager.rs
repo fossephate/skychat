@@ -181,6 +181,7 @@ impl ConvoManager {
         // for (k, v) in serialized.sig_id_map {
         //     self.sig_id_map.insert(k, v);
         // }
+
         Ok(())
     }
 
@@ -198,7 +199,7 @@ impl ConvoManager {
         let serialized_key_package = kpackage
             .tls_serialize_detached()
             .expect("Error serializing key package");
-
+        
         serialized_key_package
     }
 

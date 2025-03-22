@@ -4,13 +4,13 @@ import { ThemedStyle } from "@/theme";
 import { ListItem } from "src/components/ListItem";
 import { Text } from "src/components";
 import { useAppTheme } from "@/utils/useAppTheme";
+import { useConvo } from "@/contexts/ConvoContext";
 
 export interface User {
   id: string
   displayName: string
   handle?: string
   avatar?: string
-  online: boolean
   description?: string
 }
 
@@ -34,7 +34,6 @@ const SELF_USER: User = {
   id: "self",
   displayName: "You",
   avatar: "https://i.pravatar.cc/150?u=self",
-  online: true,
 }
 
 // Helper to get chat name if not explicitly set
@@ -58,8 +57,12 @@ const getChatHandle = (chat: Chat, currentUserId: string): string | undefined =>
 
 const renderChatAvatar = (chat: Chat) => {
   const { themed } = useAppTheme();
-  const isDM = chat.members.length === 2
-  const otherMember = chat.members.find(member => member.id !== SELF_USER.id)
+  const convoContext = useConvo()
+  const client = convoContext.client
+  const ownId = client?.id;
+  const isDM = chat.members.length = 2
+  const otherMember = chat.members.find(member => member.id !== ownId)
+  const selfMember = chat.members.find(member => member.id === ownId)
 
   if (isDM && otherMember) {
     return (
@@ -67,22 +70,24 @@ const renderChatAvatar = (chat: Chat) => {
         <Image source={{ uri: otherMember.avatar }} style={themed($avatar)} />
       </View>
     )
-  } else {
-    return (
-      <View style={themed($avatarContainer)}>
-        <View style={themed($avatar)}>
-          <Text style={themed($groupAvatarText)}>
-            {chat.name?.[0]?.toUpperCase() || getChatName(chat, SELF_USER.id)[0]}
-          </Text>
-        </View>
-        {!isDM && (
-          <View style={themed($memberCount)}>
-            <Text style={themed($memberCountText)}>{chat.members.length}</Text>
-          </View>
-        )}
-      </View>
-    )
   }
+  
+  return (
+    <View style={themed($avatarContainer)}>
+      {/* <View style={themed($avatar)}>
+        <Text style={themed($groupAvatarText)}>
+          {chat.name?.[0]?.toUpperCase() || getChatName(chat, SELF_USER.id)[0]}
+        </Text>
+      </View> */}
+      <Image source={{ uri: selfMember?.avatar || "https://i.pravatar.cc/150?u=self" }} style={themed($avatar)} />
+      {!isDM && (
+        <View style={themed($memberCount)}>
+          <Text style={themed($memberCountText)}>{chat.members.length}</Text>
+        </View>
+      )}
+    </View>
+  )
+
 }
 
 // const lastMessage = (chat: Chat) => {

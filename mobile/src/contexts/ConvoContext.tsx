@@ -47,6 +47,8 @@ interface ConvoContextType {
   getGroupChat: (groupId: string) => Promise<ConvoChatWrapper>;
   saveManagerState: () => SerializedCredentialsWrapper;
   loadManagerState: (state: SerializedCredentialsWrapper) => void;
+  getGroupIdWithUsers: (userids: string[]) => string;
+  clearManagerState: () => void;
 }
 
 // Create the context with a default value
@@ -142,19 +144,24 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
 
   }, [client]);
 
-  const saveManagerState = useCallback(async () => {
-    if (!client) throw new Error("Client not initialized");
-    return client.manager.saveState();
-  }, [client]);
+  // const saveManagerState = useCallback(async () => {
+  //   if (!client) throw new Error("Client not initialized");
+  //   return client.manager.saveState();
+  // }, [client]);
 
-  const loadManagerState = useCallback(async (state: SerializedCredentialsWrapper) => {
-    if (!client) throw new Error("Client not initialized");
-    await client.manager.loadState(state);
-  }, [client]);
+  // const loadManagerState = useCallback(async (state: SerializedCredentialsWrapper) => {
+  //   if (!client) throw new Error("Client not initialized");
+  //   await client.manager.loadState(state);
+  // }, [client]);
 
-  const getGroupIdWithUsers = useCallback(async (userids: string[]) => {
+  const getGroupIdWithUsers = useCallback((userids: string[]) => {
     if (!client) throw new Error("Client not initialized");
     return client.manager.getGroupIdWithUsers(userids);
+  }, [client]);
+
+  const clearManagerState = useCallback(async () => {
+    if (!client) throw new Error("Client not initialized");
+    await client.clearState();
   }, [client]);
 
   // Computed property
@@ -176,8 +183,10 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     rejectPendingInvite,
     getChats,
     getGroupChat,
-    saveManagerState,
-    loadManagerState
+    getGroupIdWithUsers,
+    // saveManagerState,
+    // loadManagerState,
+    clearManagerState
   };
 
   return <ConvoContext.Provider value={value}>{children}</ConvoContext.Provider>;

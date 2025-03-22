@@ -82,12 +82,27 @@ export default function UsersScreen() {
     console.log('Selected users:', selectedUsers)
 
     // TODO: check if we have a group with these users already, and if so, open it:
-    const groupId = await convoContext.getGroupIdWithUsers(selectedUsers)
-    if (groupId) {
-      router.push(`/chats/${groupId}`)
+    console.log("getting groups with users: ", selectedUsers)
+
+
+    if (!convoContext.client?.id) {
+      console.error('No client id found')
       return
     }
 
+    selectedUsers.push(convoContext.client!.id)
+
+    try {
+      const groupId = await convoContext.getGroupIdWithUsers(selectedUsers)
+      console.log("got groupId", groupId)
+      if (groupId) {
+        router.push(`/chats/${groupId}`)
+        return
+      }
+    } catch (error) {
+      console.error('No group found with these users, creating new group')
+    }
+      
     try {
       const encodedGroupId = await convoContext.createGroup(groupName, selectedUsers)
       console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)

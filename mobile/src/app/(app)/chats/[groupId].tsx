@@ -59,12 +59,9 @@ export default function Page() {
     console.log("fetching messages")
     // get the group id from the url
 
-    console.log(groupId)
     const chat = await convoContext.getGroupChat(groupId as string)
     // setMessages(messages)
     setConvoName(chat.name)
-
-    console.log("@@@@@@@ chat @@@@@", chat)
 
     // map the messages to the format we want:
     const messages = chat.decrypted.map((msg) => ({
@@ -75,80 +72,28 @@ export default function Page() {
         _id: msg.senderId,
         name: msg.senderId,
       },
-      system: true,
+      // system: true,
     }))
-    console.log(messages)
+    console.log("messages", messages)
     setMessages(messages.reverse())
     setLoading(false)
   }
 
   useEffect(() => {
-
-
-
     fetchMessages()
     startMessageListener()
+    setTimeout(() => setLoading(false), 1000)
   }, [groupId, session])
 
   // Real-time message listener implementation
   const messageListenerRef = useRef<any>(null)
 
   const startMessageListener = async () => {
-    if (!session || !groupId) return
-
-    // try {
-    //   const agent = new Agent(session)
-    //   const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
-
-    //   // Implement real-time message subscription
-    //   // This is a simplified example - actual implementation will depend on API capabilities
-    //   messageListenerRef.current = setInterval(async () => {
-    //     // Only check for new messages if we're not already loading
-    //     if (loading || loadingMore) return
-
-    //     try {
-    //       // Get latest messages (assume API supports getting messages since a specific timestamp)
-    //       const latestMessage = messagesRef.current[0]
-
-    //       if (!latestMessage) return
-
-    //       const newMessagesResponse = await proxy.chat.bsky.convo.getMessages({
-    //         convoId: groupId as string,
-    //         cursor: cursor ?? undefined,
-    //         limit: 10
-    //       })
-
-    //       const newMessagesData = newMessagesResponse.data.messages || []
-
-    //       console.log("newMessagesData.length", newMessagesData.length)
-
-    //       if (newMessagesData.length > 0) {
-    //         // Transform new messages
-    //         const transformedNewMessages = newMessagesData.map(msg => {
-    //           const isSelf = msg.sender?.did === session.did
-
-    //           return {
-    //             _id: msg.id,
-    //             text: msg.text,
-    //             createdAt: new Date(msg.sentAt),
-    //             user: {
-    //               _id: msg.sender?.did || "unknown",
-    //               name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
-    //               avatar: msg.sender?.avatar || `https://i.pravatar.cc/150?u=${msg.sender?.did}`
-    //             }
-    //           }
-    //         })
-
-    //         // Prepend new messages
-    //         setMessages(prevMessages => GiftedChat.append(prevMessages, transformedNewMessages))
-    //       }
-    //     } catch (error) {
-    //       console.error("Error in message listener:", error)
-    //     }
-    //   }, 5000) // Check every 5 seconds - adjust as needed
-    // } catch (error) {
-    //   console.error("Error setting up message listener:", error)
-    // }
+    // if (!groupId) return
+    clearInterval(messageListenerRef.current)
+    messageListenerRef.current = setInterval(async () => {
+      await fetchMessages()
+    }, 3000);
   }
 
   const stopMessageListener = () => {
@@ -158,37 +103,44 @@ export default function Page() {
     }
   }
 
+  // call stopMessageListener when the component unmounts:
+  useEffect(() => {
+    return () => stopMessageListener()
+  }, [])
+
   const onSend = useCallback(async (newMessages = []) => {
-    if (!session || newMessages.length === 0) {
-      console.error("Cannot send message: missing session, groupId, or message")
-      return
-    }
+    // if (!session || newMessages.length === 0) {
+    //   console.error("Cannot send message: missing session, groupId, or message")
+    //   return
+    // }
 
     const messageText = newMessages[0].text
 
+    console.log("messageText", messageText)
+
     // Optimistically update UI
-    setMessages((previousMessages) => GiftedChat.append(previousMessages, newMessages))
+    // setMessages((previousMessages) => GiftedChat.append(previousMessages, newMessages))
 
-    try {
-      const agent = new Agent(session)
-      const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
+    // try {
+    //   const agent = new Agent(session)
+    //   const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
 
-      const response = await proxy.chat.bsky.convo.sendMessage({
-        convoId: groupId as string,
-        message: {
-          text: messageText,
-          // TODO: facets
-        },
-      })
+    //   const response = await proxy.chat.bsky.convo.sendMessage({
+    //     convoId: groupId as string,
+    //     message: {
+    //       text: messageText,
+    //       // TODO: facets
+    //     },
+    //   })
 
-      console.log("Message sent successfully", response.data)
+    //   console.log("Message sent successfully", response.data)
 
-      // Clear reply state after sending
-      setReplyMessage(null)
-    } catch (error) {
-      console.error("Error sending message:", error)
-      // Consider showing an error to the user and/or removing the optimistically added message
-    }
+    //   // Clear reply state after sending
+    //   setReplyMessage(null)
+    // } catch (error) {
+    //   console.error("Error sending message:", error)
+    //   // Consider showing an error to the user and/or removing the optimistically added message
+    // }
   }, [groupId, session, replyMessage])
 
   const updateRowRef = useCallback(

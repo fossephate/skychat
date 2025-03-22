@@ -679,6 +679,8 @@ public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
     func getGroupChat(groupId: String)  -> ConvoChatWrapper
     
+    func getGroupIdWithUsers(userids: [String])  -> String
+    
     func getKeyPackage()  -> Data
     
     func getPartialGroup(groupId: Data)  -> LocalGroupWrapper
@@ -815,6 +817,14 @@ open func getGroupChat(groupId: String) -> ConvoChatWrapper  {
     return try!  FfiConverterTypeConvoChatWrapper_lift(try! rustCall() {
     uniffi_foobar_fn_method_convomanager_get_group_chat(self.uniffiClonePointer(),
         FfiConverterString.lower(groupId),$0
+    )
+})
+}
+    
+open func getGroupIdWithUsers(userids: [String]) -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_foobar_fn_method_convomanager_get_group_id_with_users(self.uniffiClonePointer(),
+        FfiConverterSequenceString.lower(userids),$0
     )
 })
 }
@@ -2026,6 +2036,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_get_group_chat() != 30161) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_get_group_id_with_users() != 7244) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_get_key_package() != 58549) {

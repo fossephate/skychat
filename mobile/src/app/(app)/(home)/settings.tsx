@@ -7,11 +7,13 @@ import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useAuth } from "@/contexts/AuthContext";
+import { useConvo } from "@/contexts/ConvoContext";
 
 export default function SettingsScreen() {
 
   const { themed } = useAppTheme();
   const { client, session, setDidAuthenticate } = useAuth();
+  const convoContext = useConvo();
 
   const [userProfile, setUserProfile] = React.useState({
     displayName: "",
@@ -75,6 +77,7 @@ export default function SettingsScreen() {
       if (client) {
         setDidAuthenticate(false);
       }
+      convoContext.clearManagerState();
     } catch (err) {
       console.error("Logout error:", err)
     }
@@ -109,7 +112,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Account Settings */}
-        <View style={themed($section)}>
+        {/* <View style={themed($section)}>
           <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:account" />
           <View style={themed($sectionContent)}>
             <ListItem
@@ -131,10 +134,10 @@ export default function SettingsScreen() {
               style={themed($listItem)}
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Preferences */}
-        <View style={themed($section)}>
+        {/* <View style={themed($section)}>
           <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:preferences" />
           <View style={themed($sectionContent)}>
             <ListItem
@@ -163,10 +166,10 @@ export default function SettingsScreen() {
               style={themed($listItem)}
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Storage and Data */}
-        <View style={themed($section)}>
+        {/* <View style={themed($section)}>
           <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:storageAndData" />
           <View style={themed($sectionContent)}>
             <ListItem
@@ -183,10 +186,10 @@ export default function SettingsScreen() {
               style={themed($listItem)}
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Support */}
-        <View style={themed($section)}>
+        {/* <View style={themed($section)}>
           <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:support" />
           <View style={themed($sectionContent)}>
             <ListItem
@@ -208,13 +211,13 @@ export default function SettingsScreen() {
               style={themed($listItem)}
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Account Actions */}
         <View style={themed($section)}>
           <ListItem
             tx="common:logOut"
-            LeftComponent={themed(renderIcon("log-out"))}
+            LeftComponent={themed(renderIcon("sign-out"))}
             style={[themed($listItem), themed($destructiveItem)]}
             textStyle={themed($destructiveText)}
             onPress={handleLogout}
@@ -222,7 +225,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={themed($footer)}>
-          <Text style={themed($version)}>Version 2.1.0</Text>
+          <Text style={themed($version)}>Version 0.1.0</Text>
         </View>
       </ScrollView>
     </Screen>
@@ -340,13 +343,13 @@ const $listItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 })
 
 const $destructiveItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.errorBackground,
+  backgroundColor: colors.error,
   marginHorizontal: spacing.lg,
   borderRadius: 16,
 })
 
 const $destructiveText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.error,
+  color: colors.text,
 })
 
 const $footer: ThemedStyle<ViewStyle> = ({ spacing }) => ({

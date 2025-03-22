@@ -987,6 +987,7 @@ export interface ConvoManagerInterface {
   createNewGroup(name: string): ArrayBuffer;
   getChats(): Array<ConvoChatWrapper>;
   getGroupChat(groupId: string): ConvoChatWrapper;
+  getGroupIdWithUsers(userids: Array<string>): string;
   getKeyPackage(): ArrayBuffer;
   getPartialGroup(groupId: ArrayBuffer): LocalGroupWrapper;
   getPendingInvites(): Array<ConvoInviteWrapper>;
@@ -1132,6 +1133,21 @@ export class ConvoManager
           return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_group_chat(
             uniffiTypeConvoManagerObjectFactory.clonePointer(this),
             FfiConverterString.lower(groupId),
+            callStatus
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift
+      )
+    );
+  }
+
+  public getGroupIdWithUsers(userids: Array<string>): string {
+    return FfiConverterString.lift(
+      uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_group_id_with_users(
+            uniffiTypeConvoManagerObjectFactory.clonePointer(this),
+            FfiConverterArrayString.lower(userids),
             callStatus
           );
         },
@@ -1617,6 +1633,14 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_get_group_chat'
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_get_group_id_with_users() !==
+    7244
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_foobar_checksum_method_convomanager_get_group_id_with_users'
     );
   }
   if (

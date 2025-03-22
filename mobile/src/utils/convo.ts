@@ -2,7 +2,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { ConvoChatWrapper, ConvoInviteWrapper, ConvoManager, ConvoMessageWrapper } from "skychat-lib";
-import { saveManagerStateToStorage } from "@/utils/storage/credential-storage";
+import { clearManagerStateFromStorage, saveManagerStateToStorage } from "@/utils/storage/credential-storage";
 
 // Type definitions
 type GroupId = ArrayBuffer;
@@ -323,6 +323,10 @@ export class ConvoClient {
     // save the manager state:
     const state = this.manager.saveState();
     await saveManagerStateToStorage(state);
+  }
+
+  async clearState(): Promise<void> {
+    await clearManagerStateFromStorage();
   }
 
   async getPendingInvites(): Promise<ConvoInviteWrapper[]> {

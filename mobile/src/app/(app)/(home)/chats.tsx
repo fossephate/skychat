@@ -57,7 +57,6 @@ const SELF_USER: User = {
   id: "self",
   displayName: "You",
   avatar: "https://i.pravatar.cc/150?u=self",
-  online: true,
 }
 
 export default function chatsScreen() {
@@ -70,6 +69,37 @@ export default function chatsScreen() {
   const { themed } = useAppTheme()
   const convoContext = useConvo()
   const authContext = useAuth()
+  const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map())
+
+
+  async function fetchUserProfile(did: string): Promise<User> {
+    const { session } = authContext
+    if (!session) {
+      console.error("No session found")
+      return {
+        id: did,
+        displayName: did,
+        avatar: `https://i.pravatar.cc/150?u=${did}`,
+      }
+    }
+
+    try {
+      const agent = new Agent(session)
+      const profile = await agent.getProfile({ actor: did })
+      return {
+        id: did,
+        displayName: profile.data.displayName || did.substring(0, 8) + '...',
+        avatar: profile.data.avatar,
+      }
+    } catch (error) {
+      console.error(`Error fetching profile for ${did}:`, error)
+      return {
+        id: did,
+        displayName: did.substring(0, 8) + '...',
+        avatar: `https://i.pravatar.cc/150?u=${did}`,
+      }
+    }
+  }
 
   async function fetchBskychats() {
     console.log("chats.tsx: fetching dms")
@@ -92,50 +122,36 @@ export default function chatsScreen() {
         return;
       }
 
+
       const transformedChats = await Promise.all(convos.map(async (convo) => {
 
         // Extract members excluding self
         const memberUsers = convo.members
-          .filter((member) => member.did !== session.did)
           .map((member) => ({
             id: member.did,
             displayName: member.displayName || member.handle,
-            avatar: member.avatar || `https://i.pravatar.cc/150?u=${member.did}`,
+            avatar: member.avatar,
             verified: !!member.verified,
             handle: member.handle,
           }))
 
-        // Include self user for consistency with existing chat model
-        const chatMembers = [SELF_USER, ...memberUsers]
-
-        // Extract and decode the last message if available
-        const lastMsg = convo.lastMessage
-          ? {
-            text: convo.lastMessage.text || "New message", // Text might be encrypted
-            sender: convo.lastMessage.sender
-              ? {
-                id: convo.lastMessage.sender.did,
-                displayName:
-                  convo.lastMessage.sender.displayName || convo.lastMessage.sender.handle,
-                avatar:
-                  convo.lastMessage.sender.avatar ||
-                  `https://i.pravatar.cc/150?u=${convo.lastMessage.sender.did}`,
-                online: false,
-              }
-              : SELF_USER,
-            timestamp: formatTimestamp(convo.lastMessage.sentAt),
-            read: convo.unreadCount === 0,
+        for (const member of memberUsers) {
+          if (!memberProfiles.has(member.id)) {
+            memberProfiles.set(member.id, {
+              id: member.id,
+              displayName: member.displayName || member.handle,
+              avatar: member.avatar,
+              handle: member.handle,
+            });
           }
-          : null
+        }
 
         return {
           id: convo.id,
-          name: convo.name || (memberUsers.length === 1 ? memberUsers[0].displayName : ""),
-          members: chatMembers,
-          lastMessage: lastMsg,
+          name: convo.name,
+          members: memberUsers,
+          lastMessage: convo.lastMessage,
           unreadCount: convo.unreadCount || 0,
-          muted: !!convo.muted,
-          pinned: false, // API doesn't indicate pinned status
           isBsky: true,
         }
       }))
@@ -146,62 +162,52 @@ export default function chatsScreen() {
     }
   }
 
+
+
   async function fetchSkychats() {
     console.log("chats.tsx: fetching skychats")
-    // Placeholder for future implementation
-    // For now, generate some dummy data for SkyChats
-    // const mockSkyChats = users.slice(0, 5).map((user, index) => ({
-    //   id: `sky-${index}`,
-    //   name: user.displayName,
-    //   members: [SELF_USER, user],
-    //   lastMessage: {
-    //     text: `Latest message from ${user.displayName}`,
-    //     sender: user,
-    //     timestamp: formatTimestamp(new Date(Date.now() - Math.random() * 86400000 * 3).toISOString()),
-    //     read: Math.random() > 0.3,
-    //   },
-    //   unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 5) + 1 : 0,
-    //   muted: Math.random() > 0.9,
-    //   pinned: Math.random() > 0.8,
-    //   isBsky: false,
-    // }));
 
-    // setSkychats(mockSkyChats);
-
-    // Alternatively, fetch from your API or context:
+    let chats = [];
+    // Fetch chats with proper error handling
     try {
-      const chats = await convoContext.getChats()
-      // setSkychats(chats)
-
-      // map skychat chats for display:
-      const transformedChats = chats.map((chat) => {
-        return {
-          id: Buffer.from(chat.id).toString('base64'),
-          name: chat.name,
-          members: [SELF_USER, ...chat.members],
-          // lastMessage: {
-          //   text: chat.lastMessage?.text || "New message",
-          //   // sender: chat.lastMessage?.sender || SELF_USER,
-          //   // timestamp: formatTimestamp(chat.lastMessage?.timestamp || new Date().toISOString()),
-          //   // read: chat.lastMessage?.read || false,
-          // },
-          isBsky: false,
-          unreadCount: 0,
-        }
-      })
-
-      setSkychats(transformedChats as Chat[])
-
-      console.log("got chats", chats)
-
-      for (const chat of chats) {
-        console.log("chat", chat)
-      }
+      chats = await convoContext.getChats();
     } catch (error) {
-      console.error("Error fetching skychats:", error)
+      console.error("Error fetching skychats:", error);
+      return;
     }
 
+    // map skychat chats for display:
+    const transformedChats = await Promise.all(chats.map(async (chat) => {
 
+      let members = [];
+
+      for (const memberId of chat.members) {
+        var userProfile = memberProfiles.get(memberId);
+
+        if (!userProfile) {
+          userProfile = await fetchUserProfile(memberId);
+          memberProfiles.set(memberId, userProfile);
+        }
+
+        if (userProfile) {
+          members.push(userProfile);
+        }
+      }
+
+      return {
+        id: Buffer.from(chat.id).toString('base64'),
+        name: chat.name,
+        members: members,
+        isBsky: false,
+      };
+    }));
+
+    // // Sort chats by latest activity
+    // transformedChats.sort((a, b) => {
+    //   return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime();
+    // });
+
+    setSkychats(transformedChats as Chat[]);
   }
 
   // Helper function to format API timestamp to relative time

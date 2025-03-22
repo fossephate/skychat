@@ -94,6 +94,11 @@ interface NativeModuleInterface {
     groupId: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): Uint8Array;
+  ubrn_uniffi_foobar_fn_method_convomanager_get_group_id_with_users(
+    ptr: bigint,
+    userids: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus
+  ): Uint8Array;
   ubrn_uniffi_foobar_fn_method_convomanager_get_key_package(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus
@@ -327,6 +332,7 @@ interface NativeModuleInterface {
   ubrn_uniffi_foobar_checksum_method_convomanager_create_new_group(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_chats(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_group_chat(): number;
+  ubrn_uniffi_foobar_checksum_method_convomanager_get_group_id_with_users(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_key_package(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_partial_group(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_get_pending_invites(): number;

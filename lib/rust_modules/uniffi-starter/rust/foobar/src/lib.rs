@@ -153,13 +153,14 @@ impl ConvoManager {
       let mut inner = self.inner.lock().unwrap();
       // map all groups to ConvoChatWrapper:
       let chats = inner.groups.iter().map(|(group_id, group)| {
+        let member_ids = inner.group_get_member_ids(&group_id);
         ConvoChatWrapper {
             id: group_id.clone(),
             name: group.name.clone(),
             global_index: group.global_index.clone(),
             last_message: None,
             unread_messages: 0,
-            members: vec![],
+            members: member_ids.clone(),
             decrypted: vec![],
         }
       }).collect();
@@ -170,13 +171,14 @@ impl ConvoManager {
         let mut inner = self.inner.lock().unwrap();
         let group_id_bin = BufferConverter::from_base64(&group_id).unwrap();
         let group = inner.groups.get(&group_id_bin).unwrap();
+        let member_ids = inner.group_get_member_ids(&group_id_bin);
         ConvoChatWrapper {
             id: group.id.clone(),
             name: group.name.clone(),
             global_index: group.global_index.clone(),
             last_message: None,
             unread_messages: 0,
-            members: vec![],
+            members: member_ids.clone(),
             decrypted: group.decrypted.iter().map(|m| m.into()).collect(),
         }
     }
@@ -237,6 +239,17 @@ impl ConvoManager {
     //     let welcome_message = invites[0].welcome_message.clone();
     //     welcome_message
     // }
+
+    pub fn get_group_id_with_users(&self, user_ids: Vec<String>) -> EncodedBase64 {
+        let mut inner = self.inner.lock().unwrap();
+
+        println!("user_ids: {:?}", user_ids);
+        let group_id = inner.get_group_id_with_users(user_ids);
+
+        println!("group_id: {:?}", group_id);
+        let encoded_group_id = BufferConverter::to_base64(&group_id);
+        encoded_group_id
+    }
 
     pub fn save_state(&self) -> SerializedCredentialsWrapper {
         let mut inner = self.inner.lock().unwrap();
