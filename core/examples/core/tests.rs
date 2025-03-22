@@ -137,7 +137,7 @@ async fn manual_chat() {
     let gn = "alice_group".to_string();
 
     // alice creates a new group and invites bob:
-    let gid = alice.create_new_group(gn.clone());
+    let gid = alice.create_group(gn.clone());
     let group_invite = alice.create_invite(&gid, bob.get_key_package());
     bob.process_raw_invite(
         group_invite.sender_id.clone(),

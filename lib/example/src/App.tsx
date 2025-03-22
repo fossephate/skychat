@@ -43,7 +43,7 @@ function manual_chat(): string {
   let result = "";
 
   // alice creates a new group and invites bob:
-  gid = alice.createNewGroup(gn);
+  gid = alice.createGroup(gn);
   group_invite = alice.createInvite(gid, bob.getKeyPackage());
   console.log(group_invite);
   bob.processRawInvite(gn, group_invite.welcomeMessage, group_invite.ratchetTree, undefined);
@@ -165,7 +165,7 @@ function manual_chat(): string {
 
 async function client_chat(): Promise<string> {
   // const convoManager = new ConvoManager('test');
-  // convoManager.createNewGroup('test');
+  // convoManager.createGroup('test');
   return "test";
 }
 
