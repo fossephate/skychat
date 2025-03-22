@@ -108,15 +108,38 @@ export default function Page() {
     return () => stopMessageListener()
   }, [])
 
+  const fromB64 = (b64: string): ArrayBuffer => {
+    // Create a buffer from the base64 string
+    const buffer = Buffer.from(b64, "base64");
+    // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
+    const arrayBuffer = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < buffer.length; i++) {
+      view[i] = buffer[i];
+    }
+    return arrayBuffer;
+  }
+
   const onSend = useCallback(async (newMessages = []) => {
     // if (!session || newMessages.length === 0) {
     //   console.error("Cannot send message: missing session, groupId, or message")
     //   return
     // }
 
-    const messageText = newMessages[0].text
+    const messageText = newMessages[0].text;
 
     console.log("messageText", messageText)
+
+    // base64 decode groupId to get the array buffer:
+    const groupIdBuffer = fromB64(groupId as string)
+
+    try { 
+      convoContext.sendMessage(groupIdBuffer, messageText)
+    } catch (error) {
+      console.error("Error sending message:", error)
+    }
+
+    console.log("message sent!")
 
     // Optimistically update UI
     // setMessages((previousMessages) => GiftedChat.append(previousMessages, newMessages))

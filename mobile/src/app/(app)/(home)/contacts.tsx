@@ -90,10 +90,9 @@ export default function UsersScreen() {
       return
     }
 
-    selectedUsers.push(convoContext.client!.id)
-
     try {
-      const groupId = await convoContext.getGroupIdWithUsers(selectedUsers)
+      let allMembers = [...selectedUsers, convoContext.client!.id]
+      const groupId = await convoContext.getGroupIdWithUsers(allMembers)
       console.log("got groupId", groupId)
       if (groupId) {
         router.push(`/chats/${groupId}`)
@@ -108,6 +107,7 @@ export default function UsersScreen() {
       console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)
       router.push(`/chats/${encodedGroupId}` as any)
     } catch (error) {
+      console.log("error creating group: ", error)
       // console.error('Error creating chat:', error)
       // pop up an error modal:
       Alert.alert('Error creating chat', 'This user is not on Skychat (yet!)')

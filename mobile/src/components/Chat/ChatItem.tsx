@@ -19,6 +19,7 @@ export interface Chat {
   isBsky: boolean
   members: User[]
   name?: string
+  handle?: string
   lastMessage?: {
     text: string
     sender: User
@@ -30,39 +31,22 @@ export interface Chat {
   muted?: boolean
 }
 
-const SELF_USER: User = {
-  id: "self",
-  displayName: "You",
-  avatar: "https://i.pravatar.cc/150?u=self",
-}
-
-// Helper to get chat name if not explicitly set
-const getChatName = (chat: Chat, currentUserId: string): string => {
-  if (chat.name) return chat.name
-
-  const otherMembers = chat.members.filter(member => member.id !== currentUserId)
-  if (chat.members.length === 2) {
-    return otherMembers[0].displayName
-  }
-  return otherMembers.slice(0, 3).map(m => m.displayName).join(", ")
-}
-
-const getChatHandle = (chat: Chat, currentUserId: string): string | undefined => {
-  const otherMembers = chat.members.filter(member => member.id !== currentUserId)
-  if (chat.members.length === 2) {
-    return otherMembers[0].handle
-  }
-  return undefined;
-}
-
 const renderChatAvatar = (chat: Chat) => {
   const { themed } = useAppTheme();
   const convoContext = useConvo()
   const client = convoContext.client
   const ownId = client?.id;
   const isDM = chat.members.length = 2
-  const otherMember = chat.members.find(member => member.id !== ownId)
-  const selfMember = chat.members.find(member => member.id === ownId)
+
+  var selfMember = null;
+  var otherMember = null;
+  for (const member of chat.members) {
+    if (member?.id === ownId) {
+      selfMember = member;
+    } else {
+      otherMember = member;
+    }
+  }
 
   if (isDM && otherMember) {
     return (
@@ -113,8 +97,6 @@ const renderChatAvatar = (chat: Chat) => {
 // Convert to a proper React component
 const ChatItem = ({ item: chat }: { item: Chat }) => {
   const { themed } = useAppTheme();
-  let chatHandle = getChatHandle(chat, SELF_USER.id)
-  let chatName = getChatName(chat, SELF_USER.id)
   return (
     <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
       <ListItem
@@ -152,8 +134,8 @@ const ChatItem = ({ item: chat }: { item: Chat }) => {
         style={themed($listItem)}
       >
         <View style={{ flexDirection: "column" }}>
-          <Text>{chatName}</Text>
-          {chatHandle && chatHandle !== chatName && <Text style={themed($chatHandle)}>{"@" + chatHandle}</Text>}
+          <Text>{chat.name}</Text>
+          {chat.handle && <Text style={themed($chatHandle)}>{"@" + chat.handle}</Text>}
           {chat.lastMessage && (
             <Text numberOfLines={1} style={themed($lastMessage)}>{chat.lastMessage?.text}</Text>
           )}

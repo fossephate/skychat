@@ -140,7 +140,7 @@ uniffi_foobar_fn_method_convomanager_get_chats(void *ptr,
 RustBuffer uniffi_foobar_fn_method_convomanager_get_group_chat(
     void *ptr, RustBuffer group_id, RustCallStatus *uniffi_out_err);
 RustBuffer uniffi_foobar_fn_method_convomanager_get_group_id_with_users(
-    void *ptr, RustBuffer userids, RustCallStatus *uniffi_out_err);
+    void *ptr, RustBuffer user_ids, RustCallStatus *uniffi_out_err);
 RustBuffer uniffi_foobar_fn_method_convomanager_get_key_package(
     void *ptr, RustCallStatus *uniffi_out_err);
 RustBuffer uniffi_foobar_fn_method_convomanager_get_partial_group(

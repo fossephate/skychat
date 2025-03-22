@@ -96,7 +96,7 @@ interface NativeModuleInterface {
   ): Uint8Array;
   ubrn_uniffi_foobar_fn_method_convomanager_get_group_id_with_users(
     ptr: bigint,
-    userids: Uint8Array,
+    userIds: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): Uint8Array;
   ubrn_uniffi_foobar_fn_method_convomanager_get_key_package(

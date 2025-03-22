@@ -199,7 +199,7 @@ impl ConvoManager {
         let serialized_key_package = kpackage
             .tls_serialize_detached()
             .expect("Error serializing key package");
-        
+
         serialized_key_package
     }
 

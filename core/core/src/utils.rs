@@ -43,7 +43,6 @@ pub fn generate_key_package(
         .unwrap()
 }
 
-
 pub fn current_timestamp() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -51,11 +50,9 @@ pub fn current_timestamp() -> u64 {
         .as_secs()
 }
 
-
 use base64::{engine::general_purpose, Engine as _};
+use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 use std::error::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwned};
-
 
 pub struct BufferConverter;
 impl BufferConverter {

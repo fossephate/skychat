@@ -88,7 +88,14 @@ export class ConvoClient {
       throw new Error("Server address is not set");
     }
 
-    const groupId = this.manager.createNewGroup(groupName);
+    var groupId;
+    try {
+      groupId = this.manager.createNewGroup(groupName);
+    } catch (error) {
+      console.error("Failed to create group", error);
+      throw new Error("Failed to create group" + error);
+    }
+
     const encodedGroupId = this.toB64(groupId);
 
     const response = await fetch(`${this.serverAddress}/api/create_group`, {
@@ -277,7 +284,7 @@ export class ConvoClient {
 
   async acceptPendingInvite(welcomeMessage: ArrayBuffer): Promise<ArrayBuffer> {
     const groupId = this.manager.acceptPendingInvite(welcomeMessage);
-    // await this.syncGroup(groupId);
+    await this.syncGroup(groupId);
     return groupId;
   }
 
@@ -302,9 +309,9 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: groupId,
+        group_id: groupId ? this.toB64(groupId) : undefined,
         sender_id: this.id,
-        index
+        index: Number(index)
         // TODO: this should need to be signed by the userid or some other auth
       })
     });
@@ -372,8 +379,8 @@ export class ConvoClient {
       body: JSON.stringify({
         group_id: this.toB64(groupId),
         sender_id: this.id,
-        message: msg,
-        global_index: groupIndex + 1n
+        message: this.toB64(msg),
+        global_index: Number(groupIndex) + 1
       })
     });
 

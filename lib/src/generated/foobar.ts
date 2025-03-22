@@ -987,7 +987,7 @@ export interface ConvoManagerInterface {
   createNewGroup(name: string): ArrayBuffer;
   getChats(): Array<ConvoChatWrapper>;
   getGroupChat(groupId: string): ConvoChatWrapper;
-  getGroupIdWithUsers(userids: Array<string>): string;
+  getGroupIdWithUsers(userIds: Array<string>): string;
   getKeyPackage(): ArrayBuffer;
   getPartialGroup(groupId: ArrayBuffer): LocalGroupWrapper;
   getPendingInvites(): Array<ConvoInviteWrapper>;
@@ -1141,13 +1141,13 @@ export class ConvoManager
     );
   }
 
-  public getGroupIdWithUsers(userids: Array<string>): string {
+  public getGroupIdWithUsers(userIds: Array<string>): string {
     return FfiConverterString.lift(
       uniffiCaller.rustCall(
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_group_id_with_users(
             uniffiTypeConvoManagerObjectFactory.clonePointer(this),
-            FfiConverterArrayString.lower(userids),
+            FfiConverterArrayString.lower(userIds),
             callStatus
           );
         },
@@ -1637,7 +1637,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_get_group_id_with_users() !==
-    7244
+    12260
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_get_group_id_with_users'

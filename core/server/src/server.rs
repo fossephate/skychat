@@ -79,16 +79,14 @@ impl ConvoServer {
             user_ids: vec![sender_id.clone()],
             messages: Vec::new(),
         };
-        
+
         self.groups.insert(group_id, group);
         Ok(())
     }
 
     pub fn client_accept_invite(&mut self, group_id: Vec<u8>, sender_id: String) -> Result<()> {
-        let group = self.groups
-            .get_mut(&group_id)
-            .context("Group not found")?;
-            
+        let group = self.groups.get_mut(&group_id).context("Group not found")?;
+
         group.user_ids.push(sender_id.clone());
 
         // Delete the invite from user_specific_messages
@@ -119,9 +117,7 @@ impl ConvoServer {
     }
 
     pub fn client_get_group_index(&self, group_id: Vec<u8>, _sender_id: String) -> Result<u64> {
-        let group = self.groups
-            .get(&group_id)
-            .context("Group not found")?;
+        let group = self.groups.get(&group_id).context("Group not found")?;
         Ok(group.global_index)
     }
 
@@ -155,7 +151,6 @@ impl ConvoServer {
             self.user_specific_messages.remove(&sender_id);
         }
 
-
         Ok(new_messages)
     }
 
@@ -168,9 +163,7 @@ impl ConvoServer {
         ratchet_tree: Vec<u8>,
         fanned: Option<Vec<u8>>,
     ) -> Result<()> {
-        let group = self.groups
-            .get_mut(&group_id)
-            .context("Group not found")?;
+        let group = self.groups.get_mut(&group_id).context("Group not found")?;
 
         // Add fanned message if provided
         if let Some(fanned) = fanned {
@@ -207,7 +200,7 @@ impl ConvoServer {
                     fanned: None,
                 }),
             });
-        
+
         group.global_index += 1;
         Ok(())
     }
@@ -219,9 +212,7 @@ impl ConvoServer {
         message: Vec<u8>,
         global_index: u64,
     ) -> Result<()> {
-        let group = self.groups
-            .get_mut(&group_id)
-            .context("Group not found")?;
+        let group = self.groups.get_mut(&group_id).context("Group not found")?;
         // the proposed message's global_index must be the current group's global_index + 1:
         let correct_new_gi = group.global_index + 1;
         if global_index == correct_new_gi {
@@ -250,5 +241,4 @@ impl ConvoServer {
         }
         Ok(key_packages_map)
     }
-    
 }

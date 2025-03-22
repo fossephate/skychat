@@ -69,11 +69,18 @@ export default function chatsScreen() {
   const { themed } = useAppTheme()
   const convoContext = useConvo()
   const authContext = useAuth()
-  const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map())
+  // const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map())
+
+  let memberProfiles = new Map<string, User>();
 
 
   async function fetchUserProfile(did: string): Promise<User> {
     const { session } = authContext
+
+    if (memberProfiles.has(did)) {
+      return memberProfiles.get(did) as User;
+    }
+
     if (!session) {
       console.error("No session found")
       return {
@@ -86,18 +93,22 @@ export default function chatsScreen() {
     try {
       const agent = new Agent(session)
       const profile = await agent.getProfile({ actor: did })
-      return {
+      const userProfile = {
         id: did,
         displayName: profile.data.displayName || did.substring(0, 8) + '...',
         avatar: profile.data.avatar,
       }
+      memberProfiles.set(did, userProfile);
+      return userProfile;
     } catch (error) {
       console.error(`Error fetching profile for ${did}:`, error)
-      return {
+      const userProfile = {
         id: did,
         displayName: did.substring(0, 8) + '...',
         avatar: `https://i.pravatar.cc/150?u=${did}`,
       }
+      memberProfiles.set(did, userProfile);
+      return userProfile;
     }
   }
 
@@ -146,9 +157,20 @@ export default function chatsScreen() {
           }
         }
 
+        let handle;
+        let name;
+        for (const member of memberUsers) {
+          if (member.id !== convoContext.client?.id) {
+            handle = member.handle;
+            name = member.displayName;
+            break;
+          }
+        }
+
         return {
           id: convo.id,
-          name: convo.name,
+          name: name,
+          handle: handle,
           members: memberUsers,
           lastMessage: convo.lastMessage,
           unreadCount: convo.unreadCount || 0,
@@ -177,16 +199,77 @@ export default function chatsScreen() {
     }
 
     // map skychat chats for display:
-    const transformedChats = await Promise.all(chats.map(async (chat) => {
+    // const transformedChats = await Promise.all(chats.map(async (chat) => {
+
+    //   let members = [];
+
+    //   for (const memberId of chat.members) {
+    //     var userProfile = memberProfiles.get(memberId);
+
+    //     if (!userProfile) {
+    //       userProfile = await fetchUserProfile(memberId);
+    //       memberProfiles.set(memberId, userProfile);
+    //     }
+
+    //     if (userProfile) {
+    //       members.push(userProfile);
+    //     }
+    //   }
+
+    //   for (const member of members) {
+    //     console.log("member", member)
+    //   }
+    //   console.log("members", members)
+
+    //   return {
+    //     id: Buffer.from(chat.id).toString('base64'),
+    //     name: chat.name,
+    //     members: members,
+    //     isBsky: false,
+    //   };
+    // }));
+
+
+    let transformedChats = [];
+
+    // for k, v in chats
+    for (const chat of chats) {
+      console.log("chat", chat)
 
       let members = [];
+
+      // technically this is an error state but might as well handle it gracefullyish:
+      if (chat.members.length < 2) {
+        const id = convoContext.client?.id;
+        if (id) {
+          const userProfile = await fetchUserProfile(id);
+          members.push(userProfile);
+          members.push(userProfile);
+        } else {
+          // add mock members just so the ui doesn't break:
+          members.push({
+            id: id,
+            displayName: "You",
+            avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
+          });
+          members.push({
+            id: "self",
+            displayName: "You",
+            avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
+          });
+        }
+      }
+
 
       for (const memberId of chat.members) {
         var userProfile = memberProfiles.get(memberId);
 
+        // if (memberId === convoContext.client?.id) {
+        //   continue;
+        // }
+
         if (!userProfile) {
           userProfile = await fetchUserProfile(memberId);
-          memberProfiles.set(memberId, userProfile);
         }
 
         if (userProfile) {
@@ -194,18 +277,36 @@ export default function chatsScreen() {
         }
       }
 
-      return {
+
+      let handle;
+      let name;
+      for (const member of members) {
+        if (member.id !== convoContext.client?.id) {
+          // handle = member.displayName;
+          name = member.displayName;
+          break;
+        }
+      }
+
+      transformedChats.push({
         id: Buffer.from(chat.id).toString('base64'),
         name: chat.name,
         members: members,
         isBsky: false,
-      };
-    }));
+        unreadCount: 0,
+      });
+    }
+
+
+
 
     // // Sort chats by latest activity
     // transformedChats.sort((a, b) => {
     //   return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime();
     // });
+
+    console.log("transformedChats", transformedChats)
+    console.log("chat1members", transformedChats[0].members)
 
     setSkychats(transformedChats as Chat[]);
   }

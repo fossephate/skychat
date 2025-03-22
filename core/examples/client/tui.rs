@@ -1,9 +1,9 @@
+use crossterm::event::{KeyEvent, KeyEventKind};
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use crossterm::event::{KeyEventKind, KeyEvent};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
@@ -20,8 +20,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use skychat_core::manager::ConvoMessage;
 use skychat_client::client::ConvoClient;
+use skychat_core::manager::ConvoMessage;
 use skychat_core::manager::SerializedCredentials;
 
 type GroupId = Vec<u8>;
@@ -377,9 +377,7 @@ impl App {
                         // client.kick_user_from_group(user.user_id.clone(), group_id.clone()).await;
                     }
 
-                    client
-                        .send_message(group_id, self.input.clone())
-                        .await;
+                    client.send_message(group_id, self.input.clone()).await;
                     self.input.clear();
                     self.scroll_to_bottom();
                 }
@@ -585,11 +583,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                         } else {
                             Style::default()
                         };
-                        ListItem::new(format!(
-                            "Invite to {}",
-                            invite.group_name
-                        ))
-                        .style(style)
+                        ListItem::new(format!("Invite to {}", invite.group_name)).style(style)
                     })
                     .collect();
 
@@ -623,7 +617,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             f.render_widget(input, chunks[2]);
         }
         InputMode::CreatingGroup => {
-            let user_strings = vec![app.users[app.users_scroll.selected().unwrap()].user_id.clone()];
+            let user_strings = vec![app.users[app.users_scroll.selected().unwrap()]
+                .user_id
+                .clone()];
             let users: Vec<ListItem> = user_strings
                 .iter()
                 .map(|u| ListItem::new(u.clone()))
@@ -730,10 +726,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             if let Some(selected) = app.invites_scroll.selected() {
                 let client = app.client.as_ref().expect("client not found!");
                 if let Some(invite) = client.manager.pending_invites.get(selected) {
-                    let text = format!(
-                        "Accept invite to group {}? (Y/n)",
-                        invite.group_name
-                    );
+                    let text = format!("Accept invite to group {}? (Y/n)", invite.group_name);
                     let prompt = Paragraph::new(text).block(
                         Block::default()
                             .title("Processing Invite")

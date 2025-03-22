@@ -39,7 +39,7 @@ interface ConvoContextType {
   // connect: (serverAddress: string) => Promise<void>;
   initAndConnect: (serverAddress: string, id: string) => Promise<void>;
   createGroup: (name: string, userids: string[]) => Promise<string>;
-  sendMessage: (groupId: Uint8Array, text: string) => Promise<void>;
+  sendMessage: (groupId: ArrayBuffer, text: string) => void;
   getGroups: () => Promise<void>;
   acceptPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<ArrayBuffer>;
   rejectPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<void>;

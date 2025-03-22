@@ -10,7 +10,7 @@ type EncodedBase64 = String;
 pub struct ConvoInviteWrapper {
     pub sender_id: String,
     pub group_name: String,
-    pub welcome_message: EncodedBase64,// todo: changed from Vec<u8> to String
+    pub welcome_message: EncodedBase64, // todo: changed from Vec<u8> to String
     pub ratchet_tree: Option<Vec<u8>>,
     pub global_index: u64,
     pub fanned: Option<Vec<u8>>,
@@ -204,12 +204,11 @@ impl From<ConvoMessageWrapper> for skychat_core::manager::ConvoMessage {
 
 #[derive(uniffi::Record)]
 pub struct ConvoChatWrapper {
-  pub id: Vec<u8>,
-  pub name: String,
-  pub last_message: Option<String>,
-  pub unread_messages: u64,
-  pub global_index: u64,
-  pub members: Vec<String>,
-  pub decrypted: Vec<MessageItemWrapper>,
+    pub id: Vec<u8>,
+    pub name: String,
+    pub last_message: Option<String>,
+    pub unread_messages: u64,
+    pub global_index: u64,
+    pub members: Vec<String>,
+    pub decrypted: Vec<MessageItemWrapper>,
 }
-

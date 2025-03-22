@@ -3,9 +3,9 @@ extern crate rocket;
 
 use rocket::Config;
 use skychat_server::server::ConvoServer;
-use tokio::time::interval;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use tokio::time::interval;
 mod web;
 use web::*;
 

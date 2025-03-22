@@ -195,14 +195,16 @@ async fn manual_chat() {
     let serialized_message = charlie.create_message(&gid, message_text);
 
     // alice decrypts the message:
-    let processed_results = alice.process_message(serialized_message.clone(), Some("charlie".to_string()));
+    let processed_results =
+        alice.process_message(serialized_message.clone(), Some("charlie".to_string()));
     println!(
         "{}",
         format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
     );
 
     // bob decrypts the message:
-    let processed_results = bob.process_message(serialized_message.clone(), Some("charlie".to_string()));
+    let processed_results =
+        bob.process_message(serialized_message.clone(), Some("charlie".to_string()));
     println!(
         "{}",
         format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
@@ -213,12 +215,14 @@ async fn manual_chat() {
     println!("{}", format!("Bob: {}", message_text).blue());
     let serialized_message = bob.create_message(&gid, message_text);
     // charlie and alice decrypt the message:
-    let processed_results = alice.process_message(serialized_message.clone(), Some("bob".to_string()));
+    let processed_results =
+        alice.process_message(serialized_message.clone(), Some("bob".to_string()));
     println!(
         "{}",
         format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
     );
-    let processed_results = charlie.process_message(serialized_message.clone(), Some("bob".to_string()));
+    let processed_results =
+        charlie.process_message(serialized_message.clone(), Some("bob".to_string()));
     println!(
         "{}",
         format!("Charlie decrypted: {}", processed_results.message.unwrap()).green()
@@ -237,7 +241,8 @@ async fn manual_chat() {
     let serialized_message = charlie.create_message(&gid, message_text);
 
     // bob decrypts the message:
-    let processed_results = bob.process_message(serialized_message.clone(), Some("charlie".to_string()));
+    let processed_results =
+        bob.process_message(serialized_message.clone(), Some("charlie".to_string()));
     println!(
         "{}",
         format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
@@ -268,7 +273,6 @@ async fn manual_chat() {
     );
     println!("<------ David processed the invite! ------->");
 
-
     // // print out the members of the group:
     // let group = david.groups.get(&gid).unwrap();
     // let members = group.mls_group.members().collect::<Vec<_>>();
@@ -286,7 +290,6 @@ async fn manual_chat() {
 
     // let ids = bob.group_get_member_ids(&gid);
     // println!("{}", format!("IDs: {:?}", ids).green());
-
 
     // charlie must also process the fanned commit:
     // charlie.process_message(proposed_invite.fanned.unwrap(), None);
