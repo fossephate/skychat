@@ -108,17 +108,43 @@ export default function Page() {
     return () => stopMessageListener()
   }, [])
 
-  const fromB64 = (b64: string): ArrayBuffer => {
+  // const fromB64 = (b64: string): ArrayBuffer => {
+  //   // Create a buffer from the base64 string
+  //   const buffer = Buffer.from(b64, "base64");
+  //   // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
+  //   const arrayBuffer = new ArrayBuffer(buffer.length);
+  //   const view = new Uint8Array(arrayBuffer);
+  //   for (let i = 0; i < buffer.length; i++) {
+  //     view[i] = buffer[i];
+  //   }
+  //   return arrayBuffer;
+  // }
+
+  const fromUrlSafeB64 = (urlSafeB64: string): ArrayBuffer => {
+    // Convert from URL-safe format back to standard base64
+    let b64 = urlSafeB64
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    
+    // Add padding if needed
+    // Standard base64 string length should be multiple of 4
+    const padding = b64.length % 4;
+    if (padding > 0) {
+      b64 += '='.repeat(4 - padding);
+    }
+    
     // Create a buffer from the base64 string
     const buffer = Buffer.from(b64, "base64");
-    // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
+    
+    // Get the underlying ArrayBuffer
     const arrayBuffer = new ArrayBuffer(buffer.length);
     const view = new Uint8Array(arrayBuffer);
     for (let i = 0; i < buffer.length; i++) {
       view[i] = buffer[i];
     }
+    
     return arrayBuffer;
-  }
+  };
 
   const onSend = useCallback(async (newMessages = []) => {
     // if (!session || newMessages.length === 0) {
@@ -131,7 +157,7 @@ export default function Page() {
     console.log("messageText", messageText)
 
     // base64 decode groupId to get the array buffer:
-    const groupIdBuffer = fromB64(groupId as string)
+    const groupIdBuffer = fromUrlSafeB64(groupId as string)
 
     try { 
       convoContext.sendMessage(groupIdBuffer, messageText)

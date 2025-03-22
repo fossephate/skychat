@@ -28,29 +28,6 @@ protected:
   jsi::Value cpp_uniffi_internal_fn_func_ffi__arraybuffer_to_string(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
-  jsi::Value cpp_uniffi_foobar_fn_clone_convoclient(jsi::Runtime &rt,
-                                                    const jsi::Value &thisVal,
-                                                    const jsi::Value *args,
-                                                    size_t count);
-  jsi::Value cpp_uniffi_foobar_fn_free_convoclient(jsi::Runtime &rt,
-                                                   const jsi::Value &thisVal,
-                                                   const jsi::Value *args,
-                                                   size_t count);
-  jsi::Value cpp_uniffi_foobar_fn_constructor_convoclient_new(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_foobar_fn_method_convoclient_connect_to_server(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_foobar_fn_method_convoclient_create_group(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_foobar_fn_method_convoclient_get_group_id(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_foobar_fn_method_convoclient_get_pending_invites(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
   jsi::Value cpp_uniffi_foobar_fn_clone_convomanager(jsi::Runtime &rt,
                                                      const jsi::Value &thisVal,
                                                      const jsi::Value *args,
@@ -331,18 +308,6 @@ protected:
                                                       const jsi::Value &thisVal,
                                                       const jsi::Value *args,
                                                       size_t count);
-  jsi::Value cpp_uniffi_foobar_checksum_method_convoclient_connect_to_server(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_foobar_checksum_method_convoclient_create_group(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_foobar_checksum_method_convoclient_get_group_id(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_foobar_checksum_method_convoclient_get_pending_invites(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
   jsi::Value
   cpp_uniffi_foobar_checksum_method_convomanager_accept_pending_invite(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
@@ -414,9 +379,6 @@ protected:
   jsi::Value cpp_uniffi_foobar_checksum_method_convomanager_test_post_request(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
-  jsi::Value cpp_uniffi_foobar_checksum_constructor_convoclient_new(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
   jsi::Value cpp_uniffi_foobar_checksum_constructor_convomanager_new(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -424,9 +386,6 @@ protected:
                                                     const jsi::Value &thisVal,
                                                     const jsi::Value *args,
                                                     size_t count);
-  jsi::Value cpp_uniffi_internal_fn_method_convoclient_ffi__bless_pointer(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
   jsi::Value cpp_uniffi_internal_fn_method_convomanager_ffi__bless_pointer(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);

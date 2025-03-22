@@ -23,34 +23,6 @@ interface NativeModuleInterface {
     buffer: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus
   ): string;
-  ubrn_uniffi_foobar_fn_clone_convoclient(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus
-  ): bigint;
-  ubrn_uniffi_foobar_fn_free_convoclient(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus
-  ): void;
-  ubrn_uniffi_foobar_fn_constructor_convoclient_new(
-    id: Uint8Array,
-    uniffi_out_err: UniffiRustCallStatus
-  ): bigint;
-  ubrn_uniffi_foobar_fn_method_convoclient_connect_to_server(
-    ptr: bigint,
-    serverAddress: Uint8Array
-  ): bigint;
-  ubrn_uniffi_foobar_fn_method_convoclient_create_group(
-    ptr: bigint,
-    groupName: Uint8Array
-  ): bigint;
-  ubrn_uniffi_foobar_fn_method_convoclient_get_group_id(
-    ptr: bigint,
-    groupName: Uint8Array
-  ): bigint;
-  ubrn_uniffi_foobar_fn_method_convoclient_get_pending_invites(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus
-  ): Uint8Array;
   ubrn_uniffi_foobar_fn_clone_convomanager(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus
@@ -322,10 +294,6 @@ interface NativeModuleInterface {
     handle: bigint,
     uniffi_out_err: UniffiRustCallStatus
   ): void;
-  ubrn_uniffi_foobar_checksum_method_convoclient_connect_to_server(): number;
-  ubrn_uniffi_foobar_checksum_method_convoclient_create_group(): number;
-  ubrn_uniffi_foobar_checksum_method_convoclient_get_group_id(): number;
-  ubrn_uniffi_foobar_checksum_method_convoclient_get_pending_invites(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_accept_pending_invite(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_create_invite(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_create_message(): number;
@@ -348,13 +316,8 @@ interface NativeModuleInterface {
   ubrn_uniffi_foobar_checksum_method_convomanager_reject_pending_invite(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_save_state(): number;
   ubrn_uniffi_foobar_checksum_method_convomanager_test_post_request(): number;
-  ubrn_uniffi_foobar_checksum_constructor_convoclient_new(): number;
   ubrn_uniffi_foobar_checksum_constructor_convomanager_new(): number;
   ubrn_ffi_foobar_uniffi_contract_version(): number;
-  ubrn_uniffi_internal_fn_method_convoclient_ffi__bless_pointer(
-    pointer: bigint,
-    uniffi_out_err: UniffiRustCallStatus
-  ): UniffiRustArcPtr;
   ubrn_uniffi_internal_fn_method_convomanager_ffi__bless_pointer(
     pointer: bigint,
     uniffi_out_err: UniffiRustCallStatus

@@ -66,19 +66,55 @@ export class ConvoClient {
     }
   }
 
-  toB64(buffer: ArrayBuffer): string {
-    return Buffer.from(buffer).toString("base64");
-  }
+  // toB64(buffer: ArrayBuffer): string {
+  //   return Buffer.from(buffer).toString("base64");
+  // }
 
-  fromB64(b64: string): ArrayBuffer {
+  // fromB64(b64: string): ArrayBuffer {
+  //   // Create a buffer from the base64 string
+  //   const buffer = Buffer.from(b64, "base64");
+  //   // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
+  //   const arrayBuffer = new ArrayBuffer(buffer.length);
+  //   const view = new Uint8Array(arrayBuffer);
+  //   for (let i = 0; i < buffer.length; i++) {
+  //     view[i] = buffer[i];
+  //   }
+  //   return arrayBuffer;
+  // }
+
+  toUrlSafeB64(buffer: ArrayBuffer): string {
+    // Encode to standard base64 first
+    const b64 = Buffer.from(buffer).toString("base64");
+    // Convert to URL-safe format
+    return b64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, ''); // Remove padding
+  }
+  
+  fromUrlSafeB64(urlSafeB64: string): ArrayBuffer {
+    // Convert from URL-safe format back to standard base64
+    let b64 = urlSafeB64
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    
+    // Add padding if needed
+    // Standard base64 string length should be multiple of 4
+    const padding = b64.length % 4;
+    if (padding > 0) {
+      b64 += '='.repeat(4 - padding);
+    }
+    
     // Create a buffer from the base64 string
     const buffer = Buffer.from(b64, "base64");
-    // Get the underlying ArrayBuffer and create a new one to ensure it's only ArrayBuffer
+    
+    // Get the underlying ArrayBuffer
     const arrayBuffer = new ArrayBuffer(buffer.length);
     const view = new Uint8Array(arrayBuffer);
     for (let i = 0; i < buffer.length; i++) {
       view[i] = buffer[i];
     }
+    
     return arrayBuffer;
   }
 
@@ -96,7 +132,7 @@ export class ConvoClient {
       throw new Error("Failed to create group" + error);
     }
 
-    const encodedGroupId = this.toB64(groupId);
+    const encodedGroupId = this.toUrlSafeB64(groupId);
 
     const response = await fetch(`${this.serverAddress}/api/create_group`, {
       method: "POST",
@@ -166,7 +202,7 @@ export class ConvoClient {
     // convert the base64 strings to ArrayBuffers and map them to the userIds:
     let convertedKeyPackageMap = new Map<string, ArrayBuffer>();
     for (const [key, value] of keyPackageMap.entries()) {
-      convertedKeyPackageMap.set(key, this.fromB64(value));
+      convertedKeyPackageMap.set(key, this.fromUrlSafeB64(value));
     }
     return convertedKeyPackageMap;
   }
@@ -190,7 +226,7 @@ export class ConvoClient {
       },
       body: JSON.stringify({
         user_id: this.id,
-        serialized_key_package: this.toB64(this.manager.getKeyPackage())
+        serialized_key_package: this.toUrlSafeB64(this.manager.getKeyPackage())
       })
     });
 
@@ -238,12 +274,12 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: this.toB64(groupId),
+        group_id: this.toUrlSafeB64(groupId),
         sender_id: this.id,
         receiver_id: receiverId,
-        welcome_message: this.toB64(groupInvite.welcomeMessage),
-        ratchet_tree: this.toB64(groupInvite.ratchetTree),
-        fanned: this.toB64(groupInvite.fanned)
+        welcome_message: this.toUrlSafeB64(groupInvite.welcomeMessage),
+        ratchet_tree: this.toUrlSafeB64(groupInvite.ratchetTree),
+        fanned: this.toUrlSafeB64(groupInvite.fanned)
       })
     });
 
@@ -309,7 +345,7 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: groupId ? this.toB64(groupId) : undefined,
+        group_id: groupId ? this.toUrlSafeB64(groupId) : undefined,
         sender_id: this.id,
         index: Number(index)
         // TODO: this should need to be signed by the userid or some other auth
@@ -377,9 +413,9 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: this.toB64(groupId),
+        group_id: this.toUrlSafeB64(groupId),
         sender_id: this.id,
-        message: this.toB64(msg),
+        message: this.toUrlSafeB64(msg),
         global_index: Number(groupIndex) + 1
       })
     });

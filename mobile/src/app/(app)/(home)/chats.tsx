@@ -133,7 +133,6 @@ export default function chatsScreen() {
         return;
       }
 
-
       const transformedChats = await Promise.all(convos.map(async (convo) => {
 
         // Extract members excluding self
@@ -296,17 +295,6 @@ export default function chatsScreen() {
         unreadCount: 0,
       });
     }
-
-
-
-
-    // // Sort chats by latest activity
-    // transformedChats.sort((a, b) => {
-    //   return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime();
-    // });
-
-    console.log("transformedChats", transformedChats)
-    console.log("chat1members", transformedChats[0].members)
 
     setSkychats(transformedChats as Chat[]);
   }
