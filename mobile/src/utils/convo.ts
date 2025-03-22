@@ -88,8 +88,8 @@ export class ConvoClient {
     // Convert to URL-safe format
     return b64
       .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, ''); // Remove padding
+      .replace(/\//g, '_');
+      // .replace(/=/g, ''); // Remove padding
   }
   
   fromUrlSafeB64(urlSafeB64: string): ArrayBuffer {

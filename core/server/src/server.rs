@@ -212,7 +212,14 @@ impl ConvoServer {
         message: Vec<u8>,
         global_index: u64,
     ) -> Result<()> {
+
+        // if the group doesn't exist, create it:
+        if !self.groups.contains_key(&group_id) {
+            self.client_create_group(group_id.clone(), "unknown".to_string(), sender_id.clone())?;
+        }
+
         let group = self.groups.get_mut(&group_id).context("Group not found")?;
+
         // the proposed message's global_index must be the current group's global_index + 1:
         let correct_new_gi = group.global_index + 1;
         if global_index == correct_new_gi {
