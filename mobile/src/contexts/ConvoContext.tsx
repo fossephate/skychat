@@ -48,7 +48,7 @@ interface ConvoContextType {
   getGroupChat: (groupId: string) => Promise<ConvoChatWrapper>;
   saveManagerState: () => SerializedCredentialsWrapper;
   loadManagerState: (state: SerializedCredentialsWrapper) => void;
-  getGroupIdWithUsers: (userids: string[]) => string;
+  getGroupIdWithUsers: (userids: string[]) => string | null;
   clearManagerState: () => void;
 }
 

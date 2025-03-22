@@ -134,7 +134,7 @@ export class ConvoClient {
     try {
       groupId = this.manager.createGroup(groupName);
     } catch (error) {
-      console.error("Failed to create group", error);
+      console.error("Failed to createGroup()", error);
       throw error;
     }
 
@@ -153,8 +153,8 @@ export class ConvoClient {
     });
 
     if (!response.ok) {
-      console.error("Failed to create group", response);
-      throw new Error("Failed to create group");
+      console.error("Failed to create group on server", response);
+      throw new Error("Failed to create group on server");
     }
 
     await this.manager.groupPushMessage(groupId, "<group_created>", this.id);
@@ -203,7 +203,6 @@ export class ConvoClient {
 
     
     const responseData: any = await response.json();   
-    console.log("responseData: ", responseData);
     // Convert the object to a Map
     let keyPackageMap = new Map<string, string>(Object.entries(responseData));
     if (keyPackageMap.size !== userIds.length) {

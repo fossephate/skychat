@@ -729,19 +729,19 @@ impl ConvoManager {
         Ok(ids)
     }
 
-    pub fn get_group_id_with_users(&self, userids: Vec<String>) -> Result<GroupId> {
+    pub fn get_group_id_with_users(&self, userids: Vec<String>) -> Option<GroupId> {
         // return the first group id that contains exactly the members in userids
         for group in self.groups.values() {
-            let member_ids = self.group_get_member_ids(&group.id)?;
+            let member_ids = self.group_get_member_ids(&group.id).expect("Error getting member ids");
             // check if member_ids contains all the userids:
             if member_ids.iter().all(|id| userids.contains(id)) {
                 // ensure the lengths are the same:
                 if member_ids.len() == userids.len() {
-                    return Ok(group.id.clone());
+                    return Some(group.id.clone());
                 }
             }
         }
 
-        bail!("No group found with the given users")
+        None
     }
 }

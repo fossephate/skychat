@@ -477,49 +477,49 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 public protocol ConvoManagerProtocol: AnyObject, Sendable {
     
-    func acceptPendingInvite(welcomeMessage: String)  -> Data
+    func acceptPendingInvite(welcomeMessage: String) throws  -> Data
     
-    func createInvite(groupId: Data, keyPackage: Data)  -> ConvoInviteWrapper
+    func createGroup(name: String) throws  -> Data
     
-    func createMessage(groupId: Data, message: String)  -> Data
+    func createInvite(groupId: Data, keyPackage: Data) throws  -> ConvoInviteWrapper
     
-    func createNewGroup(name: String)  -> Data
+    func createMessage(groupId: Data, message: String) throws  -> Data
     
-    func getChats()  -> [ConvoChatWrapper]
+    func deleteGroup(groupId: Data) throws 
     
-    func getGroupChat(groupId: String)  -> ConvoChatWrapper
+    func getChats() throws  -> [ConvoChatWrapper]
     
-    func getGroupIdWithUsers(userIds: [String])  -> String
+    func getGroupChat(groupId: String) throws  -> ConvoChatWrapper
     
-    func getKeyPackage()  -> Data
+    func getGroupIdWithUsers(userIds: [String]) throws  -> String
     
-    func getPartialGroup(groupId: Data)  -> LocalGroupWrapper
+    func getKeyPackage() throws  -> Data
     
-    func getPendingInvites()  -> [ConvoInviteWrapper]
+    func getPartialGroup(groupId: Data) throws  -> LocalGroupWrapper
     
-    func groupGetEpoch(groupId: Data)  -> UInt64
+    func getPendingInvites() throws  -> [ConvoInviteWrapper]
     
-    func groupGetIndex(groupId: Data)  -> UInt64
+    func groupGetEpoch(groupId: Data) throws  -> UInt64
     
-    func groupPushMessage(groupId: Data, message: String, senderId: String) 
+    func groupGetIndex(groupId: Data) throws  -> UInt64
     
-    func groupSetIndex(groupId: Data, index: UInt64) 
+    func groupPushMessage(groupId: Data, message: String, senderId: String) throws 
     
-    func loadState(state: SerializedCredentialsWrapper) 
+    func groupSetIndex(groupId: Data, index: UInt64) throws 
     
-    func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) 
+    func loadState(state: SerializedCredentialsWrapper) throws 
     
-    func processConvoMessagesBin(messages: [String], groupId: Data?)  -> UInt64
+    func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) throws 
     
-    func processMessage(message: Data, senderId: String?)  -> ProcessedResultsWrapper
+    func processConvoMessagesBin(messages: [String], groupId: Data?) throws  -> UInt64
+    
+    func processMessage(message: Data, senderId: String?) throws  -> ProcessedResultsWrapper
     
     func processRawInvite(senderId: String, groupName: String, welcomeMessage: Data, ratchetTree: Data?, keyPackage: Data?) 
     
-    func rejectPendingInvite(welcomeMessage: Data) 
+    func rejectPendingInvite(welcomeMessage: Data) throws 
     
-    func saveState()  -> SerializedCredentialsWrapper
-    
-    func testPostRequest() async  -> String
+    func saveState() throws  -> SerializedCredentialsWrapper
     
 }
 open class ConvoManager: ConvoManagerProtocol, @unchecked Sendable {
@@ -582,16 +582,24 @@ public convenience init(name: String) {
     
 
     
-open func acceptPendingInvite(welcomeMessage: String) -> Data  {
-    return try!  FfiConverterData.lift(try! rustCall() {
+open func acceptPendingInvite(welcomeMessage: String)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_accept_pending_invite(self.uniffiClonePointer(),
         FfiConverterString.lower(welcomeMessage),$0
     )
 })
 }
     
-open func createInvite(groupId: Data, keyPackage: Data) -> ConvoInviteWrapper  {
-    return try!  FfiConverterTypeConvoInviteWrapper_lift(try! rustCall() {
+open func createGroup(name: String)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
+    uniffi_foobar_fn_method_convomanager_create_group(self.uniffiClonePointer(),
+        FfiConverterString.lower(name),$0
+    )
+})
+}
+    
+open func createInvite(groupId: Data, keyPackage: Data)throws  -> ConvoInviteWrapper  {
+    return try  FfiConverterTypeConvoInviteWrapper_lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_create_invite(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
         FfiConverterData.lower(keyPackage),$0
@@ -599,8 +607,8 @@ open func createInvite(groupId: Data, keyPackage: Data) -> ConvoInviteWrapper  {
 })
 }
     
-open func createMessage(groupId: Data, message: String) -> Data  {
-    return try!  FfiConverterData.lift(try! rustCall() {
+open func createMessage(groupId: Data, message: String)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_create_message(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
         FfiConverterString.lower(message),$0
@@ -608,76 +616,75 @@ open func createMessage(groupId: Data, message: String) -> Data  {
 })
 }
     
-open func createNewGroup(name: String) -> Data  {
-    return try!  FfiConverterData.lift(try! rustCall() {
-    uniffi_foobar_fn_method_convomanager_create_new_group(self.uniffiClonePointer(),
-        FfiConverterString.lower(name),$0
+open func deleteGroup(groupId: Data)throws   {try rustCallWithError(FfiConverterTypeConvoError_lift) {
+    uniffi_foobar_fn_method_convomanager_delete_group(self.uniffiClonePointer(),
+        FfiConverterData.lower(groupId),$0
     )
-})
+}
 }
     
-open func getChats() -> [ConvoChatWrapper]  {
-    return try!  FfiConverterSequenceTypeConvoChatWrapper.lift(try! rustCall() {
+open func getChats()throws  -> [ConvoChatWrapper]  {
+    return try  FfiConverterSequenceTypeConvoChatWrapper.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_get_chats(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func getGroupChat(groupId: String) -> ConvoChatWrapper  {
-    return try!  FfiConverterTypeConvoChatWrapper_lift(try! rustCall() {
+open func getGroupChat(groupId: String)throws  -> ConvoChatWrapper  {
+    return try  FfiConverterTypeConvoChatWrapper_lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_get_group_chat(self.uniffiClonePointer(),
         FfiConverterString.lower(groupId),$0
     )
 })
 }
     
-open func getGroupIdWithUsers(userIds: [String]) -> String  {
-    return try!  FfiConverterString.lift(try! rustCall() {
+open func getGroupIdWithUsers(userIds: [String])throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_get_group_id_with_users(self.uniffiClonePointer(),
         FfiConverterSequenceString.lower(userIds),$0
     )
 })
 }
     
-open func getKeyPackage() -> Data  {
-    return try!  FfiConverterData.lift(try! rustCall() {
+open func getKeyPackage()throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_get_key_package(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func getPartialGroup(groupId: Data) -> LocalGroupWrapper  {
-    return try!  FfiConverterTypeLocalGroupWrapper_lift(try! rustCall() {
+open func getPartialGroup(groupId: Data)throws  -> LocalGroupWrapper  {
+    return try  FfiConverterTypeLocalGroupWrapper_lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_get_partial_group(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),$0
     )
 })
 }
     
-open func getPendingInvites() -> [ConvoInviteWrapper]  {
-    return try!  FfiConverterSequenceTypeConvoInviteWrapper.lift(try! rustCall() {
+open func getPendingInvites()throws  -> [ConvoInviteWrapper]  {
+    return try  FfiConverterSequenceTypeConvoInviteWrapper.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_get_pending_invites(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func groupGetEpoch(groupId: Data) -> UInt64  {
-    return try!  FfiConverterUInt64.lift(try! rustCall() {
+open func groupGetEpoch(groupId: Data)throws  -> UInt64  {
+    return try  FfiConverterUInt64.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_group_get_epoch(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),$0
     )
 })
 }
     
-open func groupGetIndex(groupId: Data) -> UInt64  {
-    return try!  FfiConverterUInt64.lift(try! rustCall() {
+open func groupGetIndex(groupId: Data)throws  -> UInt64  {
+    return try  FfiConverterUInt64.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_group_get_index(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),$0
     )
 })
 }
     
-open func groupPushMessage(groupId: Data, message: String, senderId: String)  {try! rustCall() {
+open func groupPushMessage(groupId: Data, message: String, senderId: String)throws   {try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_group_push_message(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
         FfiConverterString.lower(message),
@@ -686,7 +693,7 @@ open func groupPushMessage(groupId: Data, message: String, senderId: String)  {t
 }
 }
     
-open func groupSetIndex(groupId: Data, index: UInt64)  {try! rustCall() {
+open func groupSetIndex(groupId: Data, index: UInt64)throws   {try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_group_set_index(self.uniffiClonePointer(),
         FfiConverterData.lower(groupId),
         FfiConverterUInt64.lower(index),$0
@@ -694,14 +701,14 @@ open func groupSetIndex(groupId: Data, index: UInt64)  {try! rustCall() {
 }
 }
     
-open func loadState(state: SerializedCredentialsWrapper)  {try! rustCall() {
+open func loadState(state: SerializedCredentialsWrapper)throws   {try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_load_state(self.uniffiClonePointer(),
         FfiConverterTypeSerializedCredentialsWrapper_lower(state),$0
     )
 }
 }
     
-open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?)  {try! rustCall() {
+open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?)throws   {try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_process_convo_messages(self.uniffiClonePointer(),
         FfiConverterSequenceTypeConvoMessageWrapper.lower(messages),
         FfiConverterOptionData.lower(groupId),$0
@@ -709,8 +716,8 @@ open func processConvoMessages(messages: [ConvoMessageWrapper], groupId: Data?) 
 }
 }
     
-open func processConvoMessagesBin(messages: [String], groupId: Data?) -> UInt64  {
-    return try!  FfiConverterUInt64.lift(try! rustCall() {
+open func processConvoMessagesBin(messages: [String], groupId: Data?)throws  -> UInt64  {
+    return try  FfiConverterUInt64.lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_process_convo_messages_bin(self.uniffiClonePointer(),
         FfiConverterSequenceString.lower(messages),
         FfiConverterOptionData.lower(groupId),$0
@@ -718,8 +725,8 @@ open func processConvoMessagesBin(messages: [String], groupId: Data?) -> UInt64 
 })
 }
     
-open func processMessage(message: Data, senderId: String?) -> ProcessedResultsWrapper  {
-    return try!  FfiConverterTypeProcessedResultsWrapper_lift(try! rustCall() {
+open func processMessage(message: Data, senderId: String?)throws  -> ProcessedResultsWrapper  {
+    return try  FfiConverterTypeProcessedResultsWrapper_lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_process_message(self.uniffiClonePointer(),
         FfiConverterData.lower(message),
         FfiConverterOptionString.lower(senderId),$0
@@ -738,36 +745,18 @@ open func processRawInvite(senderId: String, groupName: String, welcomeMessage: 
 }
 }
     
-open func rejectPendingInvite(welcomeMessage: Data)  {try! rustCall() {
+open func rejectPendingInvite(welcomeMessage: Data)throws   {try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_reject_pending_invite(self.uniffiClonePointer(),
         FfiConverterData.lower(welcomeMessage),$0
     )
 }
 }
     
-open func saveState() -> SerializedCredentialsWrapper  {
-    return try!  FfiConverterTypeSerializedCredentialsWrapper_lift(try! rustCall() {
+open func saveState()throws  -> SerializedCredentialsWrapper  {
+    return try  FfiConverterTypeSerializedCredentialsWrapper_lift(try rustCallWithError(FfiConverterTypeConvoError_lift) {
     uniffi_foobar_fn_method_convomanager_save_state(self.uniffiClonePointer(),$0
     )
 })
-}
-    
-open func testPostRequest()async  -> String  {
-    return
-        try!  await uniffiRustCallAsync(
-            rustFutureFunc: {
-                uniffi_foobar_fn_method_convomanager_test_post_request(
-                    self.uniffiClonePointer()
-                    
-                )
-            },
-            pollFunc: ffi_foobar_rust_future_poll_rust_buffer,
-            completeFunc: ffi_foobar_rust_future_complete_rust_buffer,
-            freeFunc: ffi_foobar_rust_future_free_rust_buffer,
-            liftFunc: FfiConverterString.lift,
-            errorHandler: nil
-            
-        )
 }
     
 
@@ -1451,6 +1440,99 @@ public func FfiConverterTypeSerializedCredentialsWrapper_lower(_ value: Serializ
     return FfiConverterTypeSerializedCredentialsWrapper.lower(value)
 }
 
+
+public enum ConvoError: Swift.Error {
+
+    
+    
+    case ConnectionError(String
+    )
+    case ProcessingError(String
+    )
+    case GenericError(String
+    )
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeConvoError: FfiConverterRustBuffer {
+    typealias SwiftType = ConvoError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConvoError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .ConnectionError(
+            try FfiConverterString.read(from: &buf)
+            )
+        case 2: return .ProcessingError(
+            try FfiConverterString.read(from: &buf)
+            )
+        case 3: return .GenericError(
+            try FfiConverterString.read(from: &buf)
+            )
+
+         default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: ConvoError, into buf: inout [UInt8]) {
+        switch value {
+
+        
+
+        
+        
+        case let .ConnectionError(v1):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(v1, into: &buf)
+            
+        
+        case let .ProcessingError(v1):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(v1, into: &buf)
+            
+        
+        case let .GenericError(v1):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(v1, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoError_lift(_ buf: RustBuffer) throws -> ConvoError {
+    return try FfiConverterTypeConvoError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConvoError_lower(_ value: ConvoError) -> RustBuffer {
+    return FfiConverterTypeConvoError.lower(value)
+}
+
+
+extension ConvoError: Equatable, Hashable {}
+
+
+
+extension ConvoError: Foundation.LocalizedError {
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+}
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1673,52 +1755,6 @@ fileprivate struct FfiConverterDictionaryStringData: FfiConverterRustBuffer {
         return dict
     }
 }
-private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
-private let UNIFFI_RUST_FUTURE_POLL_MAYBE_READY: Int8 = 1
-
-fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
-
-fileprivate func uniffiRustCallAsync<F, T>(
-    rustFutureFunc: () -> UInt64,
-    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> (),
-    completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
-    freeFunc: (UInt64) -> (),
-    liftFunc: (F) throws -> T,
-    errorHandler: ((RustBuffer) throws -> Swift.Error)?
-) async throws -> T {
-    // Make sure to call the ensure init function since future creation doesn't have a
-    // RustCallStatus param, so doesn't use makeRustCall()
-    uniffiEnsureFoobarInitialized()
-    let rustFuture = rustFutureFunc()
-    defer {
-        freeFunc(rustFuture)
-    }
-    var pollResult: Int8;
-    repeat {
-        pollResult = await withUnsafeContinuation {
-            pollFunc(
-                rustFuture,
-                uniffiFutureContinuationCallback,
-                uniffiContinuationHandleMap.insert(obj: $0)
-            )
-        }
-    } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
-
-    return try liftFunc(makeRustCall(
-        { completeFunc(rustFuture, $0) },
-        errorHandler: errorHandler
-    ))
-}
-
-// Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
-// lift the return value or error and resume the suspended function.
-fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
-    if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
-        continuation.resume(returning: pollResult)
-    } else {
-        print("uniffiFutureContinuationCallback invalid handle")
-    }
-}
 
 private enum InitializationResult {
     case ok
@@ -1735,70 +1771,70 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_accept_pending_invite() != 10736) {
+    if (uniffi_foobar_checksum_method_convomanager_accept_pending_invite() != 16297) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_create_invite() != 50076) {
+    if (uniffi_foobar_checksum_method_convomanager_create_group() != 25549) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_create_message() != 101) {
+    if (uniffi_foobar_checksum_method_convomanager_create_invite() != 22333) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_create_new_group() != 44787) {
+    if (uniffi_foobar_checksum_method_convomanager_create_message() != 23780) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_get_chats() != 34049) {
+    if (uniffi_foobar_checksum_method_convomanager_delete_group() != 13792) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_get_group_chat() != 30161) {
+    if (uniffi_foobar_checksum_method_convomanager_get_chats() != 62645) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_get_group_id_with_users() != 12260) {
+    if (uniffi_foobar_checksum_method_convomanager_get_group_chat() != 49811) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_get_key_package() != 58549) {
+    if (uniffi_foobar_checksum_method_convomanager_get_group_id_with_users() != 3444) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_get_partial_group() != 51255) {
+    if (uniffi_foobar_checksum_method_convomanager_get_key_package() != 34790) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_get_pending_invites() != 33098) {
+    if (uniffi_foobar_checksum_method_convomanager_get_partial_group() != 37078) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_group_get_epoch() != 17970) {
+    if (uniffi_foobar_checksum_method_convomanager_get_pending_invites() != 48227) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_group_get_index() != 56153) {
+    if (uniffi_foobar_checksum_method_convomanager_group_get_epoch() != 9572) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_group_push_message() != 12963) {
+    if (uniffi_foobar_checksum_method_convomanager_group_get_index() != 62605) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_group_set_index() != 13168) {
+    if (uniffi_foobar_checksum_method_convomanager_group_push_message() != 29786) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_load_state() != 33161) {
+    if (uniffi_foobar_checksum_method_convomanager_group_set_index() != 15176) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_process_convo_messages() != 42325) {
+    if (uniffi_foobar_checksum_method_convomanager_load_state() != 50939) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_process_convo_messages_bin() != 50868) {
+    if (uniffi_foobar_checksum_method_convomanager_process_convo_messages() != 8291) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_process_message() != 22503) {
+    if (uniffi_foobar_checksum_method_convomanager_process_convo_messages_bin() != 45995) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_foobar_checksum_method_convomanager_process_message() != 32347) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_method_convomanager_process_raw_invite() != 54618) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_reject_pending_invite() != 20535) {
+    if (uniffi_foobar_checksum_method_convomanager_reject_pending_invite() != 16925) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_foobar_checksum_method_convomanager_save_state() != 12640) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_foobar_checksum_method_convomanager_test_post_request() != 16168) {
+    if (uniffi_foobar_checksum_method_convomanager_save_state() != 2934) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_foobar_checksum_constructor_convomanager_new() != 51625) {

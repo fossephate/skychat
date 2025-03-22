@@ -79,9 +79,6 @@ export default function UsersScreen() {
       groupName = "Group " + Math.floor(Math.random() * 1000000)
     }
     console.log('Group name:', groupName)
-    console.log('Selected users:', selectedUsers)
-
-    // TODO: check if we have a group with these users already, and if so, open it:
     console.log("getting groups with users: ", selectedUsers)
 
 
@@ -93,29 +90,33 @@ export default function UsersScreen() {
     try {
       let allMembers = [...selectedUsers, convoContext.client!.id]
       const groupId = await convoContext.getGroupIdWithUsers(allMembers)
-      console.log("got groupId", groupId)
-      if (groupId) {
-        router.push(`/chats/${groupId}`)
-        return
+      console.log("group with these users: ", groupId)
+      if (!groupId) {
+        throw new Error('No group id found')
       }
+      router.push(`/chats/${groupId}`)
+      return
     } catch (error) {
-      console.error('No group found with these users, creating new group')
+      console.log('No group found with these users, creating new group' + error)
     }
-      
+
     try {
-      const encodedGroupId = await convoContext.createGroup(groupName, selectedUsers)
+      const encodedGroupId = await convoContext.createGroupWithUsers(groupName, selectedUsers)
+      if (!encodedGroupId) {
+        throw new Error('No group id found')
+      }
       console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)
       router.push(`/chats/${encodedGroupId}` as any)
     } catch (error) {
-      console.log("error creating group: ", error)
+      // console.log("error creating group: ", error)
       // console.error('Error creating chat:', error)
       // pop up an error modal:
       Alert.alert('Error creating chat', 'This user is not on Skychat (yet!)')
     }
     // Alert.alert('Success', 'This user is not on Skychat (yet!)')
-    
+
   }
-  
+
   const handleCreateDm = (user: User) => {
     // TODO: check if we have a group with this user already:
     // if we do, open it
@@ -162,7 +163,7 @@ export default function UsersScreen() {
   return (
     <>
       <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
-        
+
         <View style={themed($header)}>
           <Text tx="contactsScreen:title" preset="heading" style={themed($headerText)} />
         </View>

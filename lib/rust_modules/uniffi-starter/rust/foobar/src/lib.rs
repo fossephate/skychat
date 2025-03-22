@@ -316,11 +316,14 @@ impl ConvoManager {
 
         println!("user_ids: {:?}", user_ids);
         let group_id = inner
-            .get_group_id_with_users(user_ids)
-            .expect("Error getting group id");
+            .get_group_id_with_users(user_ids);
 
-        let encoded_group_id = BufferConverter::to_base64(&group_id);
-        Ok(encoded_group_id)
+        if let Some(group_id) = group_id {
+            let encoded_group_id = BufferConverter::to_base64(&group_id);
+            Ok(encoded_group_id)
+        } else {
+            Err(ConvoError::GenericError("No group id found".to_string()))
+        }
     }
 
     pub fn save_state(&self) -> Result<SerializedCredentialsWrapper, ConvoError> {
