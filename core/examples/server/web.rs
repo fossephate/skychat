@@ -153,9 +153,10 @@ pub async fn get_new_messages_bin(
     state: &State<ServerState>,
 ) -> Json<Vec<EncodedBase64>> {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
-    let group_id = BufferConverter::from_base64(&data.group_id).unwrap();
     let messages = server.client_get_new_messages(
-        group_id,
+        data.group_id
+            .as_ref()
+            .map(|g| BufferConverter::from_base64(g).unwrap()),
         data.sender_id.clone(),
         data.index.clone(),
     );
