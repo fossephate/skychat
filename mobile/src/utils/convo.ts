@@ -339,14 +339,6 @@ export class ConvoClient {
       index = Number(await this.manager.groupGetIndex(groupId));
     }
 
-    let body = {
-        group_id: groupId ? this.toUrlSafeB64(groupId) : undefined,
-        sender_id: this.id,
-        index: Number(index)
-    }
-
-    console.log("body: ", body);
-
     const response = await fetch(`${this.serverAddress}/api/get_new_messages_bin`, {
       method: "POST",
       headers: {
