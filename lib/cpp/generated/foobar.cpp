@@ -137,8 +137,8 @@ RustBuffer uniffi_foobar_fn_method_convomanager_create_new_group(
 RustBuffer
 uniffi_foobar_fn_method_convomanager_get_chats(void *ptr,
                                                RustCallStatus *uniffi_out_err);
-RustBuffer uniffi_foobar_fn_method_convomanager_get_invite_welcome(
-    void *ptr, RustCallStatus *uniffi_out_err);
+RustBuffer uniffi_foobar_fn_method_convomanager_get_group_chat(
+    void *ptr, RustBuffer group_id, RustCallStatus *uniffi_out_err);
 RustBuffer uniffi_foobar_fn_method_convomanager_get_key_package(
     void *ptr, RustCallStatus *uniffi_out_err);
 RustBuffer uniffi_foobar_fn_method_convomanager_get_partial_group(
@@ -310,7 +310,7 @@ uint16_t uniffi_foobar_checksum_method_convomanager_create_invite();
 uint16_t uniffi_foobar_checksum_method_convomanager_create_message();
 uint16_t uniffi_foobar_checksum_method_convomanager_create_new_group();
 uint16_t uniffi_foobar_checksum_method_convomanager_get_chats();
-uint16_t uniffi_foobar_checksum_method_convomanager_get_invite_welcome();
+uint16_t uniffi_foobar_checksum_method_convomanager_get_group_chat();
 uint16_t uniffi_foobar_checksum_method_convomanager_get_key_package();
 uint16_t uniffi_foobar_checksum_method_convomanager_get_partial_group();
 uint16_t uniffi_foobar_checksum_method_convomanager_get_pending_invites();
@@ -1909,17 +1909,16 @@ NativeFoobar::NativeFoobar(
             return this->cpp_uniffi_foobar_fn_method_convomanager_get_chats(
                 rt, thisVal, args, count);
           });
-  props["ubrn_uniffi_foobar_fn_method_convomanager_get_invite_welcome"] =
+  props["ubrn_uniffi_foobar_fn_method_convomanager_get_group_chat"] =
       jsi::Function::createFromHostFunction(
           rt,
           jsi::PropNameID::forAscii(
-              rt,
-              "ubrn_uniffi_foobar_fn_method_convomanager_get_invite_welcome"),
-          1,
+              rt, "ubrn_uniffi_foobar_fn_method_convomanager_get_group_chat"),
+          2,
           [this](jsi::Runtime &rt, const jsi::Value &thisVal,
                  const jsi::Value *args, size_t count) -> jsi::Value {
             return this
-                ->cpp_uniffi_foobar_fn_method_convomanager_get_invite_welcome(
+                ->cpp_uniffi_foobar_fn_method_convomanager_get_group_chat(
                     rt, thisVal, args, count);
           });
   props["ubrn_uniffi_foobar_fn_method_convomanager_get_key_package"] =
@@ -2769,16 +2768,17 @@ NativeFoobar::NativeFoobar(
                 ->cpp_uniffi_foobar_checksum_method_convomanager_get_chats(
                     rt, thisVal, args, count);
           });
-  props["ubrn_uniffi_foobar_checksum_method_convomanager_get_invite_welcome"] =
+  props["ubrn_uniffi_foobar_checksum_method_convomanager_get_group_chat"] =
       jsi::Function::createFromHostFunction(
           rt,
-          jsi::PropNameID::forAscii(rt, "ubrn_uniffi_foobar_checksum_method_"
-                                        "convomanager_get_invite_welcome"),
+          jsi::PropNameID::forAscii(
+              rt,
+              "ubrn_uniffi_foobar_checksum_method_convomanager_get_group_chat"),
           0,
           [this](jsi::Runtime &rt, const jsi::Value &thisVal,
                  const jsi::Value *args, size_t count) -> jsi::Value {
             return this
-                ->cpp_uniffi_foobar_checksum_method_convomanager_get_invite_welcome(
+                ->cpp_uniffi_foobar_checksum_method_convomanager_get_group_chat(
                     rt, thisVal, args, count);
           });
   props["ubrn_uniffi_foobar_checksum_method_convomanager_get_key_package"] =
@@ -3308,13 +3308,15 @@ jsi::Value NativeFoobar::cpp_uniffi_foobar_fn_method_convomanager_get_chats(
   return uniffi::foobar::Bridging<RustBuffer>::toJs(rt, callInvoker, value);
 }
 jsi::Value
-NativeFoobar::cpp_uniffi_foobar_fn_method_convomanager_get_invite_welcome(
+NativeFoobar::cpp_uniffi_foobar_fn_method_convomanager_get_group_chat(
     jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
     size_t count) {
   RustCallStatus status =
       uniffi::foobar::Bridging<RustCallStatus>::rustSuccess(rt);
-  auto value = uniffi_foobar_fn_method_convomanager_get_invite_welcome(
-      uniffi_jsi::Bridging<void *>::fromJs(rt, callInvoker, args[0]), &status);
+  auto value = uniffi_foobar_fn_method_convomanager_get_group_chat(
+      uniffi_jsi::Bridging<void *>::fromJs(rt, callInvoker, args[0]),
+      uniffi::foobar::Bridging<RustBuffer>::fromJs(rt, callInvoker, args[1]),
+      &status);
   uniffi::foobar::Bridging<RustCallStatus>::copyIntoJs(rt, callInvoker, status,
                                                        args[count - 1]);
 
@@ -4201,10 +4203,10 @@ NativeFoobar::cpp_uniffi_foobar_checksum_method_convomanager_get_chats(
   return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
 }
 jsi::Value
-NativeFoobar::cpp_uniffi_foobar_checksum_method_convomanager_get_invite_welcome(
+NativeFoobar::cpp_uniffi_foobar_checksum_method_convomanager_get_group_chat(
     jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
     size_t count) {
-  auto value = uniffi_foobar_checksum_method_convomanager_get_invite_welcome();
+  auto value = uniffi_foobar_checksum_method_convomanager_get_group_chat();
 
   return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
 }

@@ -92,9 +92,9 @@ const en = {
     createGroupButton: "Create Group",
     groupNamePlaceholder: "Enter a name for your group",
   },
-  invitesScreen: {
-    title: "Invites",
-    empty: "No pending invites",
+  chatRequestsScreen: {
+    title: "Chat requests",
+    empty: "No chat requests",
     inviteMessage: "{{sender}} invited you to join {{group}}!",
   },
 }

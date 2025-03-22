@@ -67,7 +67,7 @@ impl BufferConverter {
     /// # Returns
     /// A String containing the base64 encoded data
     pub fn to_base64(buffer: &[u8]) -> String {
-        general_purpose::STANDARD.encode(buffer)
+        general_purpose::URL_SAFE.encode(buffer)
     }
 
     /// Converts a base64 string back to a Vec<u8>
@@ -78,7 +78,7 @@ impl BufferConverter {
     /// # Returns
     /// Result containing either the decoded bytes or an error
     pub fn from_base64(base64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(general_purpose::STANDARD.decode(base64)?)
+        Ok(general_purpose::URL_SAFE.decode(base64)?)
     }
 
     /// Serializes a JSON-serializable type to a base64 string

@@ -74,13 +74,13 @@ export function AppInitializer() {
 
         try {
           await convoContext.initAndConnect(SKYCHAT_SERVER_URL, userId);
-          router.replace("/chats");
         } catch (e) {
           console.error("Failed to initialize convo client", e);
           // TODO: handle this better: ¯\_(ツ)_/¯
-          // router.replace("/welcome" as any);
-          router.replace("/chats");
+          router.replace("/welcome" as any);
         }
+
+        router.replace("/chats");
       } else {
         router.replace("/welcome" as any);
       }

@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { ConvoClient } from "@/utils/convo";
+import { ConvoChatWrapper, SerializedCredentialsWrapper } from 'skychat-lib';
 // import { ConvoClient } from "skychat-lib";
+
+import { 
+  saveManagerStateToStorage, 
+  loadManagerStateFromStorage, 
+  clearManagerStateFromStorage 
+} from '@/utils/storage/credential-storage';
 
 // Define the types for our messages and groups
 interface Message {
@@ -36,6 +43,10 @@ interface ConvoContextType {
   getGroups: () => Promise<void>;
   acceptPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<ArrayBuffer>;
   rejectPendingInvite: (welcomeMessage: ArrayBuffer) => Promise<void>;
+  getChats: () => Promise<ConvoChatWrapper[]>;
+  getGroupChat: (groupId: string) => Promise<ConvoChatWrapper>;
+  saveManagerState: () => SerializedCredentialsWrapper;
+  loadManagerState: (state: SerializedCredentialsWrapper) => void;
 }
 
 // Create the context with a default value
@@ -48,37 +59,41 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [connected, setConnected] = useState(false);
 
-  // const initClient = useCallback((id: string) => {
-  //   // TODO: check if a client with that id already exists in persistent storage
-  //   const newClient = new ConvoClient(id);
-  //   setClient(newClient);
-  //   return newClient; // Return the client instance directly
-  // }, []);
-
-  // const connect = useCallback(async (serverAddress: string) => {
-  //   console.log("connecting to server...", serverAddress, client);
-  //   if (!client) throw new Error("Client not initialized");
-  //   await client.connectToServer(serverAddress);
-  //   setConnected(true);
-    
-  //   // Optionally load initial users
-  //   // const users = await client.listUsers()
-  //   // setUsers(users);
-  // }, [client]);
-
 
   const initAndConnect = useCallback(async (serverAddress: string, id: string) => {
-    const newClient = new ConvoClient(id);
-    setClient(newClient);
-    console.log("CLIENT INITIALIZED, connecting to: ", serverAddress);
-    // await newClient.connectToServer(serverAddress);
-    await newClient.connectToServer(serverAddress);
-    setConnected(true);
-  }, [client]);
+    try {
+      // Create new client
+      const newClient = new ConvoClient(id);
+      setClient(newClient);
+      
+      // Try to load saved state
+      const savedState = await loadManagerStateFromStorage();
+      if (savedState) {
+        console.log("Found saved manager state, loading...");
+        await newClient.manager.loadState(savedState);
+      }
+      
+      console.log("CLIENT INITIALIZED, connecting to: ", serverAddress);
+      // Connect to server
+      await newClient.connectToServer(serverAddress);
+      setConnected(true);
+      
+      // Save the state after successful connection
+      // if (!savedState) {
+        const state = newClient.manager.saveState();
+        await saveManagerStateToStorage(state);
+      // }
+      
+      return newClient;
+    } catch (error) {
+      console.error("Error in initAndConnect:", error);
+      throw error;
+    }
+  }, []);
 
   const createGroup = useCallback(async (name: string, userids: string[]) => {
     if (!client) throw new Error("Client not initialized");
-    await client.createGroupWithUsers(name, userids);
+    return await client.createGroupWithUsers(name, userids);
   }, [client]);
 
   const sendMessage = useCallback(async (groupId: ArrayBuffer, text: string) => {
@@ -117,15 +132,29 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
   const getChats = useCallback(async () => {
     if (!client) throw new Error("Client not initialized");
     // list of all chats:
-    return await client.getChats();
+    return client.getChats();
   }, [client]);
 
-  const getChatMessages = useCallback(async (groupId: string) => {
+  const getGroupChat = useCallback(async (groupId: string) => {
     if (!client) throw new Error("Client not initialized");
     // list of messages in a chat:
+    return client.getGroupChat(groupId);
 
+  }, [client]);
 
+  const saveManagerState = useCallback(async () => {
+    if (!client) throw new Error("Client not initialized");
+    return client.manager.saveState();
+  }, [client]);
 
+  const loadManagerState = useCallback(async (state: SerializedCredentialsWrapper) => {
+    if (!client) throw new Error("Client not initialized");
+    await client.manager.loadState(state);
+  }, [client]);
+
+  const getGroupIdWithUsers = useCallback(async (userids: string[]) => {
+    if (!client) throw new Error("Client not initialized");
+    return client.manager.getGroupIdWithUsers(userids);
   }, [client]);
 
   // Computed property
@@ -146,7 +175,9 @@ export function ConvoProvider({ children }: { children: ReactNode }) {
     acceptPendingInvite,
     rejectPendingInvite,
     getChats,
-    getChatMessages
+    getGroupChat,
+    saveManagerState,
+    loadManagerState
   };
 
   return <ConvoContext.Provider value={value}>{children}</ConvoContext.Provider>;

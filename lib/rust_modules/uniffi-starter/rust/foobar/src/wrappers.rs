@@ -209,7 +209,7 @@ pub struct ConvoChatWrapper {
   pub last_message: Option<String>,
   pub unread_messages: u64,
   pub global_index: u64,
-  pub participants: Vec<String>,
+  pub members: Vec<String>,
   pub decrypted: Vec<MessageItemWrapper>,
 }
 

@@ -57,6 +57,7 @@ pub struct SerializedCredentials {
     pub storage: HashMap<String, Vec<u8>>,
     pub group_names: Vec<String>,
     pub group_name_to_id: HashMap<String, GroupId>,
+    // pub sig_id_map: HashMap<Vec<u8>, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -87,6 +88,7 @@ pub struct ConvoManager {
     credential_with_key: CredentialWithKey,
     pub groups: HashMap<GroupId, LocalGroup>,
     pub pending_invites: Vec<ConvoInvite>,
+    // pub sig_id_map: HashMap<Vec<u8>, String>,
 }
 
 impl ConvoManager {
@@ -108,6 +110,7 @@ impl ConvoManager {
             credential_with_key: credential_with_key,
             groups: HashMap::new(),
             pending_invites: Vec::new(),
+            // sig_id_map: HashMap::new(),
         }
     }
 
@@ -116,7 +119,7 @@ impl ConvoManager {
         let values = storage.values.read().unwrap();
         let converted_storage: HashMap<String, Vec<u8>> = values
             .iter()
-            .map(|(k, v)| (general_purpose::STANDARD.encode(k), v.clone()))
+            .map(|(k, v)| (general_purpose::URL_SAFE.encode(k), v.clone()))
             .collect();
 
         // let serialized_credential_with_key = TlsSerialize::tls_serialize_detached(&self.credential_with_key).unwrap();
@@ -134,6 +137,7 @@ impl ConvoManager {
                 .iter()
                 .map(|(k, v)| (v.name.clone(), k.clone()))
                 .collect(),
+            // sig_id_map: self.sig_id_map.clone(),
         };
         serialized
     }
@@ -146,7 +150,7 @@ impl ConvoManager {
         let converted_storage: HashMap<Vec<u8>, Vec<u8>> = serialized
             .storage
             .iter()
-            .map(|(k, v)| (general_purpose::STANDARD.decode(k).unwrap(), v.clone()))
+            .map(|(k, v)| (general_purpose::URL_SAFE.decode(k).unwrap(), v.clone()))
             .collect();
 
         self.signer = SignatureKeyPair::tls_deserialize_exact_bytes(&serialized.signer)?;
@@ -161,7 +165,7 @@ impl ConvoManager {
 
         // load the groups:
         for group_name in serialized.group_names {
-            let group_id = serialized.group_name_to_id.get(&group_name).unwrap();
+            let group_id: &Vec<u8> = serialized.group_name_to_id.get(&group_name).unwrap();
             let group = MlsGroup::load(
                 provider_storage,
                 &openmls::group::GroupId::from_slice(group_id.as_slice()),
@@ -172,6 +176,11 @@ impl ConvoManager {
                     .insert(group_id.clone(), LocalGroup::new(group_name, group));
             }
         }
+
+        // // load the sig_id_map:
+        // for (k, v) in serialized.sig_id_map {
+        //     self.sig_id_map.insert(k, v);
+        // }
         Ok(())
     }
 
@@ -354,6 +363,7 @@ impl ConvoManager {
 
         // decrypt the message:
         let protocol_message: ProtocolMessage = mls_message
+            .clone()
             .try_into_protocol_message()
             .expect("Expected a PublicMessage or a PrivateMessage");
         // let processed_message = mls_group
@@ -377,7 +387,25 @@ impl ConvoManager {
             };
         }
 
-        let processed_content = processed_message.unwrap().into_content();
+        let processed_message = processed_message.unwrap();
+
+        // // we successfully processed the message, so we should update the sig_id_map with the sender's id:
+        // if let Some(sender_id) = sender_id.clone() {
+        //     let credential = processed_message.credential();
+        //     let signature_key_vec = credential.serialized_content().to_vec();
+        //     // println!("{}", format!("Signature key: {:?}", signature_key));
+        //     // let signature_key_vec = signature_key.as_slice().to_vec();
+        //     println!("{}", format!("Signature key vec: {:?}", signature_key_vec));
+
+        //     // print insert:
+        //     println!("{}", format!("Inserting into sig_id_map[{}]: {:?}", sender_id, signature_key_vec));
+        //     self.sig_id_map.insert(signature_key_vec, sender_id);
+
+        //     // print the sig_id_map:
+        //     println!("{}", format!("Sig_id_map: {:?}", self.sig_id_map));
+        // }
+
+        let processed_content = processed_message.into_content();
         let processed_results = match processed_content {
             ProcessedMessageContent::ApplicationMessage(msg) => {
                 let text = String::from_utf8(msg.into_bytes()).unwrap();
@@ -556,7 +584,7 @@ impl ConvoManager {
             if let Some(invite) = message.invite {
                 self.pending_invites.push(invite);
             }
-            
+
             // if the message is a message, process it:
             if let Some(msg) = message.message {
                 self.process_message(msg, Some(message.sender_id));
@@ -571,26 +599,48 @@ impl ConvoManager {
         }
     }
 
-    pub fn accept_pending_invite(&mut self, welcome_message: Vec<u8>) -> GroupId {
-        // find the index of the invite in the pending_invites vector:
-        let index = self.pending_invites.iter().position(|i| i.welcome_message == welcome_message);
-        if let Some(index) = index {
-            let invite = self.pending_invites.remove(index);
-            let group_id = self.process_invite(invite);
-            group_id
-        } else {
-            panic!("Invite not found");
+    pub async fn accept_current_invites(&mut self) {
+        let invites = self.pending_invites.clone();
+        for invite in invites {
+            self.process_invite(invite);
         }
+        self.pending_invites.clear();
+    }
+
+    pub fn accept_pending_invite(&mut self, welcome_message: Vec<u8>) -> GroupId {
+        // TODO: fix this!!
+        // // find the index of the invite in the pending_invites vector:
+        // let index = self.pending_invites.iter().position(|i| i.welcome_message == welcome_message);
+        // if let Some(index) = index {
+        //     let invite = self.pending_invites.remove(index);
+        //     let group_id = self.process_invite(invite);
+        //     group_id
+        // } else {
+        //     panic!("Invite not found");
+        // }
+
+        // panic if the pending_invites vector is empty:
+        if self.pending_invites.is_empty() {
+            panic!("No pending invites to accept");
+        }
+
+        // (for now just accept the first invite in the list and remove it from the list):
+        let invite = self.pending_invites.remove(0);
+        let group_id = self.process_invite(invite);
+        group_id
     }
 
     pub fn reject_pending_invite(&mut self, welcome_message: Vec<u8>) {
         // find the index of the invite in the pending_invites vector:
-        let index = self.pending_invites.iter().position(|i| i.welcome_message == welcome_message);
+        let index = self
+            .pending_invites
+            .iter()
+            .position(|i| i.welcome_message == welcome_message);
         if let Some(index) = index {
             self.pending_invites.remove(index);
         }
     }
- 
+
     // not strictly necessary but helpful functions:
     pub fn group_get_epoch(&mut self, group_id: &GroupId) -> GroupEpoch {
         let group = self.groups.get_mut(group_id).unwrap();
@@ -620,5 +670,35 @@ impl ConvoManager {
                 .unwrap()
                 .as_millis() as u64,
         });
+    }
+
+    pub fn group_get_member_ids(&self, group_id: &GroupId) -> Vec<String> {
+        let group = self.groups.get(group_id).unwrap();
+        let members = group.mls_group.members().collect::<Vec<_>>();
+
+        let mut ids = vec![];
+        for member in members {
+            let credential = member.credential;
+            let credential_bytes = credential.serialized_content().to_vec();
+            // convert credential_bytes to a string:
+            let credential_str = String::from_utf8(credential_bytes).unwrap();
+            ids.push(credential_str);
+        }
+        ids
+    }
+
+    pub fn get_group_id_with_users(&self, userids: Vec<String>) -> GroupId {
+        // return the first group id that contains exactly the members in userids
+        for group in self.groups.values() {
+            let member_ids = self.group_get_member_ids(&group.id);
+            // check if member_ids contains all the userids:
+            if member_ids.iter().all(|id| userids.contains(id)) {
+                // ensure the lengths are the same:
+                if member_ids.len() == userids.len() {
+                    return group.id.clone();
+                }
+            }
+        }
+        panic!("No group found with the given users");
     }
 }

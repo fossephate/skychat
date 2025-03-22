@@ -76,7 +76,7 @@ export type ConvoChatWrapper = {
   lastMessage: string | undefined;
   unreadMessages: /*u64*/ bigint;
   globalIndex: /*u64*/ bigint;
-  participants: Array<string>;
+  members: Array<string>;
   decrypted: Array<MessageItemWrapper>;
 };
 
@@ -120,7 +120,7 @@ const FfiConverterTypeConvoChatWrapper = (() => {
         lastMessage: FfiConverterOptionalString.read(from),
         unreadMessages: FfiConverterUInt64.read(from),
         globalIndex: FfiConverterUInt64.read(from),
-        participants: FfiConverterArrayString.read(from),
+        members: FfiConverterArrayString.read(from),
         decrypted: FfiConverterArrayTypeMessageItemWrapper.read(from),
       };
     }
@@ -130,7 +130,7 @@ const FfiConverterTypeConvoChatWrapper = (() => {
       FfiConverterOptionalString.write(value.lastMessage, into);
       FfiConverterUInt64.write(value.unreadMessages, into);
       FfiConverterUInt64.write(value.globalIndex, into);
-      FfiConverterArrayString.write(value.participants, into);
+      FfiConverterArrayString.write(value.members, into);
       FfiConverterArrayTypeMessageItemWrapper.write(value.decrypted, into);
     }
     allocationSize(value: TypeName): number {
@@ -140,7 +140,7 @@ const FfiConverterTypeConvoChatWrapper = (() => {
         FfiConverterOptionalString.allocationSize(value.lastMessage) +
         FfiConverterUInt64.allocationSize(value.unreadMessages) +
         FfiConverterUInt64.allocationSize(value.globalIndex) +
-        FfiConverterArrayString.allocationSize(value.participants) +
+        FfiConverterArrayString.allocationSize(value.members) +
         FfiConverterArrayTypeMessageItemWrapper.allocationSize(value.decrypted)
       );
     }
@@ -978,7 +978,7 @@ const FfiConverterTypeConvoClient = new FfiConverterObject(
 );
 
 export interface ConvoManagerInterface {
-  acceptPendingInvite(welcomeMessage: ArrayBuffer): ArrayBuffer;
+  acceptPendingInvite(welcomeMessage: string): ArrayBuffer;
   createInvite(
     groupId: ArrayBuffer,
     keyPackage: ArrayBuffer
@@ -986,7 +986,7 @@ export interface ConvoManagerInterface {
   createMessage(groupId: ArrayBuffer, message: string): ArrayBuffer;
   createNewGroup(name: string): ArrayBuffer;
   getChats(): Array<ConvoChatWrapper>;
-  getInviteWelcome(): ArrayBuffer;
+  getGroupChat(groupId: string): ConvoChatWrapper;
   getKeyPackage(): ArrayBuffer;
   getPartialGroup(groupId: ArrayBuffer): LocalGroupWrapper;
   getPendingInvites(): Array<ConvoInviteWrapper>;
@@ -1046,13 +1046,13 @@ export class ConvoManager
       uniffiTypeConvoManagerObjectFactory.bless(pointer);
   }
 
-  public acceptPendingInvite(welcomeMessage: ArrayBuffer): ArrayBuffer {
+  public acceptPendingInvite(welcomeMessage: string): ArrayBuffer {
     return FfiConverterArrayBuffer.lift(
       uniffiCaller.rustCall(
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_accept_pending_invite(
             uniffiTypeConvoManagerObjectFactory.clonePointer(this),
-            FfiConverterArrayBuffer.lower(welcomeMessage),
+            FfiConverterString.lower(welcomeMessage),
             callStatus
           );
         },
@@ -1125,12 +1125,13 @@ export class ConvoManager
     );
   }
 
-  public getInviteWelcome(): ArrayBuffer {
-    return FfiConverterArrayBuffer.lift(
+  public getGroupChat(groupId: string): ConvoChatWrapper {
+    return FfiConverterTypeConvoChatWrapper.lift(
       uniffiCaller.rustCall(
         /*caller:*/ (callStatus) => {
-          return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_invite_welcome(
+          return nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_get_group_chat(
             uniffiTypeConvoManagerObjectFactory.clonePointer(this),
+            FfiConverterString.lower(groupId),
             callStatus
           );
         },
@@ -1572,7 +1573,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_accept_pending_invite() !==
-    47504
+    10736
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_accept_pending_invite'
@@ -1611,11 +1612,11 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
-    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_get_invite_welcome() !==
-    37437
+    nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_get_group_chat() !==
+    30161
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
-      'uniffi_foobar_checksum_method_convomanager_get_invite_welcome'
+      'uniffi_foobar_checksum_method_convomanager_get_group_chat'
     );
   }
   if (

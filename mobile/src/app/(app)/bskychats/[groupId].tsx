@@ -32,8 +32,8 @@ export default function Page() {
   const [convoName, setConvoName] = useState("Chat")
   const [convoMembers, setConvoMembers] = useState<any[]>([])
   const insets = useSafeAreaInsets()
-  const { groupId } = useLocalSearchParams()
   const { session } = useAuth()
+  const { groupId } = useLocalSearchParams()
 
   const [replyMessage, setReplyMessage] = useState<IMessage | null>(null)
   const swipeableRowRef = useRef<Swipeable | null>(null)
@@ -55,7 +55,7 @@ export default function Page() {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!session || !groupId) {
+      if (!session) {
         console.error("No session or groupId found")
         setLoading(false)
         return
@@ -230,7 +230,7 @@ export default function Page() {
   }
 
   const onSend = useCallback(async (newMessages = []) => {
-    if (!session || !groupId || newMessages.length === 0) {
+    if (!session || newMessages.length === 0) {
       console.error("Cannot send message: missing session, groupId, or message")
       return
     }

@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Image
 } from "react-native"
-import { Screen, Text, ListItem } from "@/components"
+import { Screen, Text, ListItem, Header } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
 import { translate } from "@/i18n"
 import { FontAwesome } from '@expo/vector-icons'  // Fixed import
@@ -18,6 +18,7 @@ import { colors, ThemedStyle } from "@/theme"
 import { useConvo } from "@/contexts/ConvoContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Agent } from "@atproto/api"
+import { router } from "expo-router"
 
 interface Invite {
   senderId: string
@@ -129,18 +130,16 @@ export default function InvitesScreen() {
 
   const handleAccept = async (inviteWelcomeMessage: ArrayBuffer) => {
     console.log("handleAccept: ", inviteWelcomeMessage);
-    // TODO: Implement accept functionality with convoContext
+
     const groupId = await convoContext.acceptPendingInvite(inviteWelcomeMessage);
 
     // convert groupId (ArrayBuffer) to base64 string:
     let groupIdBase64 = Buffer.from(groupId).toString('base64');
 
     console.log("groupIdBase64: ", groupIdBase64);
-    // navigate to the group (/chats/group/:groupId)
+    // navigate to the skychat (/chats/:groupId)
+    router.replace(`/chats/${groupIdBase64}` as any);
 
-    // For now, just remove from UI
-    // setInvites(current => current.filter(invite => invite.senderId !== inviteId))
-    
     refreshInvites();
   }
 
@@ -211,19 +210,19 @@ export default function InvitesScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Text tx="invitesScreen:empty" style={themed($emptyText)} />
+      <Text tx="chatRequestsScreen:empty" style={themed($emptyText)} />
     </ScrollView>
   )
 
   return (
     <Screen
       preset="fixed"
-      safeAreaEdges={["top"]}
       contentContainerStyle={themed($screenContainer)}
     >
-      <View style={themed($header)}>
+      {/* <View style={themed($header)}>
         <Text tx="invitesScreen:title" preset="heading" style={themed($headerText)} />
-      </View>
+      </View> */}
+      <Header title={translate("chatRequestsScreen:title")} leftIcon="back" onLeftPress={() => router.back()} />
 
       {
         invites.length > 0 ? (

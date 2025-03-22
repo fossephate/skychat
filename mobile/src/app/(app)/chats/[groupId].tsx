@@ -1,27 +1,13 @@
-// import ChatMessageBox from '@/components/Chat/ChatMessageBox';
-// import ReplyMessageBar from '@/components/Chat/ReplyMessageBar';
 import { Ionicons } from "@expo/vector-icons"
-// import React, { useState, useCallback, useEffect, useRef } from 'react';
-// import { ImageBackground, StyleSheet, View, ViewStyle } from 'react-native';
-// import { Swipeable } from 'react-native-ge, ViewStylesture-handler';
-// import {
-//   GiftedChat,
-//   Bubble,
-//   InputToolbar,
-//   Send,
-//   SystemMessage,
-//   IMessage,
-// } from 'react-native-gifted-chat';
-// import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import messageData from "assets/data/messages.json"
-// import { useAppTheme } from '@/utils/useAppTheme';
 import { ThemedStyle } from "@/theme"
 
 import ChatMessageBox from "@/components/Chat/ChatMessageBox"
 import ReplyMessageBar from "@/components/Chat/ReplyMessageBar"
+import { Screen } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import { ImageBackground, View, ViewStyle, Image } from "react-native"
+import { ImageBackground, View, ViewStyle, Image, ActivityIndicator } from "react-native"
 import { Swipeable } from "react-native-gesture-handler"
 import {
   IMessage,
@@ -31,51 +17,179 @@ import {
   Send,
   InputToolbar,
 } from "react-native-gifted-chat"
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Header, Text } from "@/components"
-import { router } from "expo-router"
-import { Screen } from "@/components"
+import { router, useLocalSearchParams } from "expo-router"
+import { useAuth } from "@/contexts/AuthContext"
+import { Agent } from "@atproto/api"
 import { translate } from "@/i18n"
+import { useConvo } from "@/contexts/ConvoContext"
+
 
 export default function Page() {
   const [messages, setMessages] = useState<IMessage[]>([])
   const [text, setText] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [convoName, setConvoName] = useState("Chat")
+  const [convoMembers, setConvoMembers] = useState<any[]>([])
   const insets = useSafeAreaInsets()
+  const { session } = useAuth()
+  const { groupId } = useLocalSearchParams()
+  const convoContext = useConvo()
 
   const [replyMessage, setReplyMessage] = useState<IMessage | null>(null)
   const swipeableRowRef = useRef<Swipeable | null>(null)
 
   const { themed, theme } = useAppTheme()
 
-  useEffect(() => {
-    setMessages([
-      ...messageData.map((message: any) => {
-        return {
-          _id: message.id,
-          text: message.msg,
-          createdAt: new Date(message.date),
-          user: {
-            _id: message.from,
-            name: message.from ? "You" : "Bob",
-          },
-        }
-      }),
-      {
-        _id: 0,
-        system: true,
-        text: "All your base are belong to us",
-        createdAt: new Date(),
-        user: {
-          _id: 0,
-          name: "Bot",
-        },
-      },
-    ])
-  }, [])
+  // map did's to profile images:
+  const [profileImages, setProfileImages] = useState<Record<string, string>>({});
 
-  const onSend = useCallback((messages = []) => {
-    setMessages((previousMessages: any[]) => GiftedChat.append(previousMessages, messages))
-  }, [])
+  const getProfileImage = async (did: string) => {
+    if (!session) return
+    const agent = new Agent(session)
+    const profile = await agent.com.atproto.repo.getRecord({ repo: did, collection: "app.bsky.actor.profile", rkey: "self" })
+    // @ts-ignore - Handling potential type issues
+    const avatarUri = profile.data.value.avatar
+    console.log(avatarUri)
+    return avatarUri || undefined
+  }
+
+  async function fetchMessages() {
+    console.log("fetching messages")
+    // get the group id from the url
+
+    console.log(groupId)
+    const chat = await convoContext.getGroupChat(groupId as string)
+    // setMessages(messages)
+    setConvoName(chat.name)
+
+    console.log("@@@@@@@ chat @@@@@", chat)
+
+    // map the messages to the format we want:
+    const messages = chat.decrypted.map((msg) => ({
+      _id: msg.senderId + msg.text + msg.timestamp,
+      text: msg.text,
+      createdAt: new Date(Number(msg.timestamp)),
+      user: {
+        _id: msg.senderId,
+        name: msg.senderId,
+      },
+      system: true,
+    }))
+    console.log(messages)
+    setMessages(messages.reverse())
+    setLoading(false)
+  }
+
+  useEffect(() => {
+
+
+
+    fetchMessages()
+    startMessageListener()
+  }, [groupId, session])
+
+  // Real-time message listener implementation
+  const messageListenerRef = useRef<any>(null)
+
+  const startMessageListener = async () => {
+    if (!session || !groupId) return
+
+    // try {
+    //   const agent = new Agent(session)
+    //   const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
+
+    //   // Implement real-time message subscription
+    //   // This is a simplified example - actual implementation will depend on API capabilities
+    //   messageListenerRef.current = setInterval(async () => {
+    //     // Only check for new messages if we're not already loading
+    //     if (loading || loadingMore) return
+
+    //     try {
+    //       // Get latest messages (assume API supports getting messages since a specific timestamp)
+    //       const latestMessage = messagesRef.current[0]
+
+    //       if (!latestMessage) return
+
+    //       const newMessagesResponse = await proxy.chat.bsky.convo.getMessages({
+    //         convoId: groupId as string,
+    //         cursor: cursor ?? undefined,
+    //         limit: 10
+    //       })
+
+    //       const newMessagesData = newMessagesResponse.data.messages || []
+
+    //       console.log("newMessagesData.length", newMessagesData.length)
+
+    //       if (newMessagesData.length > 0) {
+    //         // Transform new messages
+    //         const transformedNewMessages = newMessagesData.map(msg => {
+    //           const isSelf = msg.sender?.did === session.did
+
+    //           return {
+    //             _id: msg.id,
+    //             text: msg.text,
+    //             createdAt: new Date(msg.sentAt),
+    //             user: {
+    //               _id: msg.sender?.did || "unknown",
+    //               name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
+    //               avatar: msg.sender?.avatar || `https://i.pravatar.cc/150?u=${msg.sender?.did}`
+    //             }
+    //           }
+    //         })
+
+    //         // Prepend new messages
+    //         setMessages(prevMessages => GiftedChat.append(prevMessages, transformedNewMessages))
+    //       }
+    //     } catch (error) {
+    //       console.error("Error in message listener:", error)
+    //     }
+    //   }, 5000) // Check every 5 seconds - adjust as needed
+    // } catch (error) {
+    //   console.error("Error setting up message listener:", error)
+    // }
+  }
+
+  const stopMessageListener = () => {
+    if (messageListenerRef.current) {
+      clearInterval(messageListenerRef.current)
+      messageListenerRef.current = null
+    }
+  }
+
+  const onSend = useCallback(async (newMessages = []) => {
+    if (!session || newMessages.length === 0) {
+      console.error("Cannot send message: missing session, groupId, or message")
+      return
+    }
+
+    const messageText = newMessages[0].text
+
+    // Optimistically update UI
+    setMessages((previousMessages) => GiftedChat.append(previousMessages, newMessages))
+
+    try {
+      const agent = new Agent(session)
+      const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
+
+      const response = await proxy.chat.bsky.convo.sendMessage({
+        convoId: groupId as string,
+        message: {
+          text: messageText,
+          // TODO: facets
+        },
+      })
+
+      console.log("Message sent successfully", response.data)
+
+      // Clear reply state after sending
+      setReplyMessage(null)
+    } catch (error) {
+      console.error("Error sending message:", error)
+      // Consider showing an error to the user and/or removing the optimistically added message
+    }
+  }, [groupId, session, replyMessage])
 
   const updateRowRef = useCallback(
     (ref: any) => {
@@ -97,7 +211,6 @@ export default function Page() {
     }
   }, [replyMessage])
 
-
   let backgroundImage;
   if (theme.isDark) {
     backgroundImage = require("assets/images/splash-dark.png")
@@ -105,40 +218,59 @@ export default function Page() {
     backgroundImage = require("assets/images/splash.png")
   }
 
+  // Get avatar for the chat (either group avatar or the other member's avatar)
+  const getConvoAvatar = () => {
+    if (convoMembers.length === 0) return `https://i.pravatar.cc/150?u=${groupId}`
+
+    if (convoMembers.length > 2) {
+      // For group chats, use a placeholder or generate a group avatar
+      return `https://i.pravatar.cc/150?u=group_${groupId}`
+    } else {
+      // For DMs, use the other person's avatar
+      const otherMember = convoMembers.find(member => member.did !== session?.did)
+      return otherMember?.avatar || `https://i.pravatar.cc/150?u=${otherMember?.did || groupId}`
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
+        <Text style={{ marginTop: 10 }}>Loading messages...</Text>
+      </View>
+    )
+  }
+
   return (
-    <Screen preset="fixed" contentContainerStyle={themed($screenContainer)}>
+    <Screen preset="fixed" contentContainerStyle={themed($screenContainer)} safeAreaEdges={["bottom"]}>
+      {/* // <View style={{ flex: 1, backgroundColor: theme.colors.background, paddingBottom: insets.bottom }}> */}
       <ImageBackground
         source={backgroundImage}
         style={{
           flex: 1,
           backgroundColor: theme.colors.background,
-          marginBottom: insets.bottom,
         }}>
-        {/* <View style={{ flex: 1, backgroundColor: theme.colors.background }}> */}
-        <Header title="Chat with Bob" leftIcon="back" onLeftPress={() => router.back()} />
+        <Header title={convoName} leftIcon="back" onLeftPress={() => router.back()} />
         <GiftedChat
-          placeholder={translate("chatScreen:inputPlaceholder")}
           messages={messages}
           onSend={(messages: any) => onSend(messages)}
           onInputTextChanged={setText}
           user={{
-            _id: 1,
+            _id: session?.did || '1',
           }}
           renderSystemMessage={(props) => (
-            <SystemMessage {...props} textStyle={{ color: theme.colors.palette.neutral300 }} />
+            <SystemMessage {...props} textStyle={{ color: theme.colors.text }} />
           )}
-          bottomOffset={insets.bottom}
-          renderAvatar={() => {
-            // use pravatar:
-            const groupId = "123"
-            return (
-              <Image
-                source={{ uri: `https://i.pravatar.cc/150?u=${groupId}` }}
-                style={{ width: 32, height: 32 }}
-              />
-            )
-          }}
+          renderAvatar={() => (
+            <Image
+              source={{ uri: getConvoAvatar() }}
+              style={{ width: 32, height: 32, borderRadius: 16 }}
+            />
+          )}
           maxComposerHeight={100}
+          // minComposerHeight={10}
+          // bottomOffset={insets.bottom}
+          isKeyboardInternallyHandled={false}
           textInputProps={themed($composer)}
           renderBubble={(props) => {
             return (
@@ -160,11 +292,8 @@ export default function Page() {
               />
             )
           }}
-          // renderAccessory={() => {
-          //   const groupId = "456";
-          //   return <Image source={{ uri: `https://i.pravatar.cc/150?u=${groupId}` }} style={{ width: 32, height: 32 }} />
-          // }}
-          isTyping={true}
+          placeholder={translate("chatScreen:inputPlaceholder")}
+          isTyping={false}
           infiniteScroll
           onPressActionButton={() => {
             console.log("action button pressed")
@@ -199,6 +328,7 @@ export default function Page() {
               )}
             </View>
           )}
+
           renderInputToolbar={(props) => (
             <InputToolbar
               {...props}
@@ -213,7 +343,7 @@ export default function Page() {
           renderChatFooter={() => (
             <ReplyMessageBar clearReply={() => setReplyMessage(null)} message={replyMessage} />
           )}
-          // onLongPress={(context, message) => setReplyMessage(message)}
+          onLongPress={(context, message) => setReplyMessage(message)}
           renderMessage={(props) => (
             <ChatMessageBox
               {...props}
@@ -222,8 +352,8 @@ export default function Page() {
             />
           )}
         />
-        {/* </View> */}
       </ImageBackground>
+      {/* </View> */}
     </Screen>
   )
 }
@@ -235,213 +365,7 @@ const $composer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   color: colors.text,
 })
 
-// const styles = StyleSheet.create({
-//   composer: {
-//     backgroundColor: '#fff',
-//     borderRadius: 18,
-//     borderWidth: 1,
-//     borderColor: theme.colors.palette.neutral300,
-//     paddingHorizontal: 10,
-//     paddingTop: 8,
-//     fontSize: 16,
-//     marginVertical: 4,
-//   },
-// });
-
 const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
   flex: 1,
   backgroundColor: colors.background,
 })
-
-// // Page.tsx
-// const Page = () => {
-//   const [messages, setMessages] = useState<IMessage[]>([]);
-//   const [text, setText] = useState('');
-//   const insets = useSafeAreaInsets();
-//   const [replyMessage, setReplyMessage] = useState<IMessage | null>(null);
-//   const swipeableRowRef = useRef<Swipeable | null>(null);
-//   const { theme, themed } = useAppTheme();
-
-//   useEffect(() => {
-//     setMessages([
-//       ...messageData.map((message: any) => ({
-//         _id: message.id,
-//         text: message.msg,
-//         createdAt: new Date(message.date),
-//         user: {
-//           _id: message.from,
-//           name: message.from ? 'You' : 'Bob',
-//         },
-//         // Add replyTo if this message is a reply
-//         ...(message.replyTo && {
-//           replyTo: {
-//             _id: message.replyTo.id,
-//             user: {
-//               _id: message.replyTo.from,
-//               name: message.replyTo.from ? 'You' : 'Bob',
-//             },
-//           },
-//         }),
-//       })),
-//       {
-//         _id: 0,
-//         system: true,
-//         text: 'All your base are belong to us',
-//         createdAt: new Date(),
-//         user: {
-//           _id: 0,
-//           name: 'Bot',
-//         },
-//       },
-//     ]);
-//   }, []);
-
-//   const onSend = useCallback((newMessages: any[]) => {
-//     setMessages((previousMessages: any[]) => {
-//       const messagesToAdd = newMessages.map((message: any) => ({
-//         ...message,
-//         // Add reply information if there's a message being replied to
-//         ...(replyMessage && {
-//           replyTo: {
-//             _id: replyMessage._id,
-//             user: replyMessage.user,
-//           },
-//         }),
-//       }));
-
-//       return GiftedChat.append(previousMessages, messagesToAdd);
-//     });
-
-//     // Clear reply state after sending
-//     setReplyMessage(null);
-//   }, [replyMessage]);
-
-//   const renderInputToolbar = (props: any) => {
-//     return (
-//       <InputToolbar
-//         {...props}
-//         containerStyle={{ backgroundColor: theme.colors.background }}
-//         renderActions={() => (
-//           <View style={{ height: 44, justifyContent: 'center', alignItems: 'center', left: 5 }}>
-//             <Ionicons name="add" color={theme.colors.palette.primary300} size={28} />
-//           </View>
-//         )}
-//       />
-//     );
-//   };
-
-//   const updateRowRef = useCallback(
-//     (ref: any) => {
-//       if (
-//         ref &&
-//         replyMessage &&
-//         ref.props.children.props.currentMessage?._id === replyMessage._id
-//       ) {
-//         swipeableRowRef.current = ref;
-//       }
-//     },
-//     [replyMessage]
-//   );
-
-//   useEffect(() => {
-//     if (replyMessage && swipeableRowRef.current) {
-//       swipeableRowRef.current.close();
-//       swipeableRowRef.current = null;
-//     }
-//   }, [replyMessage]);
-
-//   return (
-//     <ImageBackground
-//       style={{
-//         flex: 1,
-//         backgroundColor: theme.colors.background,
-//         marginBottom: insets.bottom,
-//       }}>
-//       <GiftedChat
-//         messages={messages}
-//         onSend={onSend}
-//         onInputTextChanged={setText}
-//         user={{
-//           _id: 1,
-//         }}
-//         renderSystemMessage={(props) => (
-//           <SystemMessage {...props} textStyle={{ color: theme.colors.palette.neutral300 }} />
-//         )}
-//         bottomOffset={insets.bottom}
-//         renderAvatar={null}
-//         maxComposerHeight={100}
-//         textInputProps={themed($composer)}
-//         renderBubble={(props) => (
-//           <Bubble
-//             {...props}
-//             textStyle={{
-//               right: {
-//                 color: '#000',
-//               },
-//             }}
-//             wrapperStyle={{
-//               left: {
-//                 backgroundColor: '#fff',
-//               },
-//               right: {
-//                 backgroundColor: theme.colors.palette.secondary300,
-//               },
-//             }}
-//           />
-//         )}
-//         renderSend={(props) => (
-//           <View
-//             style={{
-//               height: 44,
-//               flexDirection: 'row',
-//               alignItems: 'center',
-//               justifyContent: 'center',
-//               gap: 14,
-//               paddingHorizontal: 14,
-//             }}>
-//             {text === '' && (
-//               <>
-//                 <Ionicons name="camera-outline" color={theme.colors.palette.primary300} size={28} />
-//                 <Ionicons name="mic-outline" color={theme.colors.palette.primary300} size={28} />
-//               </>
-//             )}
-//             {text !== '' && (
-//               <Send
-//                 {...props}
-//                 containerStyle={{
-//                   justifyContent: 'center',
-//                 }}>
-//                 <Ionicons name="send" color={theme.colors.palette.primary300} size={28} />
-//               </Send>
-//             )}
-//           </View>
-//         )}
-//         renderInputToolbar={renderInputToolbar}
-//         renderChatFooter={() => (
-//           <ReplyMessageBar clearReply={() => setReplyMessage(null)} message={replyMessage} />
-//         )}
-//         onLongPress={(context, message) => setReplyMessage(message)}
-//         renderMessage={(props) => (
-//           <ChatMessageBox
-//             {...props}
-//             setReplyOnSwipeOpen={setReplyMessage}
-//             updateRowRef={updateRowRef}
-//           />
-//         )}
-//       />
-//     </ImageBackground>
-//   );
-// };
-
-// const $composer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-//   backgroundColor: '#fff',
-//   borderRadius: 18,
-//   borderWidth: 1,
-//   borderColor: colors.palette.neutral300,
-//   paddingHorizontal: 10,
-//   paddingTop: 8,
-//   fontSize: 16,
-//   marginVertical: 4,
-// })
-
-// export default Page;

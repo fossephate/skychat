@@ -80,15 +80,25 @@ export default function UsersScreen() {
     }
     console.log('Group name:', groupName)
     console.log('Selected users:', selectedUsers)
+
+    // TODO: check if we have a group with these users already, and if so, open it:
+    const groupId = await convoContext.getGroupIdWithUsers(selectedUsers)
+    if (groupId) {
+      router.push(`/chats/${groupId}`)
+      return
+    }
+
     try {
       const encodedGroupId = await convoContext.createGroup(groupName, selectedUsers)
       console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)
-      return encodedGroupId
+      router.push(`/chats/${encodedGroupId}` as any)
     } catch (error) {
       // console.error('Error creating chat:', error)
       // pop up an error modal:
       Alert.alert('Error creating chat', 'This user is not on Skychat (yet!)')
     }
+    // Alert.alert('Success', 'This user is not on Skychat (yet!)')
+    
   }
   
   const handleCreateDm = (user: User) => {
@@ -98,7 +108,7 @@ export default function UsersScreen() {
     // convoContext.createDm(userId)
 
     // for now assume we don't have a group with this user already:
-    handleNewChat(`DM with ${user.handle}`, [user.did])
+    handleNewChat(`${user.handle}`, [user.did])
   }
 
   useEffect(() => {

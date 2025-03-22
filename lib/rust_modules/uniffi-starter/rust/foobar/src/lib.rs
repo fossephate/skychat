@@ -117,6 +117,11 @@ impl ConvoManager {
         messages: Vec<EncodedBase64>,
         group_id: Option<GroupId>,
     ) -> u64 {
+
+        if messages.is_empty() {
+            return 0;// don't bother
+        }
+
         let mut inner = self.inner.lock().unwrap();
 
         // convert Option<GroupId> to Option<&GroupId>
@@ -149,34 +154,37 @@ impl ConvoManager {
       // map all groups to ConvoChatWrapper:
       let chats = inner.groups.iter().map(|(group_id, group)| {
         ConvoChatWrapper {
-            name: group.name.clone(),
-            global_index: group.global_index,
             id: group_id.clone(),
+            name: group.name.clone(),
+            global_index: group.global_index.clone(),
             last_message: None,
             unread_messages: 0,
-            participants: vec![],
+            members: vec![],
             decrypted: vec![],
         }
       }).collect();
       chats
     }
 
-    // pub fn get_group_chat(&self, group_id: GroupId) -> ConvoChatWrapper {
-    //     let mut inner = self.inner.lock().unwrap();
-    //     let group = inner.groups.get(&group_id).unwrap();
-    //     ConvoChatWrapper {
-    //         group_id: group.id.clone(),
-    //         group_name: group.name.clone(),
-    //         last_message: None,
-    //         unread_messages: 0,
-    //         participants: group.participants.clone(),
-    //         decrypted: g.decrypted.iter().map(|m| m.into()).collect(),
-    //     }
-    // }
-
-    pub fn accept_pending_invite(&self, welcome_message: Vec<u8>) -> Vec<u8> {
+    pub fn get_group_chat(&self, group_id: EncodedBase64) -> ConvoChatWrapper {
         let mut inner = self.inner.lock().unwrap();
-        inner.accept_pending_invite(welcome_message)
+        let group_id_bin = BufferConverter::from_base64(&group_id).unwrap();
+        let group = inner.groups.get(&group_id_bin).unwrap();
+        ConvoChatWrapper {
+            id: group.id.clone(),
+            name: group.name.clone(),
+            global_index: group.global_index.clone(),
+            last_message: None,
+            unread_messages: 0,
+            members: vec![],
+            decrypted: group.decrypted.iter().map(|m| m.into()).collect(),
+        }
+    }
+
+    pub fn accept_pending_invite(&self, welcome_message: EncodedBase64) -> Vec<u8> {
+        let mut inner = self.inner.lock().unwrap();
+        let welcome_message_bin = BufferConverter::from_base64(&welcome_message).unwrap();
+        inner.accept_pending_invite(welcome_message_bin)
     }
 
     pub fn reject_pending_invite(&self, welcome_message: Vec<u8>) {
@@ -188,17 +196,6 @@ impl ConvoManager {
         let inner = self.inner.lock().unwrap();
         let key_package = inner.get_key_package();
         key_package
-    }
-
-    pub fn save_state(&self) -> SerializedCredentialsWrapper {
-        let mut inner = self.inner.lock().unwrap();
-        let state = inner.save_state();
-        state.into()
-    }
-
-    pub fn load_state(&self, state: SerializedCredentialsWrapper) {
-        let mut inner = self.inner.lock().unwrap();
-        inner.load_state(state.into());
     }
 
     pub fn group_set_index(&self, group_id: GroupId, index: u64) {
@@ -232,13 +229,24 @@ impl ConvoManager {
         invites
     }
 
-    pub fn get_invite_welcome(&self) -> Vec<u8> {
+    // pub fn get_invite_welcome(&self) -> Vec<u8> {
+    //     let mut inner = self.inner.lock().unwrap();
+    //     // get pending invites:
+    //     let invites = inner.pending_invites.clone();
+    //     // get welcome message from first invite:
+    //     let welcome_message = invites[0].welcome_message.clone();
+    //     welcome_message
+    // }
+
+    pub fn save_state(&self) -> SerializedCredentialsWrapper {
         let mut inner = self.inner.lock().unwrap();
-        // get pending invites:
-        let invites = inner.pending_invites.clone();
-        // get welcome message from first invite:
-        let welcome_message = invites[0].welcome_message.clone();
-        welcome_message
+        let state = inner.save_state();
+        state.into()
+    }
+
+    pub fn load_state(&self, state: SerializedCredentialsWrapper) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.load_state(state.into());
     }
 
     // this works:

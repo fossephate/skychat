@@ -150,30 +150,58 @@ export default function chatsScreen() {
     console.log("chats.tsx: fetching skychats")
     // Placeholder for future implementation
     // For now, generate some dummy data for SkyChats
-    const mockSkyChats = users.slice(0, 5).map((user, index) => ({
-      id: `sky-${index}`,
-      name: user.displayName,
-      members: [SELF_USER, user],
-      lastMessage: {
-        text: `Latest message from ${user.displayName}`,
-        sender: user,
-        timestamp: formatTimestamp(new Date(Date.now() - Math.random() * 86400000 * 3).toISOString()),
-        read: Math.random() > 0.3,
-      },
-      unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 5) + 1 : 0,
-      muted: Math.random() > 0.9,
-      pinned: Math.random() > 0.8,
-      isBsky: false,
-    }));
+    // const mockSkyChats = users.slice(0, 5).map((user, index) => ({
+    //   id: `sky-${index}`,
+    //   name: user.displayName,
+    //   members: [SELF_USER, user],
+    //   lastMessage: {
+    //     text: `Latest message from ${user.displayName}`,
+    //     sender: user,
+    //     timestamp: formatTimestamp(new Date(Date.now() - Math.random() * 86400000 * 3).toISOString()),
+    //     read: Math.random() > 0.3,
+    //   },
+    //   unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 5) + 1 : 0,
+    //   muted: Math.random() > 0.9,
+    //   pinned: Math.random() > 0.8,
+    //   isBsky: false,
+    // }));
 
-    setSkychats(mockSkyChats);
+    // setSkychats(mockSkyChats);
+
     // Alternatively, fetch from your API or context:
-    const chats = await convoContext.getChats()
-    // setSkyChats(chats)
+    try {
+      const chats = await convoContext.getChats()
+      // setSkychats(chats)
 
-    for (const chat of chats) {
-      console.log("chat", chat)
+      // map skychat chats for display:
+      const transformedChats = chats.map((chat) => {
+        return {
+          id: Buffer.from(chat.id).toString('base64'),
+          name: chat.name,
+          members: [SELF_USER, ...chat.members],
+          // lastMessage: {
+          //   text: chat.lastMessage?.text || "New message",
+          //   // sender: chat.lastMessage?.sender || SELF_USER,
+          //   // timestamp: formatTimestamp(chat.lastMessage?.timestamp || new Date().toISOString()),
+          //   // read: chat.lastMessage?.read || false,
+          // },
+          isBsky: false,
+          unreadCount: 0,
+        }
+      })
+
+      setSkychats(transformedChats as Chat[])
+
+      console.log("got chats", chats)
+
+      for (const chat of chats) {
+        console.log("chat", chat)
+      }
+    } catch (error) {
+      console.error("Error fetching skychats:", error)
     }
+
+
   }
 
   // Helper function to format API timestamp to relative time

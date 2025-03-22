@@ -304,23 +304,13 @@ impl ConvoClient {
 
     pub async fn process_invite(&mut self, invite: ConvoInvite) {
         // add the welcome_message to the manager
-        self.manager.process_invite(invite.clone());
+        let group_id = self.manager.process_invite(invite.clone());
 
         // let the server know we have successfully processed the invite:
         let address = self
             .server_address
             .as_ref()
             .expect("server address is not set");
-
-        // get the group_id from the manager:
-        let group_id = self
-            .manager
-            .groups
-            .iter()
-            .find(|(_, group)| group.name == invite.group_name)
-            .unwrap()
-            .0
-            .clone();
 
         let client = reqwest::Client::new();
         let response = client

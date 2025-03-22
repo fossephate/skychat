@@ -2,6 +2,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { ConvoChatWrapper, ConvoInviteWrapper, ConvoManager, ConvoMessageWrapper } from "skychat-lib";
+import { saveManagerStateToStorage } from "@/utils/storage/credential-storage";
 
 // Type definitions
 type GroupId = ArrayBuffer;
@@ -318,20 +319,25 @@ export class ConvoClient {
     } catch (error) {
       console.error("error: ", error);
     }
+
+    // save the manager state:
+    const state = this.manager.saveState();
+    await saveManagerStateToStorage(state);
   }
 
   async getPendingInvites(): Promise<ConvoInviteWrapper[]> {
     const invites = await this.manager.getPendingInvites();
-
-    // const welcomeMessage = this.manager.getInviteWelcome();
-    // console.log("welcomeMessage: ", welcomeMessage);
-    // console.log("welcomeMessage.byteLength: ", welcomeMessage.byteLength);
     return invites;
   }
 
   getChats(): ConvoChatWrapper[] {
     const chats = this.manager.getChats();
     return chats;
+  }
+
+  getGroupChat(encodedGroupId: string): ConvoChatWrapper {
+    const chat = this.manager.getGroupChat(encodedGroupId);
+    return chat;
   }
 
   async syncGroup(groupId: GroupId): Promise<void> {
@@ -360,7 +366,7 @@ export class ConvoClient {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        group_id: groupId,
+        group_id: this.toB64(groupId),
         sender_id: this.id,
         message: msg,
         global_index: groupIndex + 1n
