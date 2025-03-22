@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# exit on error
+set -e
+
 # start in the /mobile directory:
 
 cd ../lib
