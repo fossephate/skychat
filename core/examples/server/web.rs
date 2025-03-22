@@ -67,27 +67,12 @@ pub struct SendMessage {
 #[post("/send_message", format = "json", data = "<data>")]
 pub async fn send_message(data: Json<SendMessage>, state: &State<ServerState>) {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
-
-
-    // do each step at a time to find out where b64 is failing:
-    let group_id = BufferConverter::from_base64(&data.group_id).unwrap();
-    let message = BufferConverter::from_base64(&data.message).unwrap();
-    let sender_id = data.sender_id.clone();
-    let global_index = data.global_index.clone();
-
     let res = server.client_send_message(
-        group_id,
-        sender_id,
-        message,
-        global_index,
+        BufferConverter::from_base64(&data.group_id).unwrap(),
+        data.sender_id.clone(),
+        BufferConverter::from_base64(&data.message).unwrap(),
+        data.global_index.clone(),
     );
-
-    // let res = server.client_send_message(
-    //     BufferConverter::from_base64(&data.group_id).unwrap(),
-    //     data.sender_id.clone(),
-    //     BufferConverter::from_base64(&data.message).unwrap(),
-    //     data.global_index.clone(),
-    // );
     if res.is_err() {
         panic!("failed to send message: {:?}", res);
     }
@@ -168,10 +153,9 @@ pub async fn get_new_messages_bin(
     state: &State<ServerState>,
 ) -> Json<Vec<EncodedBase64>> {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
+    let group_id = BufferConverter::from_base64(&data.group_id).unwrap();
     let messages = server.client_get_new_messages(
-        data.group_id
-            .as_ref()
-            .map(|g| BufferConverter::from_base64(g).unwrap()),
+        group_id,
         data.sender_id.clone(),
         data.index.clone(),
     );
