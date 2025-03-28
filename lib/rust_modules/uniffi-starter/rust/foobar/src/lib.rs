@@ -10,7 +10,6 @@ use skychat_core::manager::*;
 
 use skychat_core::utils::BufferConverter;
 
-
 // use skychat_client::client::*;
 
 // #[uniffi::export]
@@ -21,7 +20,6 @@ use skychat_core::utils::BufferConverter;
 
 // use futures::executor;
 // use tokio::task;
-
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum ConvoError {
@@ -109,7 +107,11 @@ impl ConvoManager {
         );
     }
 
-    pub fn create_message(&self, group_id: &GroupId, message: String) -> Result<Vec<u8>, ConvoError> {
+    pub fn create_message(
+        &self,
+        group_id: &GroupId,
+        message: String,
+    ) -> Result<Vec<u8>, ConvoError> {
         let mut inner = self.inner.lock().expect("Error locking inner");
 
         let message = inner
@@ -195,7 +197,9 @@ impl ConvoManager {
             .groups
             .iter()
             .map(|(group_id, group)| {
-                let member_ids = inner.group_get_member_ids(&group_id).expect("Error getting member ids");
+                let member_ids = inner
+                    .group_get_member_ids(&group_id)
+                    .expect("Error getting member ids");
                 ConvoChatWrapper {
                     id: group_id.clone(),
                     name: group.name.clone(),
@@ -234,7 +238,10 @@ impl ConvoManager {
         Ok(chat)
     }
 
-    pub fn accept_pending_invite(&self, welcome_message: EncodedBase64) -> Result<Vec<u8>, ConvoError> {
+    pub fn accept_pending_invite(
+        &self,
+        welcome_message: EncodedBase64,
+    ) -> Result<Vec<u8>, ConvoError> {
         let mut inner = self.inner.lock().expect("Error locking inner");
         let welcome_message_bin = BufferConverter::from_base64(&welcome_message)
             .expect("Error b64 decoding welcome message");
@@ -247,8 +254,7 @@ impl ConvoManager {
     pub fn reject_pending_invite(&self, welcome_message: Vec<u8>) -> Result<(), ConvoError> {
         let mut inner = self.inner.lock().expect("Error locking inner");
 
-        inner
-            .reject_pending_invite(welcome_message);
+        inner.reject_pending_invite(welcome_message);
         Ok(())
     }
 
@@ -311,19 +317,22 @@ impl ConvoManager {
         Ok(invites)
     }
 
-    pub fn get_group_id_with_users(&self, user_ids: Vec<String>) -> Result<EncodedBase64, ConvoError> {
-        let inner = self.inner.lock().expect("Error locking inner");
+    pub fn get_group_id_with_users(
+        &self,
+        user_ids: Vec<String>,
+    ) -> Result<EncodedBase64, ConvoError> {
+        let inner = self
+            .inner
+            .lock()
+            .map_err(|_| ConvoError::GenericError("Error locking inner".to_string()))?;
 
         println!("user_ids: {:?}", user_ids);
         let group_id = inner
-            .get_group_id_with_users(user_ids);
+            .get_group_id_with_users(user_ids)
+            .ok_or_else(|| ConvoError::GenericError("No group id found".to_string()))?;
 
-        if let Some(group_id) = group_id {
-            let encoded_group_id = BufferConverter::to_base64(&group_id);
-            Ok(encoded_group_id)
-        } else {
-            Err(ConvoError::GenericError("No group id found".to_string()))
-        }
+        let encoded_group_id = BufferConverter::to_base64(&group_id);
+        Ok(encoded_group_id)
     }
 
     pub fn save_state(&self) -> Result<SerializedCredentialsWrapper, ConvoError> {
@@ -336,9 +345,7 @@ impl ConvoManager {
     pub fn load_state(&self, state: SerializedCredentialsWrapper) -> Result<(), ConvoError> {
         let mut inner = self.inner.lock().expect("Error locking inner");
 
-        inner
-            .load_state(state.into())
-            .expect("Error loading state");
+        inner.load_state(state.into()).expect("Error loading state");
         Ok(())
     }
 

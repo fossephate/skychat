@@ -244,6 +244,8 @@ impl ConvoManager {
     }
 
     pub fn process_invite(&mut self, invite: ConvoInvite) -> Result<GroupId> {
+        log::info!("Processing invite from {} for group '{}'", invite.sender_id, invite.group_name);
+        
         // bob can now de-serialize the message as an [`MlsMessageIn`] ...
         let mls_message_in = MlsMessageIn::tls_deserialize(&mut invite.welcome_message.as_slice())
             .context("Failed to deserialize welcome message")?;
@@ -275,11 +277,19 @@ impl ConvoManager {
             ratchet_tree_deserialized,
         )
         .context("Error creating a staged join from Welcome")?;
-
+    
         // Finally, bob can create the group
         let new_group = bob_staged_join
             .into_group(&self.provider)
             .context("Error creating the group from the staged join")?;
+
+        // // Print the members' credentials
+        // for member in new_group.members() {
+        //     let credential = member.credential;
+        //     let identity = String::from_utf8(credential.serialized_content().to_vec())
+        //         .context("Failed to decode credential as UTF-8")?;
+        //     println!("Group member identity: {}", identity);
+        // }
 
         // create the group:
         let group = LocalGroup {

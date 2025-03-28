@@ -1,5 +1,6 @@
 // src/bin/client.rs
 
+use anyhow::Context;
 use colored::*;
 use crossterm::style::Stylize;
 use rand::Rng;
@@ -130,30 +131,31 @@ async fn old_reference() {
     // }
 }
 
-async fn manual_chat() {
+async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
     // create alice and bob:
     let mut alice = ConvoManager::init("alice".to_string());
     let mut bob = ConvoManager::init("bob".to_string());
     let gn = "alice_group".to_string();
 
     // alice creates a new group and invites bob:
-    let gid = alice.create_group(gn.clone());
-    let group_invite = alice.create_invite(&gid, bob.get_key_package());
-    bob.process_raw_invite(
-        group_invite.sender_id.clone(),
-        group_invite.group_name.clone(),
-        group_invite.welcome_message,
-        group_invite.ratchet_tree,
-        None,
-    );
+    let gid = alice.create_group(gn.clone()).context("failed to create group")?;
+    let bob_key_package = bob.get_key_package().context("failed to get key package")?;
+    let group_invite = alice
+        .create_invite(&gid, bob_key_package)
+        .context("failed to create invite")?;
+    bob.process_invite(group_invite.clone()).context("failed to process invite")?;
 
     println!("<------ Alice creates a new group and invites Bob! ------->");
 
     // bob sends a message to alice:
     let message_text = "Hello, alice!".to_string();
     println!("{}", format!("Bob: {}", message_text).blue());
-    let serialized_message = bob.create_message(&gid, message_text);
-    let processed_results = alice.process_message(serialized_message, Some("bob".to_string()));
+    let serialized_message = bob
+        .create_message(&gid, message_text)
+        .context("failed to create message")?;
+    let processed_results = alice
+        .process_message(serialized_message, Some("bob".to_string()))
+        .context("failed to process message")?;
     println!(
         "{}",
         format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
@@ -162,8 +164,12 @@ async fn manual_chat() {
     // alice sends a message to bob:
     let message_text = "Hello, bob!".to_string();
     println!("{}", format!("Alice: {}", message_text).red());
-    let serialized_message = alice.create_message(&gid, message_text);
-    let processed_results = bob.process_message(serialized_message, Some("alice".to_string()));
+    let serialized_message = alice
+        .create_message(&gid, message_text)
+        .context("failed to create message")?;
+    let processed_results = bob
+        .process_message(serialized_message, Some("alice".to_string()))
+        .context("failed to process message")?;
     println!(
         "{}",
         format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
@@ -171,32 +177,33 @@ async fn manual_chat() {
 
     // charlie is created:
     let mut charlie = ConvoManager::init("charlie".to_string());
+    let charlie_key_package = charlie.get_key_package().context("failed to get key package")?;
     // and bob invites charlie:
-    let group_invite = bob.create_invite(&gid, charlie.get_key_package());
+    let group_invite = bob
+        .create_invite(&gid, charlie_key_package)
+        .context("failed to create invite")?;
 
     // charlie + everyone* (not actually everyone, but I think log(n) people in the tree?)
     // must process the invite before any new messages can be decrypted
     // (excluding bob since he created the invite)
-    charlie.process_raw_invite(
-        group_invite.sender_id.clone(),
-        gn.clone(),
-        group_invite.welcome_message,
-        group_invite.ratchet_tree,
-        None,
-    );
+    charlie.process_invite(group_invite.clone()).context("failed to process invite")?;
     // everyone* else must processes the fanned commit like a normal message
-    alice.process_message(group_invite.fanned.unwrap(), Some("bob".to_string()));
+    alice.process_message(group_invite.clone().fanned.unwrap(), Some("bob".to_string()))
+        .context("failed to process message")?;
 
     println!("\n<------ Charlie enters the group! ------->");
 
     // charlie, now in the group, sends a message:
     let message_text = "Hello, everyone!".to_string();
     println!("{}", format!("Charlie: {}", message_text).yellow());
-    let serialized_message = charlie.create_message(&gid, message_text);
+    let serialized_message = charlie
+        .create_message(&gid, message_text)
+        .context("failed to create message")?;
 
     // alice decrypts the message:
-    let processed_results =
-        alice.process_message(serialized_message.clone(), Some("charlie".to_string()));
+    let processed_results = alice
+        .process_message(serialized_message.clone(), Some("charlie".to_string()))
+        .context("failed to process message")?;
     println!(
         "{}",
         format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
@@ -204,7 +211,8 @@ async fn manual_chat() {
 
     // bob decrypts the message:
     let processed_results =
-        bob.process_message(serialized_message.clone(), Some("charlie".to_string()));
+        bob.process_message(serialized_message.clone(), Some("charlie".to_string()))
+        .context("failed to process message")?;
     println!(
         "{}",
         format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
@@ -213,16 +221,20 @@ async fn manual_chat() {
     // bob responds:
     let message_text = "Welcome, charlie!".to_string();
     println!("{}", format!("Bob: {}", message_text).blue());
-    let serialized_message = bob.create_message(&gid, message_text);
+    let serialized_message = bob
+        .create_message(&gid, message_text)
+        .context("failed to create message")?;
     // charlie and alice decrypt the message:
     let processed_results =
-        alice.process_message(serialized_message.clone(), Some("bob".to_string()));
+        alice.process_message(serialized_message.clone(), Some("bob".to_string()))
+        .context("failed to process message")?;
     println!(
         "{}",
         format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
     );
     let processed_results =
-        charlie.process_message(serialized_message.clone(), Some("bob".to_string()));
+        charlie.process_message(serialized_message.clone(), Some("bob".to_string()))
+        .context("failed to process message")?;
     println!(
         "{}",
         format!("Charlie decrypted: {}", processed_results.message.unwrap()).green()
@@ -230,19 +242,26 @@ async fn manual_chat() {
 
     println!("\n<------ Charlie kicks Alice out of the group! ------->");
     // charlie kicks alice out of the group!:
-    let (fanned, welcome_option) = charlie.kick_member(gid.clone(), alice.get_key_package());
+    let alice_key_package = alice.get_key_package().context("failed to get key package")?;
+    let (fanned, welcome_option) = charlie
+        .kick_member(gid.clone(), alice_key_package)
+        .context("failed to kick member")?;
 
     // bob processes the fanned commit:
-    bob.process_message(fanned.clone(), Some("charlie".to_string()));
+    bob.process_message(fanned.clone(), Some("charlie".to_string()))
+        .context("failed to process message")?;
 
     // charlie sends a message (to now just bob):
     let message_text = "Hello, (just) bob!".to_string();
     println!("{}", format!("Charlie: {}", message_text).yellow());
-    let serialized_message = charlie.create_message(&gid, message_text);
+    let serialized_message = charlie
+        .create_message(&gid, message_text)
+        .context("failed to create message")?;
 
     // bob decrypts the message:
     let processed_results =
-        bob.process_message(serialized_message.clone(), Some("charlie".to_string()));
+        bob.process_message(serialized_message.clone(), Some("charlie".to_string()))
+        .context("failed to process message")?;
     println!(
         "{}",
         format!("Bob decrypted: {}", processed_results.message.unwrap()).green()
@@ -251,12 +270,16 @@ async fn manual_chat() {
     // david requests to join the group:
     let mut david = ConvoManager::init("david".to_string());
     println!("<------ David created! ------->");
-    let epoch = charlie.group_get_epoch(&gid);
-    let serialized_proposal = david.request_join(&gid, &epoch);
+    let epoch = charlie.group_get_epoch(&gid).context("failed to get epoch")?;
+    let serialized_proposal = david
+        .request_join(&gid, &epoch)
+        .context("failed to request join")?;
     println!("<------ David requested to join the group! ------->");
     println!("<------ Bob allows David to join the group! ------->");
-    let proposed_invite = bob
+    let processed_results = bob
         .process_message(serialized_proposal.clone(), Some("david".to_string()))
+        .context("failed to process message")?;
+    let proposed_invite = processed_results
         .invite
         .expect("invite not found");
     println!("<------ Bob processed the proposal! ------->");
@@ -280,6 +303,7 @@ async fn manual_chat() {
     // for member in members {
     //     println!("{}", format!("Member: {:?}", member.signature_key).green());
     // }
+
     // // print david's key package:
     // let key_package = bob.get_key_package();
     // // deserialize the key package:
@@ -312,13 +336,11 @@ async fn manual_chat() {
     // );
 
     // end of old code
+    Ok(())
 }
 
 async fn client() -> Result<(), Box<dyn std::error::Error>> {
-    println!("\n<------ Hello, world! ------->\n");
 
-    // make sure all our base functions still work:
-    manual_chat().await;
 
     // start a client:
     println!("\n\n<!------ Starting alice client and connecting to server... ------->");
@@ -340,7 +362,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
     // alice calls list_users, notices bob, and invites bob to join the group
     let _ = alice_client.list_users().await;
-    let users_list = bob_client.list_users().await;
+    let users_list = bob_client.list_users().await.context("failed to list users")?;
 
     let bob_user = users_list
         .iter()
@@ -352,7 +374,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("<!------ Alice creates a new group (alphabet_group)! ------->");
     alice_client.create_group(gn.clone()).await;
-    let group_id = alice_client.get_group_id(gn.clone()).await;
+    let group_id = alice_client.get_group_id(gn.clone()).await.context("failed to get group id")?;
 
     println!("<!------ Alice invites bob to the group! ------->");
     alice_client
@@ -364,10 +386,10 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
         .await;
 
     println!("<!------ Bob checks his incoming messages! ------->");
-    bob_client.check_incoming_messages(None).await;
+    bob_client.check_incoming_messages(None).await.context("failed to check incoming messages")?;
 
     println!("<!------ Bob accepts the invite! ------->");
-    bob_client.accept_current_invites().await;
+    bob_client.accept_current_invites().await.context("failed to accept invites")?;
 
     // // list bob's groups:
     // let groups = bob_client.manager.groups;
@@ -392,36 +414,36 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     // aliceClient.check_incoming_messages(group_id.clone()).await;
     alice_client
         .send_message(&group_id, "Welcome to the group, bob!".to_string())
-        .await;
+        .await.context("failed to send message")?;
     println!("<!------ Bob sends a message to alice! ------->");
     bob_client
         .send_message(&group_id, "Hello, alice!".to_string())
-        .await;
+        .await.context("failed to send message")?;
     println!("<!------ Bob sends a second message to alice! ------->");
     bob_client
         .send_message(&group_id, "Second message to alice!".to_string())
-        .await;
+        .await.context("failed to send message")?;
     println!("<!------ Alice sends a reply to bob! ------->");
     alice_client
         .send_message(&group_id, "Reply to bob!".to_string())
-        .await;
+        .await.context("failed to send message")?;
 
     // fetch new messages:
     // println!("<!------ Bob checks his messages! ------->");
     // bob_client.check_incoming_messages(group_id.clone()).await;
     println!("<!------ Alice & Bob check their messages! ------->\n");
-    alice_client.check_incoming_messages(Some(&group_id)).await;
-    bob_client.check_incoming_messages(Some(&group_id)).await;
+    alice_client.check_incoming_messages(Some(&group_id)).await.context("failed to check incoming messages")?;
+    bob_client.check_incoming_messages(Some(&group_id)).await.context("failed to check incoming messages")?;
 
     println!("<!------ Alice's message history ------->\n");
 
     // message history from alice's perspective:
-    alice_client.print_group_messages(&group_id);
+    alice_client.print_group_messages(&group_id).context("failed to print group messages")?;
 
     println!("\n<!------ Bob's message history ------->\n");
 
     // message history from bob's perspective:
-    bob_client.print_group_messages(&group_id);
+    bob_client.print_group_messages(&group_id).context("failed to print group messages")?;
 
     // create charlie:
     println!("\n<!------ Creating charlie! ------->");
@@ -433,7 +455,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
     // alice calls list_users, notices charlie, and invites charlie to join the group
     let _ = alice_client.list_users().await;
     let _ = bob_client.list_users().await;
-    let users_list = charlie_client.list_users().await;
+    let users_list = charlie_client.list_users().await.context("failed to list users")?;
 
     let charlie_user = users_list
         .iter()
@@ -459,38 +481,38 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
         .await;
 
     println!("<!------ Charlie checks his messages! ------->");
-    charlie_client.check_incoming_messages(None).await;
+    charlie_client.check_incoming_messages(None).await.context("failed to check incoming messages")?;
 
     println!("<!------ Charlie accepts the invite! ------->");
-    charlie_client.accept_current_invites().await;
+    charlie_client.accept_current_invites().await.context("failed to accept invites")?;
 
     println!("<!------ Charlie sends a message to alice! ------->");
     charlie_client
         .send_message(&group_id, "Hello, alice!".to_string())
-        .await;
+        .await.context("failed to send message")?;
 
     println!("<!------ Bob checks his messages! ------->");
-    bob_client.check_incoming_messages(Some(&group_id)).await;
+    bob_client.check_incoming_messages(Some(&group_id)).await.context("failed to check incoming messages")?;
 
     // bob sends a message to charlie:
     println!("<!------ Bob sends a message to charlie! ------->");
     bob_client
         .send_message(&group_id, "Welcome to the group, charlie!".to_string())
-        .await;
+        .await.context("failed to send message")?;
 
     println!("<!------ Charlie checks his messages! ------->");
     charlie_client
         .check_incoming_messages(Some(&group_id))
-        .await;
+        .await.context("failed to check incoming messages")?;
 
     // display message lists:
     println!("\n\n<!------ Everyone's POV: ------->");
     println!("\n<!------ Alice's message history ------->");
-    alice_client.print_group_messages(&group_id);
+    alice_client.print_group_messages(&group_id).context("failed to print group messages")?;
     println!("\n<!------ Bob's message history ------->");
-    bob_client.print_group_messages(&group_id);
+    bob_client.print_group_messages(&group_id).context("failed to print group messages")?;
     println!("\n<!------ Charlie's message history ------->");
-    charlie_client.print_group_messages(&group_id);
+    charlie_client.print_group_messages(&group_id).context("failed to print group messages")?;
 
     // alice's message list:
     // let messages = aliceClient.get_group_messages(group_id.clone());
@@ -512,8 +534,18 @@ async fn client() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+    println!("\n<------ Hello, world! ------->\n");
+
+    // make sure all our base functions still work:
+    manual_chat().await.inspect_err(|e| println!("{}", e));
+
+    println!("\n<------ Starting client... ------->\n");
+    client().await.inspect_err(|e| println!("{}", e));
+
+    println!("\n<------ Goodbye, world! ------->\n");
+
     println!("Starting client...");
-    // Move your client() function code here
-    client().await;
+
     Ok(())
 }
