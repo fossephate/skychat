@@ -1,6 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use openmls::prelude::*;
+use openmls::prelude::{tls_codec::Serialize as TlsSerialize, *};
 use openmls_basic_credential::SignatureKeyPair;
 use serde_json;
 use anyhow::{Context, Result};
@@ -105,4 +105,11 @@ impl BufferConverter {
         serde_json::from_slice(&bytes)
             .context("Failed to deserialize JSON from base64 string")
     }
+}
+
+
+pub fn extract_sender_id_from_credential(credential: Credential) -> Result<String> {
+    let sender_id_bytes = credential.tls_serialize_detached().context("Failed to serialize sender id")?;
+    let sender_id = String::from_utf8(sender_id_bytes).context("Failed to convert sender id to string")?;
+    Ok(sender_id)
 }

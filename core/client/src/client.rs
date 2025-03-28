@@ -375,11 +375,11 @@ impl ConvoClient {
             .await
             .context("Failed to parse response data")?;
 
-        // exclude any messages from our own user_id:
-        let messages: Vec<ConvoMessage> = messages
-            .into_iter()
-            .filter(|message| message.sender_id != self.user_id)
-            .collect();
+        // // exclude any messages from our own user_id:
+        // let messages: Vec<ConvoMessage> = messages
+        //     .into_iter()
+        //     .filter(|message| message.sender_id != self.user_id)
+        //     .collect();
 
         self.manager
             .process_convo_messages(messages.clone(), group_id)

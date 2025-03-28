@@ -10,7 +10,7 @@ use openmls_rust_crypto::OpenMlsRustCrypto;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 
-use crate::utils::{generate_credential_with_key, generate_key_package};
+use crate::utils::{extract_sender_id_from_credential, generate_credential_with_key, generate_key_package};
 use openmls::prelude::{MlsMessageBodyIn, MlsMessageIn};
 
 type GroupId = Vec<u8>;
@@ -64,7 +64,6 @@ pub struct SerializedCredentials {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 
 pub struct ConvoInvite {
-    pub sender_id: String,
     pub group_name: String,
     pub welcome_message: Vec<u8>,
     pub ratchet_tree: Option<Vec<u8>>,
@@ -75,9 +74,8 @@ pub struct ConvoInvite {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConvoMessage {
     pub global_index: u64,
-    pub sender_id: String,
     pub unix_timestamp: u64,
-    pub message: Option<Vec<u8>>,
+    pub encrypted: Option<Vec<u8>>,
     pub invite: Option<ConvoInvite>,
 }
 
@@ -225,14 +223,12 @@ impl ConvoManager {
 
     pub fn process_raw_invite(
         &mut self,
-        sender_id: String,
         group_name: String,
         welcome_message: Vec<u8>,
         ratchet_tree: Option<Vec<u8>>,
         fanned: Option<Vec<u8>>,
     ) -> Result<()> {
         self.process_invite(ConvoInvite {
-            sender_id: sender_id.clone(),
             group_name: group_name.clone(),
             welcome_message: welcome_message.clone(),
             ratchet_tree: ratchet_tree.clone(),
@@ -243,8 +239,52 @@ impl ConvoManager {
         Ok(())
     }
 
+    pub fn get_invite_sender_id(&self, invite: ConvoInvite) -> Result<String> {
+        // bob can now de-serialize the message as an [`MlsMessageIn`] ...
+        let mls_message_in = MlsMessageIn::tls_deserialize(&mut invite.welcome_message.as_slice())
+            .context("Failed to deserialize welcome message")?;
+
+        // ... and inspect the message.
+        let welcome = match mls_message_in.extract() {
+            MlsMessageBodyIn::Welcome(welcome) => welcome,
+            // We know it's a welcome message, so we handle all other cases as errors
+            _ => bail!("Unexpected message type, expected a Welcome message"),
+        };
+
+        let mut ratchet_tree_deserialized: Option<RatchetTreeIn> = None;
+
+        // if we have a ratchet tree:
+        if let Some(ratchet_tree) = invite.ratchet_tree {
+            ratchet_tree_deserialized = Some(
+                RatchetTreeIn::tls_deserialize(&mut ratchet_tree.as_slice())
+                    .context("Error deserializing ratchet tree")?,
+            );
+        }
+
+        // Now bob can build a staged join for the group in order to inspect the welcome
+        let bob_staged_join = StagedWelcome::new_from_welcome(
+            &self.provider,
+            &MlsGroupJoinConfig::default(),
+            welcome,
+            // The public tree is need and transferred out of band.
+            // It is also possible to use the [`RatchetTreeExtension`]
+            ratchet_tree_deserialized,
+        )
+        .context("Error creating a staged join from Welcome")?;
+
+        let sender_lead_node = bob_staged_join.welcome_sender().context("Failed to get sender id")?;
+        let sender_id_bytes = sender_lead_node.credential().tls_serialize_detached().context("Failed to serialize sender id")?;
+        let sender_id = String::from_utf8(sender_id_bytes).context("Failed to convert sender id to string")?;
+        Ok(sender_id)
+    }
+
+    pub fn get_invite_sender_id_from_credential(&self, credential: Credential) -> Result<String> {
+        let sender_id_bytes = credential.tls_serialize_detached().context("Failed to serialize sender id")?;
+        let sender_id = String::from_utf8(sender_id_bytes).context("Failed to convert sender id to string")?;
+        Ok(sender_id)
+    }
+
     pub fn process_invite(&mut self, invite: ConvoInvite) -> Result<GroupId> {
-        log::info!("Processing invite from {} for group '{}'", invite.sender_id, invite.group_name);
         
         // bob can now de-serialize the message as an [`MlsMessageIn`] ...
         let mls_message_in = MlsMessageIn::tls_deserialize(&mut invite.welcome_message.as_slice())
@@ -277,6 +317,9 @@ impl ConvoManager {
             ratchet_tree_deserialized,
         )
         .context("Error creating a staged join from Welcome")?;
+
+        let sender_lead_node = bob_staged_join.welcome_sender().context("Failed to get sender id")?;
+        let sender_id = sender_lead_node.credential().tls_serialize_detached().context("Failed to serialize sender id")?;
     
         // Finally, bob can create the group
         let new_group = bob_staged_join
@@ -373,7 +416,6 @@ impl ConvoManager {
             .context("Error serializing fanned")?;
 
         Ok(ConvoInvite {
-            sender_id: self.id.clone(),
             group_name: group.name.clone(),
             welcome_message: serialized_welcome,
             ratchet_tree: Some(ratchet_tree),
@@ -401,8 +443,7 @@ impl ConvoManager {
 
     pub fn process_message(
         &mut self,
-        serialized_message: SerializedMessage,
-        sender_id: Option<String>,
+        serialized_message: SerializedMessage
     ) -> Result<ProcessedResults> {
         let mls_message = MlsMessageIn::tls_deserialize_exact(serialized_message)
             .context("Could not deserialize message")?;
@@ -421,19 +462,11 @@ impl ConvoManager {
 
         let mls_group = &mut group.mls_group;
 
-        let processed_message = mls_group.process_message(&self.provider, protocol_message);
-
-        if let Err(err) = processed_message {
-            println!("Error processing message: {:?}", err);
-            return Ok(ProcessedResults {
-                message: None,
-                invite: None,
-            });
-        }
-
-        let processed_message = processed_message.unwrap();
-
+        let processed_message = mls_group.process_message(&self.provider, protocol_message)?;
+        let sender_credential = processed_message.credential().clone();
+        let sender_id = extract_sender_id_from_credential(sender_credential.clone())?;
         let processed_content = processed_message.into_content();
+
         let processed_results = match processed_content {
             ProcessedMessageContent::ApplicationMessage(msg) => {
                 let text = String::from_utf8(msg.into_bytes())
@@ -444,9 +477,11 @@ impl ConvoManager {
                     .context("Failed to get current timestamp")?
                     .as_millis() as u64;
 
+                
+
                 group.decrypted.push(MessageItem {
                     text: text.clone(),
-                    sender_id: sender_id.unwrap_or("Unknown".to_string()),
+                    sender_id: sender_id.clone(),
                     timestamp: timestamp,
                 });
 
@@ -486,7 +521,6 @@ impl ConvoManager {
                 ProcessedResults {
                     message: None,
                     invite: Some(ConvoInvite {
-                        sender_id: self.id.clone(),
                         group_name: group.name.clone(),
                         welcome_message: serialized_welcome,
                         ratchet_tree: Some(ratchet_tree),
@@ -592,21 +626,21 @@ impl ConvoManager {
         group_id: Option<&GroupId>,
     ) -> Result<()> {
         // if the message's sender_id is from ourself, skip it: (make a new vector with the filtered messages):
-        let filtered_messages: Vec<ConvoMessage> = messages
-            .iter()
-            .filter(|m| m.sender_id != self.id)
-            .map(|m| m.clone())
-            .collect();
+        // let filtered_messages: Vec<ConvoMessage> = messages
+        //     .iter()
+        //     .filter(|m| m.sender_id != self.id)
+        //     .map(|m| m.clone())
+        //     .collect();
 
         // if the message is an invite, process it:
-        for message in filtered_messages {
+        for message in messages {
             if let Some(invite) = message.invite {
                 self.pending_invites.push(invite);
             }
 
             // if the message is a message, process it:
-            if let Some(msg) = message.message {
-                self.process_message(msg, Some(message.sender_id))?;
+            if let Some(enc) = message.encrypted {
+                self.process_message(enc)?;
             }
 
             if let Some(group_id) = group_id {

@@ -64,7 +64,6 @@ impl ConvoServer {
         &mut self,
         group_id: Vec<u8>,
         group_name: String,
-        sender_id: String,
     ) -> Result<()> {
         // Check if group exists
         if self.groups.contains_key(&group_id) {
@@ -76,7 +75,7 @@ impl ConvoServer {
             group_id: group_id.clone(),
             group_name: group_name.clone(),
             global_index: 0,
-            user_ids: vec![sender_id.clone()],
+            user_ids: vec![],
             messages: Vec::new(),
         };
 
@@ -169,8 +168,7 @@ impl ConvoServer {
         if let Some(fanned) = fanned {
             group.messages.push(ConvoMessage {
                 global_index: group.global_index + 1,
-                sender_id: sender_id.clone(),
-                message: Some(fanned),
+                encrypted: Some(fanned),
                 unix_timestamp: utils::current_timestamp(),
                 invite: None,
             });
@@ -188,11 +186,9 @@ impl ConvoServer {
             .unwrap()
             .push(ConvoMessage {
                 global_index: group.global_index,
-                sender_id: sender_id.clone(),
-                message: None,
+                encrypted: None,
                 unix_timestamp: utils::current_timestamp(),
                 invite: Some(ConvoInvite {
-                    sender_id: sender_id.clone(),
                     global_index: group.global_index,
                     group_name: group.group_name.clone(),
                     welcome_message,
@@ -208,14 +204,13 @@ impl ConvoServer {
     pub fn client_send_message(
         &mut self,
         group_id: Vec<u8>,
-        sender_id: String,
         message: Vec<u8>,
         global_index: u64,
     ) -> Result<()> {
 
         // if the group doesn't exist, create it:
         if !self.groups.contains_key(&group_id) {
-            self.client_create_group(group_id.clone(), "unknown".to_string(), sender_id.clone())?;
+            self.client_create_group(group_id.clone(), "unknown".to_string())?;
         }
 
         let group = self.groups.get_mut(&group_id).context("Group not found")?;
@@ -225,8 +220,7 @@ impl ConvoServer {
         if global_index == correct_new_gi {
             group.messages.push(ConvoMessage {
                 global_index: correct_new_gi,
-                sender_id: sender_id.clone(),
-                message: Some(message.clone()),
+                encrypted: Some(message.clone()),
                 unix_timestamp: utils::current_timestamp(),
                 invite: None,
             });

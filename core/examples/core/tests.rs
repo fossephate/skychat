@@ -154,7 +154,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
         .create_message(&gid, message_text)
         .context("failed to create message")?;
     let processed_results = alice
-        .process_message(serialized_message, Some("bob".to_string()))
+        .process_message(serialized_message)
         .context("failed to process message")?;
     println!(
         "{}",
@@ -168,7 +168,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
         .create_message(&gid, message_text)
         .context("failed to create message")?;
     let processed_results = bob
-        .process_message(serialized_message, Some("alice".to_string()))
+        .process_message(serialized_message)
         .context("failed to process message")?;
     println!(
         "{}",
@@ -188,7 +188,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
     // (excluding bob since he created the invite)
     charlie.process_invite(group_invite.clone()).context("failed to process invite")?;
     // everyone* else must processes the fanned commit like a normal message
-    alice.process_message(group_invite.clone().fanned.unwrap(), Some("bob".to_string()))
+    alice.process_message(group_invite.clone().fanned.unwrap())
         .context("failed to process message")?;
 
     println!("\n<------ Charlie enters the group! ------->");
@@ -202,7 +202,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
 
     // alice decrypts the message:
     let processed_results = alice
-        .process_message(serialized_message.clone(), Some("charlie".to_string()))
+        .process_message(serialized_message.clone())
         .context("failed to process message")?;
     println!(
         "{}",
@@ -211,7 +211,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
 
     // bob decrypts the message:
     let processed_results =
-        bob.process_message(serialized_message.clone(), Some("charlie".to_string()))
+        bob.process_message(serialized_message.clone())
         .context("failed to process message")?;
     println!(
         "{}",
@@ -226,14 +226,14 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
         .context("failed to create message")?;
     // charlie and alice decrypt the message:
     let processed_results =
-        alice.process_message(serialized_message.clone(), Some("bob".to_string()))
+        alice.process_message(serialized_message.clone())
         .context("failed to process message")?;
     println!(
         "{}",
         format!("Alice decrypted: {}", processed_results.message.unwrap()).green()
     );
     let processed_results =
-        charlie.process_message(serialized_message.clone(), Some("bob".to_string()))
+        charlie.process_message(serialized_message.clone())
         .context("failed to process message")?;
     println!(
         "{}",
@@ -248,7 +248,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
         .context("failed to kick member")?;
 
     // bob processes the fanned commit:
-    bob.process_message(fanned.clone(), Some("charlie".to_string()))
+    bob.process_message(fanned.clone())
         .context("failed to process message")?;
 
     // charlie sends a message (to now just bob):
@@ -260,7 +260,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
 
     // bob decrypts the message:
     let processed_results =
-        bob.process_message(serialized_message.clone(), Some("charlie".to_string()))
+        bob.process_message(serialized_message.clone())
         .context("failed to process message")?;
     println!(
         "{}",
@@ -277,7 +277,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
     println!("<------ David requested to join the group! ------->");
     println!("<------ Bob allows David to join the group! ------->");
     let processed_results = bob
-        .process_message(serialized_proposal.clone(), Some("david".to_string()))
+        .process_message(serialized_proposal.clone())
         .context("failed to process message")?;
     let proposed_invite = processed_results
         .invite
@@ -287,13 +287,7 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
     println!("<------ David joins the group! ------->");
     // print the processed_results:
     // println!("{}", format!("Processed results: {:?}", processed_results.invite.unwrap()).green());
-    david.process_raw_invite(
-        proposed_invite.sender_id.clone(),
-        proposed_invite.group_name.clone(),
-        proposed_invite.welcome_message,
-        proposed_invite.ratchet_tree,
-        None,
-    );
+    david.process_invite(proposed_invite).context("failed to process invite")?;
     println!("<------ David processed the invite! ------->");
 
     // // print out the members of the group:
@@ -312,8 +306,8 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
     // // .expect("Error deserializing key package");
     // println!("{}", format!("Bobs's key package: {:?}", key_package).dark_blue());
 
-    // let ids = bob.group_get_member_ids(&gid);
-    // println!("{}", format!("IDs: {:?}", ids).green());
+    let ids = bob.group_get_member_ids(&gid);
+    println!("{}", format!("IDs: {:?}", ids).green());
 
     // charlie must also process the fanned commit:
     // charlie.process_message(proposed_invite.fanned.unwrap(), None);
