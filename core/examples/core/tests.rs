@@ -260,8 +260,8 @@ async fn manual_chat() -> Result<(), Box<dyn std::error::Error>> {
 
     // bob decrypts the message:
     let processed_results =
-        bob.process_message(serialized_message.clone())
-        .context("failed to process message")?;
+        bob.process_message(serialized_message.clone()).unwrap();
+        // .context("failed to process message (bob decrypting charlie's message)")?;
     println!(
         "{}",
         format!("Bob decrypted: {}", processed_results.message.unwrap()).green()

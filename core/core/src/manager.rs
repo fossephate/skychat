@@ -441,6 +441,28 @@ impl ConvoManager {
             .context("Failed to serialize message to bytes")
     }
 
+    pub fn get_member_public_key(&self, group_id: &GroupId, member_index: LeafNodeIndex) -> Result<Vec<u8>> {
+        let group = self.groups.get(group_id).context(format!("Group not found for ID: {:?}", group_id))?;
+        let mls_group = &group.mls_group;
+        let all_members = mls_group.members();
+        for member in all_members {
+            if member.index == member_index {
+                return Ok(member.signature_key);
+            }
+        }
+        bail!("Member not found")
+    }
+
+    pub fn get_member_id(&self, group_id: &GroupId, member_index: LeafNodeIndex) -> Result<String> {
+        let group = self.groups.get(group_id).context(format!("Group not found for ID: {:?}", group_id))?;
+        let mls_group = &group.mls_group;
+        let credential = mls_group.member(member_index).context("Failed to get member")?;
+        // get id from credential:
+        let member_id_bytes = credential.tls_serialize_detached().context("Failed to serialize sender id")?;
+        let member_id = String::from_utf8(member_id_bytes).context("Failed to convert sender id to string")?;
+        Ok(member_id)
+    }
+
     pub fn process_message(
         &mut self,
         serialized_message: SerializedMessage
@@ -455,14 +477,44 @@ impl ConvoManager {
             .context("Expected a PublicMessage or a PrivateMessage")?;
 
         let group_id = protocol_message.group_id().to_vec();
-        let group = self
+
+        let processed_message = {
+            let group = self
             .groups
             .get_mut(&group_id)
             .context(format!("Group not found for ID: {:?}", group_id))?;
 
+            let mls_group = &mut group.mls_group;
+            
+            mls_group.process_message(&self.provider, protocol_message)?
+        };
+
+        let sender = processed_message.sender().clone();
+        
+        // check if sender is an enum of type Member:
+        if let Sender::Member(sender_index) = sender {
+            println!("sender is a member {:?}", sender_index);
+            // let sender_pub = self.get_member_public_key(&group_id, sender_index).context("Failed to get sender public key")?;
+            let sender_pub = self.get_member_public_key(&group_id, sender_index).unwrap();
+            let sender_id = self.get_member_id(&group_id, sender_index).context("Failed to get sender credential")?;
+            println!("{}", format!("Sender: {:?} {:?}", sender_id, sender_pub));
+        } else {
+            println!("sender is not a member");
+        }
+
+        // let sender_test = String::from_utf8(sender.tls_serialize_detached().context("Failed to serialize sender data")?).context("Failed to convert sender id to string")?;
+        // println!("{}", format!("Sender: {:?}", sender.));
+
+        // let sender_data = sender.tls_serialize_detached().context("Failed to serialize sender data")?;
+
+        // TODO: link credential to sender_id
+
+        let group = self
+        .groups
+        .get_mut(&group_id)
+        .context(format!("Group not found for ID: {:?}", group_id))?;
         let mls_group = &mut group.mls_group;
 
-        let processed_message = mls_group.process_message(&self.provider, protocol_message)?;
         let sender_credential = processed_message.credential().clone();
         let sender_id = extract_sender_id_from_credential(sender_credential.clone())?;
         let processed_content = processed_message.into_content();
