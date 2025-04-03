@@ -69,12 +69,11 @@ pub async fn send_message(data: Json<SendMessage>, state: &State<ServerState>) {
     let mut server = state.convo_server.lock().expect("failed to lock server!");
     let res = server.client_send_message(
         BufferConverter::from_base64(&data.group_id).unwrap(),
-        data.sender_id.clone(),
         BufferConverter::from_base64(&data.message).unwrap(),
         data.global_index.clone(),
     );
     if res.is_err() {
-        panic!("failed to send message: {:?}", res);
+        println!("failed to send message: {:?}", res);
     }
     // Json(res)
 }
