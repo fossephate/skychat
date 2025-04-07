@@ -53,110 +53,110 @@ export default function Page() {
     return avatarUri || undefined
   }
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!session) {
-        console.error("No session or groupId found")
-        setLoading(false)
-        return
-      }
-
-      try {
-        setLoading(true)
-        const agent = new Agent(session)
-        const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
-
-        // Fetch conversation details first
-        const convoResponse = await proxy.chat.bsky.convo.getConvo({
-          convoId: groupId as string
-        })
-
-        const convoData = convoResponse.data.convo
-        console.log("Conversation data:", convoData)
-
-        // Set conversation name and members
-        if (convoData) {
-          // For group chats, use the group name. For DMs, use the other user's name
-          const otherMembers = convoData.members?.filter(
-            member => member.did !== session.did
-          ) || []
-
-          console.log(convoData)
-
-          if (convoData.name) {
-            setConvoName(convoData.name)
-          } else if (otherMembers.length === 1) {
-            setConvoName(otherMembers[0].displayName || otherMembers[0].handle || "Chat")
-          }
-
-          setConvoMembers(convoData.members || [])
-        }
-
-        // Fetch messages
-        const messagesResponse = await proxy.chat.bsky.convo.getMessages({
-          convoId: groupId as string
-        })
-
-        const messagesData = messagesResponse.data.messages || []
-
-        // Transform messages to GiftedChat format
-        const transformedMessages = await Promise.all(messagesData.map(async msg => {
-          // The sender is the current user if their DID matches the message sender
-          const isSelf = msg.sender?.did === session.did;
-
-          // check if we have an avatar for this user, if not, get it:
-          if (!profileImages[msg.sender?.did]) {
-            const profileImage = await getProfileImage(msg.sender?.did)
-            setProfileImages(prev => ({ ...prev, [msg.sender?.did]: profileImage }))
-          }
-
-          // get the profile image for the sender:
-          const profileImage = profileImages[msg.sender?.did] ?? `https://i.pravatar.cc/150?u=${msg.sender?.did}`
-
-          return {
-            _id: msg.id,
-            text: msg.text,
-            createdAt: new Date(msg.sentAt),
-            user: {
-              _id: msg.sender?.did || "unknown",
-              name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
-              avatar: profileImage
-            },
-          }
-        }))
-
-        setMessages(transformedMessages)
-      } catch (error) {
-        console.error("Error fetching messages:", error)
-        // Fallback to sample data for demo/testing
-        setMessages([
-          ...messageData.map((message: any) => {
-            return {
-              _id: message.id,
-              text: message.msg,
-              createdAt: new Date(message.date),
-              user: {
-                _id: message.from,
-                name: message.from ? "You" : "Bob",
-              },
-            }
-          }),
-          {
-            _id: 0,
-            system: true,
-            text: "Couldn't load messages from server, showing sample data",
-            createdAt: new Date(),
-            user: {
-              _id: 0,
-              name: "System",
-            },
-          },
-        ])
-      } finally {
-        setLoading(false)
-      }
+  const fetchMessages = async () => {
+    if (!session) {
+      console.error("No session or groupId found")
+      setLoading(false)
+      return
     }
 
+    try {
+      setLoading(true)
+      const agent = new Agent(session)
+      const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
+
+      // Fetch conversation details first
+      const convoResponse = await proxy.chat.bsky.convo.getConvo({
+        convoId: groupId as string
+      })
+
+      const convoData = convoResponse.data.convo
+      console.log("Conversation data:", convoData)
+
+      // Set conversation name and members
+      if (convoData) {
+        // For group chats, use the group name. For DMs, use the other user's name
+        const otherMembers = convoData.members?.filter(
+          member => member.did !== session.did
+        ) || []
+
+        console.log(convoData)
+
+        if (convoData.name) {
+          setConvoName(convoData.name)
+        } else if (otherMembers.length === 1) {
+          setConvoName(otherMembers[0].displayName || otherMembers[0].handle || "Chat")
+        }
+
+        setConvoMembers(convoData.members || [])
+      }
+
+      // Fetch messages
+      const messagesResponse = await proxy.chat.bsky.convo.getMessages({
+        convoId: groupId as string
+      })
+
+      const messagesData = messagesResponse.data.messages || []
+
+      // Transform messages to GiftedChat format
+      const transformedMessages = await Promise.all(messagesData.map(async msg => {
+        // The sender is the current user if their DID matches the message sender
+        const isSelf = msg.sender?.did === session.did;
+
+        // check if we have an avatar for this user, if not, get it:
+        if (!profileImages[msg.sender?.did]) {
+          const profileImage = await getProfileImage(msg.sender?.did)
+          setProfileImages(prev => ({ ...prev, [msg.sender?.did]: profileImage }))
+        }
+
+        // get the profile image for the sender:
+        const profileImage = profileImages[msg.sender?.did] ?? `https://i.pravatar.cc/150?u=${msg.sender?.did}`
+
+        return {
+          _id: msg.id,
+          text: msg.text,
+          createdAt: new Date(msg.sentAt),
+          user: {
+            _id: msg.sender?.did || "unknown",
+            name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
+            avatar: profileImage
+          },
+        }
+      }))
+
+      setMessages(transformedMessages)
+    } catch (error) {
+      console.error("Error fetching messages:", error)
+      // Fallback to sample data for demo/testing
+      setMessages([
+        ...messageData.map((message: any) => {
+          return {
+            _id: message.id,
+            text: message.msg,
+            createdAt: new Date(message.date),
+            user: {
+              _id: message.from,
+              name: message.from ? "You" : "Bob",
+            },
+          }
+        }),
+        {
+          _id: 0,
+          system: true,
+          text: "Couldn't load messages from server, showing sample data",
+          createdAt: new Date(),
+          user: {
+            _id: 0,
+            name: "System",
+          },
+        },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  } 
+
+  useEffect(() => {
     fetchMessages()
     startMessageListener()
   }, [groupId, session])
@@ -175,7 +175,7 @@ export default function Page() {
       // This is a simplified example - actual implementation will depend on API capabilities
       messageListenerRef.current = setInterval(async () => {
         // Only check for new messages if we're not already loading
-        if (loading || loadingMore) return
+        if (loading) return
 
         try {
           // Get latest messages (assume API supports getting messages since a specific timestamp)
