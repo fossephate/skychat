@@ -90,7 +90,6 @@ impl ConvoManager {
 
     pub fn process_raw_invite(
         &self,
-        sender_id: String,
         group_name: String,
         welcome_message: Vec<u8>,
         ratchet_tree: Option<Vec<u8>>,
@@ -99,7 +98,6 @@ impl ConvoManager {
         let mut inner = self.inner.lock().expect("Error locking inner");
 
         inner.process_raw_invite(
-            sender_id,
             group_name,
             welcome_message,
             ratchet_tree,
@@ -128,7 +126,7 @@ impl ConvoManager {
         let mut inner = self.inner.lock().expect("Error locking inner");
 
         let results = inner
-            .process_message(message, sender_id)
+            .process_message(message)
             .expect("Error processing message");
         Ok(results.into())
     }

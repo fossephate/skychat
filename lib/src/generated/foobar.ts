@@ -148,7 +148,6 @@ const FfiConverterTypeConvoChatWrapper = (() => {
 })();
 
 export type ConvoInviteWrapper = {
-  senderId: string;
   groupName: string;
   welcomeMessage: string;
   ratchetTree: ArrayBuffer | undefined;
@@ -191,7 +190,6 @@ const FfiConverterTypeConvoInviteWrapper = (() => {
   class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
     read(from: RustBuffer): TypeName {
       return {
-        senderId: FfiConverterString.read(from),
         groupName: FfiConverterString.read(from),
         welcomeMessage: FfiConverterString.read(from),
         ratchetTree: FfiConverterOptionalArrayBuffer.read(from),
@@ -200,7 +198,6 @@ const FfiConverterTypeConvoInviteWrapper = (() => {
       };
     }
     write(value: TypeName, into: RustBuffer): void {
-      FfiConverterString.write(value.senderId, into);
       FfiConverterString.write(value.groupName, into);
       FfiConverterString.write(value.welcomeMessage, into);
       FfiConverterOptionalArrayBuffer.write(value.ratchetTree, into);
@@ -209,7 +206,6 @@ const FfiConverterTypeConvoInviteWrapper = (() => {
     }
     allocationSize(value: TypeName): number {
       return (
-        FfiConverterString.allocationSize(value.senderId) +
         FfiConverterString.allocationSize(value.groupName) +
         FfiConverterString.allocationSize(value.welcomeMessage) +
         FfiConverterOptionalArrayBuffer.allocationSize(value.ratchetTree) +
@@ -223,9 +219,8 @@ const FfiConverterTypeConvoInviteWrapper = (() => {
 
 export type ConvoMessageWrapper = {
   globalIndex: /*u64*/ bigint;
-  senderId: string;
   unixTimestamp: /*u64*/ bigint;
-  message: ArrayBuffer | undefined;
+  encrypted: ArrayBuffer | undefined;
   invite: ConvoInviteWrapper | undefined;
 };
 
@@ -265,25 +260,22 @@ const FfiConverterTypeConvoMessageWrapper = (() => {
     read(from: RustBuffer): TypeName {
       return {
         globalIndex: FfiConverterUInt64.read(from),
-        senderId: FfiConverterString.read(from),
         unixTimestamp: FfiConverterUInt64.read(from),
-        message: FfiConverterOptionalArrayBuffer.read(from),
+        encrypted: FfiConverterOptionalArrayBuffer.read(from),
         invite: FfiConverterOptionalTypeConvoInviteWrapper.read(from),
       };
     }
     write(value: TypeName, into: RustBuffer): void {
       FfiConverterUInt64.write(value.globalIndex, into);
-      FfiConverterString.write(value.senderId, into);
       FfiConverterUInt64.write(value.unixTimestamp, into);
-      FfiConverterOptionalArrayBuffer.write(value.message, into);
+      FfiConverterOptionalArrayBuffer.write(value.encrypted, into);
       FfiConverterOptionalTypeConvoInviteWrapper.write(value.invite, into);
     }
     allocationSize(value: TypeName): number {
       return (
         FfiConverterUInt64.allocationSize(value.globalIndex) +
-        FfiConverterString.allocationSize(value.senderId) +
         FfiConverterUInt64.allocationSize(value.unixTimestamp) +
-        FfiConverterOptionalArrayBuffer.allocationSize(value.message) +
+        FfiConverterOptionalArrayBuffer.allocationSize(value.encrypted) +
         FfiConverterOptionalTypeConvoInviteWrapper.allocationSize(value.invite)
       );
     }
@@ -823,7 +815,6 @@ export interface ConvoManagerInterface {
     senderId: string | undefined
   ) /*throws*/ : ProcessedResultsWrapper;
   processRawInvite(
-    senderId: string,
     groupName: string,
     welcomeMessage: ArrayBuffer,
     ratchetTree: ArrayBuffer | undefined,
@@ -1216,7 +1207,6 @@ export class ConvoManager
   }
 
   public processRawInvite(
-    senderId: string,
     groupName: string,
     welcomeMessage: ArrayBuffer,
     ratchetTree: ArrayBuffer | undefined,
@@ -1226,7 +1216,6 @@ export class ConvoManager
       /*caller:*/ (callStatus) => {
         nativeModule().ubrn_uniffi_foobar_fn_method_convomanager_process_raw_invite(
           uniffiTypeConvoManagerObjectFactory.clonePointer(this),
-          FfiConverterString.lower(senderId),
           FfiConverterString.lower(groupName),
           FfiConverterArrayBuffer.lower(welcomeMessage),
           FfiConverterOptionalArrayBuffer.lower(ratchetTree),
@@ -1568,7 +1557,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_foobar_checksum_method_convomanager_process_raw_invite() !==
-    54618
+    34162
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_foobar_checksum_method_convomanager_process_raw_invite'

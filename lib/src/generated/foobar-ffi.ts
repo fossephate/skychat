@@ -137,7 +137,6 @@ interface NativeModuleInterface {
   ): Uint8Array;
   ubrn_uniffi_foobar_fn_method_convomanager_process_raw_invite(
     ptr: bigint,
-    senderId: Uint8Array,
     groupName: Uint8Array,
     welcomeMessage: Uint8Array,
     ratchetTree: Uint8Array,

@@ -154,8 +154,8 @@ RustBuffer uniffi_foobar_fn_method_convomanager_process_message(
     void *ptr, RustBuffer message, RustBuffer sender_id,
     RustCallStatus *uniffi_out_err);
 void uniffi_foobar_fn_method_convomanager_process_raw_invite(
-    void *ptr, RustBuffer sender_id, RustBuffer group_name,
-    RustBuffer welcome_message, RustBuffer ratchet_tree, RustBuffer key_package,
+    void *ptr, RustBuffer group_name, RustBuffer welcome_message,
+    RustBuffer ratchet_tree, RustBuffer key_package,
     RustCallStatus *uniffi_out_err);
 void uniffi_foobar_fn_method_convomanager_reject_pending_invite(
     void *ptr, RustBuffer welcome_message, RustCallStatus *uniffi_out_err);
@@ -1984,7 +1984,7 @@ NativeFoobar::NativeFoobar(
           jsi::PropNameID::forAscii(
               rt,
               "ubrn_uniffi_foobar_fn_method_convomanager_process_raw_invite"),
-          6,
+          5,
           [this](jsi::Runtime &rt, const jsi::Value &thisVal,
                  const jsi::Value *args, size_t count) -> jsi::Value {
             return this
@@ -2729,7 +2729,6 @@ NativeFoobar::cpp_uniffi_foobar_fn_method_convomanager_process_raw_invite(
       uniffi::foobar::Bridging<RustBuffer>::fromJs(rt, callInvoker, args[2]),
       uniffi::foobar::Bridging<RustBuffer>::fromJs(rt, callInvoker, args[3]),
       uniffi::foobar::Bridging<RustBuffer>::fromJs(rt, callInvoker, args[4]),
-      uniffi::foobar::Bridging<RustBuffer>::fromJs(rt, callInvoker, args[5]),
       &status);
   uniffi::foobar::Bridging<RustCallStatus>::copyIntoJs(rt, callInvoker, status,
                                                        args[count - 1]);
