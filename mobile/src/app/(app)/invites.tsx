@@ -6,16 +6,14 @@ import {
   ImageStyle,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
-  TouchableOpacity,
   Image
 } from "react-native"
 import { Screen, Text, ListItem, Header } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
 import { translate } from "@/i18n"
 import { FontAwesome } from '@expo/vector-icons'  // Fixed import
-import { colors, ThemedStyle } from "@/theme"
-import { useConvo } from "@/contexts/ConvoContext"
+import { ThemedStyle } from "@/theme"
+import { useConvo } from 'skychat-lib';
 import { useAuth } from "@/contexts/AuthContext"
 import { Agent } from "@atproto/api"
 import { router } from "expo-router"

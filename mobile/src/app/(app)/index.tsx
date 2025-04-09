@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { observer } from "mobx-react-lite"
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
-import { useConvo } from "@/contexts/ConvoContext";
+import { useConvo } from 'skychat-lib';
 
 export default function LoadingScreen() {
   const authContext = useAuth();
@@ -33,7 +33,7 @@ export default function LoadingScreen() {
         let userId = session.sub;
 
         try {
-          await convoContext.initAndConnect(SKYCHAT_SERVER_URL, userId);
+          // await convoContext.initAndConnect(SKYCHAT_SERVER_URL, userId);
         } catch (e) {
           console.error("Failed to initialize convo client", e);
           // TODO: handle this better: ¯\_(ツ)_/¯

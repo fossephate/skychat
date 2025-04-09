@@ -1,7 +1,6 @@
 // ChatMessageBox.tsx
 import { useAppTheme } from '@/utils/useAppTheme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
 import { View, StyleSheet, Animated, Text } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { IMessage, Message, MessageProps } from 'react-native-gifted-chat';
@@ -53,20 +52,20 @@ const ChatMessageBox = ({ setReplyOnSwipeOpen, updateRowRef, replyToMessage, ...
     }
   };
 
-  const isReplyMessage = props.currentMessage?.replyTo;
+  // const isReplyMessage = props.currentMessage?.replyTo;
 
   return (
     <GestureHandlerRootView>
       <View style={styles.messageContainer}>
         {/* Reply Connection Line */}
-        {isReplyMessage && (
+        {/* {isReplyMessage && (
           <View style={[
             styles.replyLine,
             props.position === 'left' ? styles.replyLineLeft : styles.replyLineRight,
           ]} />
-        )}
+        )} */}
 
-        {/* Reply Header */}
+        {/* Reply Header
         {isReplyMessage && (
           <View style={[
             styles.replyHeader,
@@ -81,7 +80,7 @@ const ChatMessageBox = ({ setReplyOnSwipeOpen, updateRowRef, replyToMessage, ...
               {props.currentMessage?.replyTo.user.name}
             </Text>
           </View>
-        )}
+        )} */}
 
         <Swipeable
           ref={updateRowRef}

@@ -2,17 +2,18 @@ import React, { useEffect } from 'react';
 import { router } from 'expo-router';
 import { ReactNativeOAuthClient, TokenInvalidError, TokenRefreshError, TokenRevokedError } from "@aquareum/atproto-oauth-client-react-native";
 import { useAuth } from '@/contexts/AuthContext';
-import { useConvo } from '@/contexts/ConvoContext';
+import { useConvo } from 'skychat-lib';
 
 // doesn't work in production for some reason??:
 // import { AUTH_SERVER_URL, SKYCHAT_SERVER_URL } from "@/env";
 const AUTH_SERVER_URL = "https://auth.fosse.co";
 const SKYCHAT_SERVER_URL = "https://skychat.fosse.co";
 
-export function AppInitializer() {
+export function AppInitializer(): JSX.Element {
   const authContext = useAuth();
+  console.log("AAAAAAAAAAAAA");
   const convoContext = useConvo();
-
+  console.log("BBBBBBBBBBBBB");
   useEffect(() => {
     const initializeApp = async () => {
       let authClient = new ReactNativeOAuthClient({

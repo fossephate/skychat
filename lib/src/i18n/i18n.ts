@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import * as Localization from "expo-localization"
 import { I18nManager } from "react-native"
 import i18n from "i18next"

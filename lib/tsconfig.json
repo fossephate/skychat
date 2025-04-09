@@ -1,8 +1,16 @@
 {
   "compilerOptions": {
     "rootDir": ".",
+    "baseUrl": ".",
     "paths": {
-      "skychat-lib": ["./src/index"]
+      "skychat-lib": ["./src/index"],
+      "@/*": [
+        "./src/*"
+      ],
+      "assets/*": [
+        "./assets/*"
+      ],
+      "src/*": ["src/*"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

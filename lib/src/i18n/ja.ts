@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import { Translations } from "./en"
 
 const ja: Translations = {

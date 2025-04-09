@@ -1,3 +1,4 @@
+// @ts-ignore
 import { Edge, useSafeAreaInsets } from "react-native-safe-area-context"
 
 export type ExtendedEdge = Edge | "start" | "end"
@@ -41,6 +42,7 @@ export function useSafeAreaInsetsStyle<
 
   return safeAreaEdges.reduce((acc, e) => {
     const value = edgeInsetMap[e] ?? e
+    // @ts-ignoreq
     return { ...acc, [`${property}${propertySuffixMap[e]}`]: insets[value] }
   }, {}) as SafeAreaInsetsStyle<Property, Edges>
 }

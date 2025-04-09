@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { AuthProvider } from './AuthContext';
-import { ConvoProvider } from './ConvoContext';
+import { ConvoProvider } from 'skychat-lib';
 import { SplashScreen, router } from 'expo-router';
 
 interface AppProviderProps {
@@ -24,6 +24,8 @@ export function AppProvider({ children, loaded }: AppProviderProps) {
   if (!loaded) {
     return null;
   }
+
+  console.log("ConvoProvider", ConvoProvider);
 
   return (
     <AuthProvider>

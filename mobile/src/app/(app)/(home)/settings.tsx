@@ -7,7 +7,7 @@ import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useAuth } from "@/contexts/AuthContext";
-import { useConvo } from "@/contexts/ConvoContext";
+import { useConvo } from 'skychat-lib';
 
 export default function SettingsScreen() {
 

@@ -1,10 +1,9 @@
-import { router } from "expo-router";
-import { Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
+import { Image, TextStyle, View, ViewStyle } from "react-native";
 import { ThemedStyle } from "@/theme";
 import { ListItem } from "src/components/ListItem";
 import { Text } from "src/components";
 import { useAppTheme } from "@/utils/useAppTheme";
-import { useConvo } from "@/contexts/ConvoContext";
+import { useConvo } from '@/contexts/ConvoContext';
 
 export interface User {
   id: string
@@ -31,10 +30,16 @@ export interface Chat {
   muted?: boolean
 }
 
+const avatarStyle = {
+  width: 48,
+  height: 48,
+  borderRadius: 25,
+}
+
 const renderChatAvatar = (chat: Chat) => {
   const { themed } = useAppTheme();
   const convoContext = useConvo()
-  const client = convoContext.client
+  const client = convoContext?.client
   const ownId = client?.id;
   const isDM = chat.members.length = 2
 
@@ -51,11 +56,11 @@ const renderChatAvatar = (chat: Chat) => {
   if (isDM && otherMember) {
     return (
       <View style={themed($avatarContainer)}>
-        <Image source={{ uri: otherMember.avatar }} style={themed($avatar)} />
+        <Image source={{ uri: otherMember.avatar }} style={avatarStyle} />
       </View>
     )
   }
-  
+
   return (
     <View style={themed($avatarContainer)}>
       {/* <View style={themed($avatar)}>
@@ -63,7 +68,7 @@ const renderChatAvatar = (chat: Chat) => {
           {chat.name?.[0]?.toUpperCase() || getChatName(chat, SELF_USER.id)[0]}
         </Text>
       </View> */}
-      <Image source={{ uri: selfMember?.avatar || "https://i.pravatar.cc/150?u=self" }} style={themed($avatar)} />
+      <Image source={{ uri: selfMember?.avatar || "https://i.pravatar.cc/150?u=self" }} style={avatarStyle} />
       {!isDM && (
         <View style={themed($memberCount)}>
           <Text style={themed($memberCountText)}>{chat.members.length}</Text>
@@ -95,7 +100,7 @@ const renderChatAvatar = (chat: Chat) => {
 // }
 
 // Convert to a proper React component
-const ChatItem = ({ item: chat }: { item: Chat }) => {
+export const ChatItem = ({ item: chat }: { item: Chat }) => {
   const { themed } = useAppTheme();
   return (
     <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
@@ -106,11 +111,12 @@ const ChatItem = ({ item: chat }: { item: Chat }) => {
           !chat.lastMessage?.read && themed($unreadChatName),
         ]}
         onPress={() => {
-          if (chat.isBsky) {
-            router.push(`/bskychats/${chat.id}` as any)
-          } else {
-            router.push(`/chats/${chat.id}` as any)
-          }
+          // if (chat.isBsky) {
+          //   router.push(`/bskychats/${chat.id}` as any)
+          // } else {
+          //   router.push(`/chats/${chat.id}` as any)
+          // }
+          console.log("chat", chat);
         }}
 
         RightComponent={
@@ -145,9 +151,6 @@ const ChatItem = ({ item: chat }: { item: Chat }) => {
     </View>
   );
 };
-
-// Export the component instead of the render function
-export { ChatItem };
 
 const $onlineBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({
   position: "absolute",

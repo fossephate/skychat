@@ -1,4 +1,4 @@
-import { save, load, remove, clear } from "@/utils/storage";
+import { save, load, remove, clear } from "./storage";
 import { SerializedCredentialsWrapper } from 'skychat-lib';
 
 // Constants for storage keys
@@ -11,7 +11,7 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+    binary += String.fromCharCode(bytes[i] ?? 0);
   }
   return btoa(binary);
 };
@@ -111,7 +111,7 @@ export const loadManagerStateFromStorage = async (): Promise<SerializedCredentia
       console.log('No manager state found in storage');
       return null;
     }
-    
+
     return restoreCredentialsFromStorage(storableState);
   } catch (error) {
     console.error('Error loading manager state from storage:', error);

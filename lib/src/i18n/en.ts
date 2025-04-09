@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 const en = {
   common: {
     ok: "OK!",

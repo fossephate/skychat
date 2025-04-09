@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { StyleProp, useColorScheme } from "react-native"
 import { DarkTheme, DefaultTheme, useTheme as useNavTheme } from "@react-navigation/native"
@@ -40,7 +41,7 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
   }, [])
 
   const themeScheme = overrideTheme || colorScheme || "light"
-  const navigationTheme = themeScheme === "dark" ? DarkTheme : DefaultTheme
+  const navigationTheme: any = themeScheme === "dark" ? DarkTheme : DefaultTheme
 
   useEffect(() => {
     setImperativeTheming(themeContextToTheme(themeScheme))

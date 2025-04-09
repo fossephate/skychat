@@ -3,68 +3,24 @@ import {
   View,
   ViewStyle,
   TextStyle,
-  FlatList,
-  Image,
-  ImageStyle,
-  TextInput,
-  TouchableOpacity,
-  Modal,
   ScrollView,
   RefreshControl,
   SectionList,
 } from "react-native"
-import { Screen, Text, ListItem, TextField, Button } from "src/components"
-import { useRouter } from "expo-router"
+import { Screen, Text, Button } from "src/components"
 import { router } from "expo-router"
-import { Chat, ChatItem, User } from "src/components/Chat/ChatItem"
+import { ChatList, Chat, User } from "skychat-lib"
 import { colors, spacing, ThemedStyle } from "src/theme"
 import { useAppTheme } from "src/utils/useAppTheme"
-import { useConvo } from "@/contexts/ConvoContext"
+import { useConvo } from 'skychat-lib';
 import { useAuth } from "@/contexts/AuthContext"
 import { Agent } from "@atproto/api"
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-
-// Generate realistic chats data
-
-// Generate dummy users
-const generateUsers = (): User[] => [
-  {
-    id: "u1",
-    displayName: "Alice Smith",
-    avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
-    online: true,
-    verified: false,
-  },
-  {
-    id: "u2",
-    displayName: "Bob Johnson",
-    avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
-    online: false,
-    verified: false,
-  },
-  ...Array(20)
-    .fill(null)
-    .map((_, index) => ({
-      id: `u${index + 3}`,
-      displayName: `User ${index + 3}`,
-      avatar: `https://i.pravatar.cc/150?u=user${index + 3}${Math.random()}`,
-      online: Math.random() > 0.7,
-      verified: Math.random() > 0.8,
-    })),
-]
-
-const SELF_USER: User = {
-  id: "self",
-  displayName: "You",
-  avatar: "https://i.pravatar.cc/150?u=self",
-}
 
 export default function chatsScreen() {
   const [searchQuery, setSearchQuery] = useState("")
   const [bskychats, setBskychats] = useState<Chat[]>([])
   const [skychats, setSkychats] = useState<Chat[]>([])
-  const [users] = useState(generateUsers())
-  const [composeDrawerOpen, setComposeDrawerOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const { themed } = useAppTheme()
   const convoContext = useConvo()
@@ -183,8 +139,6 @@ export default function chatsScreen() {
     }
   }
 
-
-
   async function fetchSkychats() {
     console.log("chats.tsx: fetching skychats")
 
@@ -201,25 +155,20 @@ export default function chatsScreen() {
     // const transformedChats = await Promise.all(chats.map(async (chat) => {
 
     //   let members = [];
-
     //   for (const memberId of chat.members) {
     //     var userProfile = memberProfiles.get(memberId);
-
     //     if (!userProfile) {
     //       userProfile = await fetchUserProfile(memberId);
     //       memberProfiles.set(memberId, userProfile);
     //     }
-
     //     if (userProfile) {
     //       members.push(userProfile);
     //     }
     //   }
-
     //   for (const member of members) {
     //     console.log("member", member)
     //   }
     //   console.log("members", members)
-
     //   return {
     //     id: Buffer.from(chat.id).toString('base64'),
     //     name: chat.name,
@@ -238,39 +187,33 @@ export default function chatsScreen() {
       let members = [];
 
       // technically this is an error state but might as well handle it gracefullyish:
-      if (chat.members.length < 2) {
-        const id = convoContext.client?.id;
-        if (id) {
-          const userProfile = await fetchUserProfile(id);
-          members.push(userProfile);
-          members.push(userProfile);
-        } else {
-          // add mock members just so the ui doesn't break:
-          members.push({
-            id: id,
-            displayName: "You",
-            avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
-          });
-          members.push({
-            id: "self",
-            displayName: "You",
-            avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
-          });
-        }
-      }
+      // if (chat.members.length < 2) {
+      //   const id = convoContext.client?.id;
+      //   if (id) {
+      //     const userProfile = await fetchUserProfile(id);
+      //     members.push(userProfile);
+      //     members.push(userProfile);
+      //   } else {
+      //     // add mock members just so the ui doesn't break:
+      //     members.push({
+      //       id: id,
+      //       displayName: "You",
+      //       avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
+      //     });
+      //     members.push({
+      //       id: "self",
+      //       displayName: "You",
+      //       avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
+      //     });
+      //   }
+      // }
 
 
       for (const memberId of chat.members) {
         var userProfile = memberProfiles.get(memberId);
-
-        // if (memberId === convoContext.client?.id) {
-        //   continue;
-        // }
-
         if (!userProfile) {
           userProfile = await fetchUserProfile(memberId);
         }
-
         if (userProfile) {
           members.push(userProfile);
         }
@@ -402,7 +345,7 @@ export default function chatsScreen() {
         />
       </View> */}
 
-      {sections.length > 0 ? (
+      {/* {sections.length > 0 ? (
         <SectionList
           sections={sections}
           renderItem={({ item }) => <ChatItem item={item} />}
@@ -417,7 +360,7 @@ export default function chatsScreen() {
         />
       ) : (
         <EmptyListComponent />
-      )}
+      )} */}
     </Screen>
   )
 }
