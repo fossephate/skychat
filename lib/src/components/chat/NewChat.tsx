@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { View, ViewStyle, TextStyle, Image, ImageStyle, Modal, TouchableOpacity, Dimensions } from "react-native"
-import { ListView, Screen, Text, Button, Icon, TextField } from "src/components"
+import { ListView, Text, Button, Icon, TextField } from "src/components"
 import { ThemedStyle } from "src/theme"
 import { Agent } from '@atproto/api'
 import { useAppTheme } from "src/utils/useAppTheme"
@@ -90,7 +90,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewCh
       }))
 
       // filter out our own profile:
-      formattedUsers = formattedUsers.filter(user => user.id !== authContext.session?.did)
+      formattedUsers = formattedUsers.filter(user => user.id !== did)
 
       setState(prev => ({
         ...prev,
@@ -290,10 +290,11 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewCh
     >
       <View style={[themed($modalContainer), { paddingTop: insets.top }]}>
         <GestureHandlerRootView>
-          <Screen
+          {/* <Screen
             preset="fixed"
             contentContainerStyle={themed($screenContainer)}
-          >
+          > */}
+
 
             <View style={themed($header)}>
               <TouchableOpacity
@@ -395,7 +396,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewCh
             /> */}
             </View>
 
-          </Screen>
+          {/* </Screen> */}
         </GestureHandlerRootView>
       </View>
     </Modal>

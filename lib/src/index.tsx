@@ -38,3 +38,5 @@ export { ChatList } from './components/chat/ChatList';
 // export type { ChatListProps } from './components/chat/ChatList';
 export { ChatItem, User, Chat } from './components/chat/ChatItem';
 export { NewChatModal } from './components/chat/NewChat';
+export { BskyChat } from './components/chat/BskyChat';
+export { useThemeProvider as useChatThemeProvider } from './utils/useAppTheme';

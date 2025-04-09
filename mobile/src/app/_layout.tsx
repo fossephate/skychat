@@ -8,6 +8,7 @@ import { useThemeProvider } from "@/utils/useAppTheme";
 import { useFonts } from "expo-font";
 import { AppProvider } from '@/contexts/AppProvider';
 import { AppInitializer } from '@/components/AppInitializer';
+import { useChatThemeProvider } from "skychat-lib";
 
 SplashScreen.preventAutoHideAsync()
 
@@ -24,6 +25,7 @@ export default function Root() {
   const [fontsLoaded, fontError] = useFonts(customFontsToLoad)
   const [isI18nInitialized, setIsI18nInitialized] = useState(false)
   const { themeScheme, setThemeContextOverride, ThemeProvider } = useThemeProvider()
+  const { ThemeProvider: ChatThemeProvider } = useChatThemeProvider()
 
   useEffect(() => {
     initI18n()
@@ -43,10 +45,12 @@ export default function Root() {
 
   return (
     <ThemeProvider value={{ themeScheme, setThemeContextOverride }}>
+      <ChatThemeProvider value={{ themeScheme, setThemeContextOverride }}>
       <AppProvider loaded={loaded}>
         <AppInitializer />
-        <Stack screenOptions={{ headerShown: false }} />
-      </AppProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </AppProvider>
+      </ChatThemeProvider>
     </ThemeProvider>
   );
 }

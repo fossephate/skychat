@@ -194,11 +194,11 @@ export default function UsersScreen() {
         />
       </Screen>
 
-      <NewChatModal
+      {/* <NewChatModal
         isVisible={isNewChatModalVisible}
         onClose={() => setIsNewChatModalVisible(false)}
         onSubmit={handleNewChat}
-      />
+      /> */}
 
       <Button
         style={themed($fabButton)}

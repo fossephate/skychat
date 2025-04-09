@@ -89,5 +89,5 @@ export function AppInitializer(): JSX.Element {
     initializeApp();
   }, []);
 
-  return null;
+  return <></>;
 } 

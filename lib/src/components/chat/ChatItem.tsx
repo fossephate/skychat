@@ -100,7 +100,7 @@ const renderChatAvatar = (chat: Chat) => {
 // }
 
 // Convert to a proper React component
-export const ChatItem = ({ item: chat }: { item: Chat }) => {
+export const ChatItem = ({ item: chat, onPress }: { item: Chat, onPress: (chat: Chat) => void }) => {
   const { themed } = useAppTheme();
   return (
     <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
@@ -111,12 +111,7 @@ export const ChatItem = ({ item: chat }: { item: Chat }) => {
           !chat.lastMessage?.read && themed($unreadChatName),
         ]}
         onPress={() => {
-          // if (chat.isBsky) {
-          //   router.push(`/bskychats/${chat.id}` as any)
-          // } else {
-          //   router.push(`/chats/${chat.id}` as any)
-          // }
-          console.log("chat", chat);
+          onPress(chat);
         }}
 
         RightComponent={
