@@ -8,7 +8,7 @@ import {
   saveManagerStateToStorage,
   loadManagerStateFromStorage,
   clearManagerStateFromStorage
-} from '@/utils/storage/credential-storage';
+} from '../utils/storage/credential-storage';
 
 // Define the types for our messages and groups
 interface Message {

@@ -11,9 +11,8 @@ const SKYCHAT_SERVER_URL = "https://skychat.fosse.co";
 
 export function AppInitializer(): JSX.Element {
   const authContext = useAuth();
-  console.log("AAAAAAAAAAAAA");
   const convoContext = useConvo();
-  console.log("BBBBBBBBBBBBB");
+
   useEffect(() => {
     const initializeApp = async () => {
       let authClient = new ReactNativeOAuthClient({

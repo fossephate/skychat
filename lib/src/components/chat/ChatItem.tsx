@@ -3,7 +3,7 @@ import { ThemedStyle } from "@/theme";
 import { ListItem } from "src/components/ListItem";
 import { Text } from "src/components";
 import { useAppTheme } from "@/utils/useAppTheme";
-import { useConvo } from '@/contexts/ConvoContext';
+import { useConvo } from '../../contexts/ConvoContext';
 
 export interface User {
   id: string
