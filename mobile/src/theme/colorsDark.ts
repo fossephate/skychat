@@ -16,7 +16,8 @@ const palette = {
   primary200: "#136B9E",
   primary100: "#0F547D",
 
-  secondary500: "#D9E8F5",
+  // secondary500: "#D9E8F5",
+  secondary500: "#1E2936",
   secondary400: "#B3D1E8",
   secondary300: "#8CB9DB",
   secondary200: "#66A2CE",

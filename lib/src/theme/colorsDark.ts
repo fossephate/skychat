@@ -1,6 +1,6 @@
 const palette = {
   neutral900: "#FFFFFF",
-  neutral800: "#F4F2F1", 
+  neutral800: "#F4F2F1",
   neutral700: "#E1E8ED",
   neutral600: "#AAB8C2",
   neutral500: "#657786",
@@ -16,7 +16,8 @@ const palette = {
   primary200: "#136B9E",
   primary100: "#0F547D",
 
-  secondary500: "#D9E8F5",
+  // secondary500: "#D9E8F5",
+  secondary500: "#1E2936",
   secondary400: "#B3D1E8",
   secondary300: "#8CB9DB",
   secondary200: "#66A2CE",
@@ -25,7 +26,7 @@ const palette = {
   accent500: "#E8F7FF",
   accent400: "#BFE8FF",
   accent300: "#99D8FF",
-  accent200: "#70C9FF", 
+  accent200: "#70C9FF",
   accent100: "#47B9FF",
 
   angry100: "#FFE8EC",

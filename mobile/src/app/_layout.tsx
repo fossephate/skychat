@@ -25,7 +25,7 @@ export default function Root() {
   const [fontsLoaded, fontError] = useFonts(customFontsToLoad)
   const [isI18nInitialized, setIsI18nInitialized] = useState(false)
   const { themeScheme, setThemeContextOverride, ThemeProvider } = useThemeProvider()
-  const { ThemeProvider: ChatThemeProvider } = useChatThemeProvider()
+  const { themeScheme: chatThemeScheme, setThemeContextOverride: setChatThemeContextOverride, ThemeProvider: ChatThemeProvider } = useChatThemeProvider()
 
   useEffect(() => {
     initI18n()
@@ -45,7 +45,7 @@ export default function Root() {
 
   return (
     <ThemeProvider value={{ themeScheme, setThemeContextOverride }}>
-      <ChatThemeProvider value={{ themeScheme, setThemeContextOverride }}>
+      <ChatThemeProvider value={{ themeScheme: chatThemeScheme, setThemeContextOverride: setChatThemeContextOverride }}>
       <AppProvider loaded={loaded}>
         <AppInitializer />
           <Stack screenOptions={{ headerShown: false }} />

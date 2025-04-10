@@ -73,6 +73,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [searchQuery, setSearchQuery] = useState("")
   const [bskyChats, setBskyChats] = useState<Chat[]>([]);
   const [skyChats, setSkyChats] = useState<Chat[]>([]);
+  const [bskyChatRequests, setBskyChatRequests] = useState<Chat[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map());
@@ -117,8 +118,10 @@ export const ChatList: React.FC<ChatListProps> = ({
   const fetchBskyChats = async () => {
     try {
       const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat");
-      const response = await proxy.chat.bsky.convo.listConvos();
-      const convos = response.data.convos;
+      // @ts-ignore
+      const convoRequests = (await proxy.chat.bsky.convo.listConvos({ status: "request" })).data.convos;
+      // @ts-ignore
+      const convos = (await proxy.chat.bsky.convo.listConvos({ status: "accepted" })).data.convos;
 
       if (!convos.length) {
         setBskyChats([]);
@@ -131,7 +134,7 @@ export const ChatList: React.FC<ChatListProps> = ({
           id: member.did,
           displayName: member.displayName || member.handle,
           avatar: member.avatar,
-          verified: !!member.verified,
+          // verified: !!member.verified,
           handle: member.handle,
         }));
 
@@ -165,9 +168,53 @@ export const ChatList: React.FC<ChatListProps> = ({
       }));
 
       setBskyChats(transformedChats as Chat[]);
+
+      const transformedChatRequests = await Promise.all(convoRequests.map(async (convo) => {
+        // Extract members
+        const memberUsers = convo.members.map((member) => ({
+          id: member.did,
+          displayName: member.displayName || member.handle,
+          avatar: member.avatar,
+          // verified: !!member.verified,
+          handle: member.handle,
+        }));
+
+        // Update member profiles
+        memberUsers.forEach(member => {
+          if (!memberProfiles.has(member.id)) {
+            setMemberProfiles(prev => new Map(prev).set(member.id, member));
+          }
+        });
+
+        // Find other user (not current user)
+        let handle;
+        let name;
+        for (const member of memberUsers) {
+          if (member.id !== userDid) {
+            handle = member.handle;
+            name = member.displayName;
+            break;
+          }
+        }
+
+        return {
+          id: convo.id,
+          name: name,
+          handle: handle,
+          members: memberUsers,
+          lastMessage: convo.lastMessage,
+          unreadCount: convo.unreadCount || 0,
+          isBsky: true,
+        };
+      }));
+
+      // setSkyChats(transformedChatRequests as Chat[]);
+      setBskyChatRequests(transformedChatRequests as Chat[]);
+
     } catch (error) {
       console.error("Error fetching Bsky conversations:", error);
     }
+
   };
 
   // Refresh function
@@ -292,13 +339,32 @@ export const ChatList: React.FC<ChatListProps> = ({
       )} */}
 
 
-      {showInvitesBanner && <Button style={themed($invitesBanner)} onPress={onInvitesPress}>
+      {/* {showInvitesBanner && <Button style={themed($invitesBanner)} onPress={onInvitesPress}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", flex: 1, width: "100%" }}>
           <View style={{ flexDirection: "row" }}>
-            <FontAwesome name="envelope" size={24} style={themed($invitesBannerIcon)} />
+            <FontAwesome name="envelope" size={14} style={themed($invitesBannerIcon)} />
             <Text tx="chatsScreen:chatRequests" preset="bold" />
           </View>
-          <FontAwesome name="chevron-right" size={24} style={themed($invitesBannerIcon)} />
+          <FontAwesome name="chevron-right" size={14} style={themed($invitesBannerIcon)} />
+        </View>
+      </Button>} */}
+
+
+      {showInvitesBanner && <Button style={themed($invitesBanner)} onPress={onInvitesPress}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", flex: 1, width: "100%" }}>
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={themed($invitesEnvelope)}>
+              <FontAwesome name="envelope" size={14} style={themed($invitesBannerIcon)} />
+              {bskyChatRequests.length > 0 && (
+                <View style={themed($notificationDot)} />
+              )}
+            </View>
+            <Text tx="chatsScreen:chatRequests" />
+          </View>
+          <View style={{ alignItems: "center" }}>
+            <FontAwesome name="chevron-right" size={14} style={{ ...themed($invitesBannerIcon), marginTop: 6 }} />
+          </View>
         </View>
       </Button>}
 
@@ -314,7 +380,7 @@ export const ChatList: React.FC<ChatListProps> = ({
       {sections.length > 0 ? (
         <SectionList
           sections={sections}
-          renderItem={({ item }) => <ChatItem item={item} onPress={onChatPress ?? (() => {})} />}
+          renderItem={({ item }) => <ChatItem item={item} onPress={onChatPress ?? (() => { })} />}
           renderSectionHeader={renderSectionHeader}
           keyExtractor={(item) => item.id}
           contentContainerStyle={themed($listContent)}
@@ -340,19 +406,37 @@ const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
 
 const $invitesBanner: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
+  paddingVertical: 1,
   marginBottom: spacing.md,
-  // border: 0,
-  backgroundColor: colors.palette.secondary400,
+  border: 0,
+  borderRadius: 0,
+  backgroundColor: colors.palette.secondary500,
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
   width: "100%",
+  minHeight: 40,
 })
 
 const $invitesBannerIcon: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   marginRight: spacing.sm,
   color: colors.text,
+  padding: 0,
+})
+
+const $notificationDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  position: "absolute",
+  top: -2,
+  right: 2,
+  width: 8,
+  height: 8,
+  borderRadius: 4,
+  backgroundColor: colors.error,
+})
+
+const $invitesEnvelope: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  position: "relative",
+  marginRight: spacing.md,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({

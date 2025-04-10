@@ -81,6 +81,10 @@ export default function UsersScreen() {
     console.log('Group name:', groupName)
     console.log("getting groups with users: ", selectedUsers)
 
+    if (!convoContext) {
+      console.error('No convo context found')
+      return
+    }
 
     if (!convoContext.client?.id) {
       console.error('No client id found')

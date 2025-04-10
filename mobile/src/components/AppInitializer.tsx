@@ -73,6 +73,9 @@ export function AppInitializer(): JSX.Element {
         let userId = session.sub;
 
         try {
+          if (!convoContext) {
+            throw new Error("Convo context is not initialized");
+          }
           await convoContext.initAndConnect(SKYCHAT_SERVER_URL, userId);
         } catch (e) {
           console.error("Failed to initialize convo client", e);
