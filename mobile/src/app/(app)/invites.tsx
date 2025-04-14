@@ -17,6 +17,7 @@ import { useConvo } from 'skychat-lib';
 import { useAuth } from "@/contexts/AuthContext"
 import { Agent } from "@atproto/api"
 import { router } from "expo-router"
+import { ChatRequestsList } from "skychat-lib"
 
 interface Invite {
   senderId: string
@@ -200,17 +201,32 @@ export default function InvitesScreen() {
     )
   }
 
-  // Create a refreshable empty list component
-  const EmptyListComponent = () => (
-    <ScrollView
-      contentContainerStyle={themed($emptyContainer)}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <Text tx="chatRequestsScreen:empty" style={themed($emptyText)} />
-    </ScrollView>
-  )
+  // // Create a refreshable empty list component
+  // const EmptyListComponent = () => (
+  //   <ScrollView
+  //     contentContainerStyle={themed($emptyContainer)}
+  //     refreshControl={
+  //       <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  //     }
+  //   >
+  //     <Text tx="chatRequestsScreen:empty" style={themed($emptyText)} />
+  //   </ScrollView>
+  // )
+
+  const { session } = authContext;
+  if (!session) {
+    console.error("No session found")
+    router.push("/login")
+    return <></>
+  }
+  const sessionDid = session.did.toString();
+  if (!sessionDid) {
+    console.error("No session did found")
+    router.push("/login")
+    return <></>
+  }
+
+  const agent = new Agent(session)
 
   return (
     <Screen
@@ -222,7 +238,7 @@ export default function InvitesScreen() {
       </View> */}
       <Header title={translate("chatRequestsScreen:title")} leftIcon="back" onLeftPress={() => router.back()} />
 
-      {
+      {/* {
         invites.length > 0 ? (
           <ScrollView
             contentContainerStyle={themed($content)}
@@ -235,7 +251,15 @@ export default function InvitesScreen() {
         ) : (
           <EmptyListComponent />
         )
-      }
+      } */}
+
+      <ChatRequestsList
+        agent={agent}
+        userDid={sessionDid}
+        onChatPress={() => { }}
+        onInvitesPress={() => { }}
+        showInvitesBanner={false}
+      />
     </Screen >
   )
 }

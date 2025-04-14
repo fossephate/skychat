@@ -99,6 +99,14 @@ const renderChatAvatar = (chat: Chat) => {
 //   )}
 // }
 
+export const ChatRequestItem = ({ item: chat, onPress }: { item: Chat, onPress: (chat: Chat) => void }) => {
+  return (
+    <View>
+      <Text>{chat.name}</Text>
+    </View>
+  )
+}
+
 // Convert to a proper React component
 export const ChatItem = ({ item: chat, onPress }: { item: Chat, onPress: (chat: Chat) => void }) => {
   const { themed } = useAppTheme();

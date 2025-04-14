@@ -23,7 +23,7 @@ SkyChat is a cross-platform chat application that uses the OpenMLS protocol to p
 ```
 skychat/
 ├── core/               # Rust core library
-│   ├── core/         # Core library / shared
+│   ├── core/           # Core library / shared
 │   ├── client/         # Client implementation
 │   ├── server/         # Server implementation
 │   └── examples/       # Examples

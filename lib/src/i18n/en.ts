@@ -21,6 +21,11 @@ const en = {
     searchPlaceholder: "Search chats...",
     chatRequests: "Chat requests",
   },
+  chatRequestsScreen: {
+    title: "Chat requests",
+    empty: "No chat requests",
+    inviteMessage: "{{sender}} invited you to join {{group}}!",
+  },
   welcomeScreen: {
     readyForLaunch: "Welcome to SkyChat!",
     postscript: "Message your friends online securely using MLS!",

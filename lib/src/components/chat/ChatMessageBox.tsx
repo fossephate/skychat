@@ -12,7 +12,7 @@ type ChatMessageBoxProps = {
   replyToMessage?: IMessage;
 } & MessageProps<IMessage>;
 
-const ChatMessageBox = ({ setReplyOnSwipeOpen, updateRowRef, replyToMessage, ...props }: ChatMessageBoxProps) => {
+export const ChatMessageBox = ({ setReplyOnSwipeOpen, updateRowRef, replyToMessage, ...props }: ChatMessageBoxProps) => {
   const { theme } = useAppTheme();
 
   const isNextMyMessage =

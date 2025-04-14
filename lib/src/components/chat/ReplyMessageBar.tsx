@@ -11,7 +11,7 @@ type ReplyMessageBarProps = {
   message: IMessage | null;
 };
 
-const ReplyMessageBar = ({ clearReply, message }: ReplyMessageBarProps) => {
+export const ReplyMessageBar = ({ clearReply, message }: ReplyMessageBarProps) => {
 
   const { themed, theme } = useAppTheme();
 
