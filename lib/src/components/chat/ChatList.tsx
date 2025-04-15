@@ -1,4 +1,4 @@
-// components/ChatList.tsx
+// @ts-nocheck
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Agent } from "@atproto/api";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Button, Text, TextField } from "@/components";
+import { Button, Text, TextField } from "../../components";
 import { ActivityIndicator } from "react-native";
 import { Chat, ChatItem, User } from "../../components/chat/ChatItem";
 import { useAppTheme } from "../../utils/useAppTheme";

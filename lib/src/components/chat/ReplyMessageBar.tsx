@@ -1,10 +1,9 @@
 // ReplyMessageBar.tsx
+import { useAppTheme } from '../../utils/useAppTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { IMessage } from 'react-native-gifted-chat';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
-import { useAppTheme } from '@/utils/useAppTheme';
-import { ThemedStyle } from '@/theme';
 
 type ReplyMessageBarProps = {
   clearReply: () => void;

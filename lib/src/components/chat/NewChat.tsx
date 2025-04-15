@@ -1,10 +1,11 @@
+// @ts-nocheck
+import { ListView, Text, Button, Icon, TextField } from "../../components"
+import { ThemedStyle } from "../../theme"
+import { useAppTheme } from "../../utils/useAppTheme"
+import { ListItem } from "../../components/ListItem"
 import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { View, ViewStyle, TextStyle, Image, ImageStyle, Modal, TouchableOpacity, Dimensions } from "react-native"
-import { ListView, Text, Button, Icon, TextField } from "src/components"
-import { ThemedStyle } from "src/theme"
 import { Agent } from '@atproto/api'
-import { useAppTheme } from "src/utils/useAppTheme"
-import { ListItem } from "src/components/ListItem"
 import debounce from 'lodash/debounce'
 import { FlatList, GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"

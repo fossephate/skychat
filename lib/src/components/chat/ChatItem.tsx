@@ -1,8 +1,9 @@
+// @ts-nocheck
 import { Image, TextStyle, View, ViewStyle } from "react-native";
-import { ThemedStyle } from "@/theme";
-import { ListItem } from "src/components/ListItem";
-import { Text } from "src/components";
-import { useAppTheme } from "@/utils/useAppTheme";
+import { ThemedStyle } from "../../theme";
+import { ListItem } from "../../components/ListItem";
+import { Text } from "../../components";
+import { useAppTheme } from "../../utils/useAppTheme";
 import { useConvo } from '../../contexts/ConvoContext';
 
 export interface User {

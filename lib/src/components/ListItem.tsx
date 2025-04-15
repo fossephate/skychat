@@ -10,8 +10,8 @@ import {
 import { $styles } from "../theme"
 import { Icon, IconTypes } from "./Icon"
 import { Text, TextProps } from "./Text"
-import type { ThemedStyle } from "@/theme"
-import { useAppTheme } from "@/utils/useAppTheme"
+import type { ThemedStyle } from "../theme"
+import { useAppTheme } from "../utils/useAppTheme"
 
 export interface ListItemProps extends TouchableOpacityProps {
   /**

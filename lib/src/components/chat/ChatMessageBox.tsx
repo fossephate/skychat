@@ -1,5 +1,5 @@
 // ChatMessageBox.tsx
-import { useAppTheme } from '@/utils/useAppTheme';
+import { useAppTheme } from '../../utils/useAppTheme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { View, StyleSheet, Animated, Text } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';

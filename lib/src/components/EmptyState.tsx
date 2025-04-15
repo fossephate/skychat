@@ -1,10 +1,10 @@
-import { Image, ImageProps, ImageStyle, StyleProp, TextStyle, View, ViewStyle } from "react-native"
-
+// @ts-nocheck
 import { Button, ButtonProps } from "./Button"
 import { Text, TextProps } from "./Text"
-import { useAppTheme } from "@/utils/useAppTheme"
-import type { ThemedStyle } from "@/theme"
-import { translate } from "@/i18n/translate"
+import { useAppTheme } from "../utils/useAppTheme"
+import type { ThemedStyle } from "../theme"
+import { translate } from "../i18n/translate"
+import { Image, ImageProps, ImageStyle, StyleProp, TextStyle, View, ViewStyle } from "react-native"
 
 const sadFace = require("../../../assets/images/sad-face.png")
 

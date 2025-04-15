@@ -1,14 +1,15 @@
 // @ts-nocheck
-import { Ionicons } from "@expo/vector-icons"
-import { ThemedStyle } from "@/theme"
-
+import { ThemedStyle } from "../../theme"
 import ChatMessageBox from "./ChatMessageBox"
 import ReplyMessageBar from "./ReplyMessageBar"
-// import { Screen } from "@/components"
-import { useAppTheme } from "@/utils/useAppTheme"
+import { useAppTheme } from "../../utils/useAppTheme"
+import { translate } from "../../i18n"
+import { Header, Text } from "../../components"
+import { ChatListProps } from "./ChatList"
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import { ImageBackground, View, ViewStyle, Image, ActivityIndicator } from "react-native"
 import { Swipeable } from "react-native-gesture-handler"
+import { Ionicons } from "@expo/vector-icons"
 import {
   IMessage,
   GiftedChat,
@@ -18,11 +19,8 @@ import {
   InputToolbar,
 } from "react-native-gifted-chat"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { Header, Text } from "../../components"
 import { router, useLocalSearchParams } from "expo-router"
 import { Agent } from "@atproto/api"
-import { translate } from "@/i18n"
-import { ChatListProps } from "./ChatList"
 
 export interface BskyChatProps {
   agent: Agent;
@@ -298,9 +296,9 @@ export const BskyChat: React.FC<BskyChatProps> = ({
 
   let backgroundImage;
   if (theme.isDark) {
-    backgroundImage = require("assets/images/splash-dark.png")
+    backgroundImage = require("../../../../assets/images/splash-dark.png")
   } else {
-    backgroundImage = require("assets/images/splash.png")
+    backgroundImage = require("../../../../assets/images/splash.png")
   }
 
   // Get avatar for the chat (either group avatar or the other member's avatar)

@@ -1,3 +1,4 @@
+import { useAppTheme } from "../utils/useAppTheme"
 import { ComponentType } from "react"
 import {
   Image,
@@ -9,7 +10,6 @@ import {
   ViewProps,
   ViewStyle,
 } from "react-native"
-import { useAppTheme } from "@/utils/useAppTheme"
 
 export type IconTypes = keyof typeof iconRegistry
 
