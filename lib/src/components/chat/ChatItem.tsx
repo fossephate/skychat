@@ -2,7 +2,7 @@
 import { Image, TextStyle, View, ViewStyle } from "react-native";
 import { ThemedStyle } from "../../theme";
 import { ListItem } from "../../components/ListItem";
-import { Text } from "../../components";
+import { Text, Button } from "../../components";
 import { useAppTheme } from "../../utils/useAppTheme";
 import { useConvo } from '../../contexts/ConvoContext';
 
@@ -100,12 +100,58 @@ const renderChatAvatar = (chat: Chat) => {
 //   )}
 // }
 
-export const ChatRequestItem = ({ item: chat, onPress }: { item: Chat, onPress: (chat: Chat) => void }) => {
+const chatRequestItemProps = {
+  height: 100,
+  topSeparator: true,
+  bottomSeparator: true,
+}
+
+type ChatRequestItemProps = {
+  item: Chat
+  onPress: (chat: Chat) => void
+  onAccept: (chat: Chat) => void
+  onReject: (chat: Chat) => void
+  rejectButtonText?: string
+  acceptButtonText?: string
+}
+
+export const ChatRequestItem = ({ item: chat, onPress, onAccept, onReject, rejectButtonText, acceptButtonText }: ChatRequestItemProps) => {
+  const { themed } = useAppTheme();
   return (
-    <View>
-      <Text>{chat.name}</Text>
+    <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
+      <ListItem
+        LeftComponent={renderChatAvatar(chat)}
+        textStyle={[
+          themed($chatName),
+          !chat.lastMessage?.read && themed($unreadChatName),
+        ]}
+
+        RightComponent={
+          <View style={themed($rightContainer)}>
+            <Text style={[
+              themed($timestamp),
+            ]}>
+              {chat.lastMessage?.timestamp}
+            </Text>
+          </View>
+        }
+        style={themed($listItem)}
+      >
+        <View style={{ flexDirection: "column" }}>
+          <Text>{chat.name}</Text>
+          {chat.handle && <Text style={themed($chatHandle)}>{"@" + chat.handle}</Text>}
+          {chat.lastMessage && (
+            <Text numberOfLines={1} style={themed($lastMessage)}>{chat.lastMessage?.text}</Text>
+          )}
+
+        </View>
+      </ListItem>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, width: "100%" }}>
+        <Button text={acceptButtonText || "Accept"} style={themed($acceptButton)} onPress={() => onAccept(chat)} />
+        <Button text={rejectButtonText || "Reject"} style={themed($rejectButton)} onPress={() => onReject(chat)} />
+      </View>
     </View>
-  )
+  );
 }
 
 // Convert to a proper React component
@@ -155,6 +201,20 @@ export const ChatItem = ({ item: chat, onPress }: { item: Chat, onPress: (chat: 
     </View>
   );
 };
+
+const $acceptButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.palette.primary500,
+  borderRadius: 10,
+  minHeight: 4,
+  flex: 1,
+})
+
+const $rejectButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.error,
+  borderRadius: 10,
+  minHeight: 4,
+  flex: 1,
+})
 
 const $onlineBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({
   position: "absolute",

@@ -5,6 +5,8 @@ const en = {
     cancel: "Cancel",
     back: "Back",
     logOut: "Log Out",
+    accept: "Accept",
+    reject: "Reject",
   },
   navigator: {
     contactsTab: "Contacts",

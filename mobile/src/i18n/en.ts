@@ -1,5 +1,9 @@
 // @ts-ignore
 const en = {
+  // skychat: {
+  //   accept: "Accept2",
+  //   reject: "Reject2",
+  // },
   common: {
     ok: "OK!",
     cancel: "Cancel",

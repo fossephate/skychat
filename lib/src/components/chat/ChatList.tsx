@@ -296,67 +296,17 @@ export const ChatList: React.FC<ChatListProps> = ({
     return <LoadingView />;
   }
 
+  // check if the unread count > 0 on any of the chat requests
+  const hasUnreadChatRequests = bskyChatRequests.some(chat => chat.unreadCount > 0);
+
   return (
     <View style={{ flex: 1 }}>
-
-      {/* {showInvitesBanner && (
-        <TouchableOpacity
-          style={{
-            flexDirection: "row",
-            backgroundColor: colors.secondary || DEFAULT_COLORS.secondary,
-            padding: spacing.sm,
-            marginBottom: spacing.md,
-            alignItems: "center",
-            justifyContent: "space-between",
-            ...(styling?.invitesBanner || {}),
-          }}
-          onPress={handleInvitesPress}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <FontAwesome
-              name="envelope"
-              size={24}
-              style={{
-                marginRight: spacing.sm,
-                color: colors.text,
-              }}
-            />
-            <Text
-              style={{
-                fontWeight: "bold",
-                color: colors.text,
-              }}
-            >
-              Chat Requests
-            </Text>
-          </View>
-          <FontAwesome
-            name="chevron-right"
-            size={24}
-            style={{ color: colors.text }}
-          />
-        </TouchableOpacity>
-      )} */}
-
-
-      {/* {showInvitesBanner && <Button style={themed($invitesBanner)} onPress={onInvitesPress}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", flex: 1, width: "100%" }}>
-          <View style={{ flexDirection: "row" }}>
-            <FontAwesome name="envelope" size={14} style={themed($invitesBannerIcon)} />
-            <Text tx="chatsScreen:chatRequests" preset="bold" />
-          </View>
-          <FontAwesome name="chevron-right" size={14} style={themed($invitesBannerIcon)} />
-        </View>
-      </Button>} */}
-
-
       {showInvitesBanner && <Button style={themed($invitesBanner)} onPress={onInvitesPress}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", flex: 1, width: "100%" }}>
-
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View style={themed($invitesEnvelope)}>
               <FontAwesome name="envelope" size={14} style={themed($invitesBannerIcon)} />
-              {bskyChatRequests.length > 0 && (
+              {hasUnreadChatRequests && (
                 <View style={themed($notificationDot)} />
               )}
             </View>

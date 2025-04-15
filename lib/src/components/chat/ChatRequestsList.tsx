@@ -14,31 +14,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Agent } from "@atproto/api";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ActivityIndicator } from "react-native";
-
-// // Define types for props and data models
-// export interface User {
-//   id: string;
-//   displayName: string;
-//   avatar?: string;
-//   handle?: string;
-//   verified?: boolean;
-// }
-
-// export interface Chat {
-//   id: string;
-//   name?: string;
-//   handle?: string;
-//   members: User[];
-//   lastMessage?: {
-//     text: string;
-//     createdAt: string;
-//     sender: User;
-//   };
-//   unreadCount: number;
-//   isBsky: boolean;
-// }
 
 export interface ChatListProps {
   agent: Agent;
@@ -47,9 +23,16 @@ export interface ChatListProps {
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
   showSectionHeaders?: boolean;
-  refreshInterval?: number; // Auto-refresh interval in ms
-  emptyStateComponent?: React.ReactNode;
-  loadingComponent?: React.ReactNode;
+  refreshIntervalMs?: number; // Auto-refresh interval in ms
+}
+
+interface ChatRequestsListProps extends ChatListProps {
+  agent: Agent;
+  userDid: string;
+  onChatPress?: (chat: Chat) => void;
+  acceptButtonText?: string;
+  rejectButtonText?: string;
+  refreshIntervalMs?: number; // Auto-refresh interval in ms
 }
 
 // interface ChatItemProps {
@@ -76,16 +59,14 @@ interface ChatRequest {
   muted?: boolean
 }
 
-export const ChatRequestsList: React.FC<ChatListProps> = ({
+export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
   agent,
   userDid,
   onChatPress,
-  onInvitesPress,
-  showInvitesBanner = true,
   showSectionHeaders = true,
-  refreshInterval,
-  emptyStateComponent,
-  loadingComponent,
+  refreshIntervalMs,
+  acceptButtonText,
+  rejectButtonText,
 }) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [skyChats, setSkyChats] = useState<Chat[]>([]);
@@ -95,40 +76,6 @@ export const ChatRequestsList: React.FC<ChatListProps> = ({
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map());
 
   const { themed } = useAppTheme()
-
-  // Fetch user profile function
-  const fetchUserProfile = async (did: string): Promise<User> => {
-    if (memberProfiles.has(did)) {
-      return memberProfiles.get(did) as User;
-    }
-
-    try {
-      const profile = await agent.getProfile({ actor: did });
-      const userProfile = {
-        id: did,
-        displayName: profile.data.displayName || did.substring(0, 8) + '...',
-        avatar: profile.data.avatar,
-        handle: profile.data.handle,
-      };
-
-      // Update memberProfiles map
-      setMemberProfiles(prev => new Map(prev).set(did, userProfile));
-
-      return userProfile;
-    } catch (error) {
-      console.error(`Error fetching profile for ${did}:`, error);
-      const userProfile = {
-        id: did,
-        displayName: did.substring(0, 8) + '...',
-        avatar: `https://i.pravatar.cc/150?u=${did}`,
-      };
-
-      // Update memberProfiles map with fallback
-      setMemberProfiles(prev => new Map(prev).set(did, userProfile));
-
-      return userProfile;
-    }
-  };
 
   // Fetch BlueChat DMs
   const fetchBskyChats = async () => {
@@ -209,15 +156,15 @@ export const ChatRequestsList: React.FC<ChatListProps> = ({
 
   // Setup auto-refresh if interval provided
   useEffect(() => {
-    if (refreshInterval) {
+    if (refreshIntervalMs) {
       const intervalId = setInterval(() => {
         fetchBskyChats();
-      }, refreshInterval);
+      }, refreshIntervalMs);
 
       return () => clearInterval(intervalId);
     }
     return () => { };
-  }, [refreshInterval, agent, userDid]);
+  }, [refreshIntervalMs, agent, userDid]);
 
   // Create sections for the SectionList
   const sections = [];
@@ -251,8 +198,6 @@ export const ChatRequestsList: React.FC<ChatListProps> = ({
 
   // Loading component
   const LoadingView = () => {
-    if (loadingComponent) return <>{loadingComponent}</>;
-
     return (
       <View style={{
         flex: 1,
@@ -268,22 +213,31 @@ export const ChatRequestsList: React.FC<ChatListProps> = ({
     return <LoadingView />;
   }
 
+  const onAccept = (chat: Chat) => {
+    console.log("Accepting chat:", chat);
+  }
+
+  const onReject = (chat: Chat) => {
+    console.log("Rejecting chat:", chat);
+  }
+
+  const renderChatRequestItem = ({ item }: { item: Chat }) => {
+    return (<ChatRequestItem
+      item={item}
+      onPress={onChatPress ?? (() => { })}
+      onAccept={onAccept}
+      onReject={onReject}
+      acceptButtonText={acceptButtonText}
+      rejectButtonText={rejectButtonText}
+    />)
+  }
+
   return (
     <View style={{ flex: 1 }}>
-
-      {/* <View style={themed($searchContainer)}>
-        <TextField
-          style={themed($searchInput)}
-          placeholderTx="chatsScreen:searchPlaceholder"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View> */}
-
       {sections.length > 0 ? (
         <SectionList
           sections={sections}
-          renderItem={({ item }) => <ChatItem item={item} onPress={onChatPress ?? (() => { })} />}
+          renderItem={renderChatRequestItem}
           renderSectionHeader={renderSectionHeader}
           keyExtractor={(item) => item.id}
           contentContainerStyle={themed($listContent)}
