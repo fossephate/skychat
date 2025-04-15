@@ -1,4 +1,4 @@
 
 packages:
-  - "skychat-lib"
-  - "skychat-mobile"
+  - "./lib"
+  - "./mobile"

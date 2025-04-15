@@ -8,8 +8,8 @@
   "license": "ISC",
   "private": true,
   "workspaces": [
-    "skychat-mobile",
-    "skychat-lib"
+    "mobile",
+    "lib"
   ],
   "scripts": {
     "mobile": "pnpm --filter skychat-mobile",

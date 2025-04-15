@@ -5,7 +5,7 @@ set -e
 
 # start in the /mobile directory:
 
-cd ../skychat-lib
+cd ../lib
 pnpm ubrn:ios
 cd ./rust_modules/uniffi-starter/rust/
 ./build-ios.sh
@@ -14,6 +14,6 @@ pnpm prepare
 cd ../
 
 
-cd ./skychat-mobile
+cd ./mobile
 pnpm install
 pnpm expo prebuild
