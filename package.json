@@ -12,10 +12,10 @@
     "lib"
   ],
   "scripts": {
-    "mobile": "pnpm --filter skychat-mobile",
-    "lib": "pnpm --filter skychat-lib",
+    "mobile": "pnpm --filter ./mobile",
+    "lib": "pnpm --filter ./lib",
     "build": "pnpm -r build",
-    "dev": "pnpm --filter skychat-mobile run ios"
+    "dev": "pnpm --filter ./mobile run ios"
   },
   "devDependencies": {
     "@expo/metro-config": "^0.19.11",

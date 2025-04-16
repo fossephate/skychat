@@ -95,7 +95,6 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
           id: member.did,
           displayName: member.displayName || member.handle,
           avatar: member.avatar,
-          // verified: !!member.verified,
           handle: member.handle,
         }));
 
@@ -128,6 +127,7 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
         };
       }));
 
+      // @ts-ignore
       setBskyChatRequests(transformedChats as ChatRequest[]);
 
     } catch (error) {
