@@ -5,4 +5,5 @@
     "skipLibCheck": true,
     "noEmitOnError": false,
     "noCheck": true,// TODO: find a better solution than this!
+  }
 }
