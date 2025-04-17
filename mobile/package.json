@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@aquareum/atproto-oauth-client-react-native": "0.0.1",
-    "@atproto/api": "^0.14.21",
+    "@atproto/api": "^0.15.1",
     "@ethersproject/shims": "^5.8.0",
     "@expo-google-fonts/space-grotesk": "^0.2.3",
     "@expo/metro-runtime": "~4.0.1",

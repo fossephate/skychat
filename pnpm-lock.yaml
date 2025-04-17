@@ -40,8 +40,8 @@ importers:
   lib:
     dependencies:
       '@atproto/api':
-        specifier: ^0.14.21
-        version: 0.14.22
+        specifier: ^0.15.1
+        version: 0.15.1
       '@expo-google-fonts/space-grotesk':
         specifier: ^0.2.3
         version: 0.2.3
@@ -57,6 +57,9 @@ importers:
       i18next:
         specifier: ^23.16.8
         version: 23.16.8
+      react-dom:
+        specifier: '*'
+        version: 18.3.1(react@18.3.1)
       react-i18next:
         specifier: ^15.4.1
         version: 15.4.1(i18next@23.16.8)(react-dom@18.3.1(react@18.3.1))(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
@@ -87,6 +90,9 @@ importers:
       react-native-safe-area-context:
         specifier: 4.12.0
         version: 4.12.0(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
+      react-native-webview:
+        specifier: 13.12.5
+        version: 13.12.5(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
       uniffi-bindgen-react-native:
         specifier: ^0.29.0-0
         version: 0.29.0-0
@@ -167,8 +173,8 @@ importers:
         specifier: 0.0.1
         version: 0.0.1(expo@52.0.46(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@expo/metro-runtime@4.0.1(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1)))(react-native-webview@13.12.5(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1))(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1))(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
       '@atproto/api':
-        specifier: ^0.14.21
-        version: 0.14.22
+        specifier: ^0.15.1
+        version: 0.15.1
       '@ethersproject/shims':
         specifier: ^5.8.0
         version: 5.8.0
@@ -482,8 +488,8 @@ packages:
   '@atproto-labs/simple-store@0.1.1':
     resolution: {integrity: sha512-WKILW2b3QbAYKh+w5U2x6p5FqqLl0nAeLwGeDY+KjX01K4Dq3vQTR9b/qNp0jZm48CabPQVrqCv0PPU9LgRRRg==}
 
-  '@atproto/api@0.14.22':
-    resolution: {integrity: sha512-ziXPau+sUdFovObSnsoN7JbOmUw1C5e5L28/yXf3P8vbEnSS3HVVGD1jYcscBYY34xQqi4bVDpwMYx/4yRsTuQ==}
+  '@atproto/api@0.15.1':
+    resolution: {integrity: sha512-+vNgrHLAid4mRIRyycbyNZoYgeLkr2otGRQeFJCK3gVwnEkBhGIjIDC8ABGJqBZf4lE6dg4CLafb6xzmF8aptQ==}
 
   '@atproto/common-web@0.4.1':
     resolution: {integrity: sha512-Ghh+djHYMAUCktLKwr2IuGgtjcwSWGudp+K7+N7KBA9pDDloOXUEY8Agjc5SHSo9B1QIEFkegClU5n+apn2e0w==}
@@ -7723,7 +7729,7 @@ snapshots:
 
   '@atproto-labs/simple-store@0.1.1': {}
 
-  '@atproto/api@0.14.22':
+  '@atproto/api@0.15.1':
     dependencies:
       '@atproto/common-web': 0.4.1
       '@atproto/lexicon': 0.4.10
