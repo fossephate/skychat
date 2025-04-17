@@ -19,19 +19,18 @@ import {
   InputToolbar,
 } from "react-native-gifted-chat"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { EmojiPopup } from 'react-native-emoji-popup';
 import { router, useLocalSearchParams } from "expo-router"
 import { Agent } from "@atproto/api"
 
 export interface BskyChatProps {
   agent: Agent;
-  userDid: string;
   groupId: string;
   refreshInterval?: number; // Auto-refresh interval in ms
 }
 
 export const BskyChat: React.FC<BskyChatProps> = ({
   agent,
-  userDid,
   groupId,
 }) => {
   const [messages, setMessages] = useState<IMessage[]>([])
@@ -44,7 +43,11 @@ export const BskyChat: React.FC<BskyChatProps> = ({
   const [replyMessage, setReplyMessage] = useState<IMessage | null>(null)
   const swipeableRowRef = useRef<Swipeable | null>(null)
 
+  const userDid = agent.assertDid;
+
   const { themed, theme } = useAppTheme()
+
+
 
   // map did's to profile images:
   const [profileImages, setProfileImages] = useState<Record<string, string>>({});
@@ -53,8 +56,39 @@ export const BskyChat: React.FC<BskyChatProps> = ({
     const profile = await agent.com.atproto.repo.getRecord({ repo: did, collection: "app.bsky.actor.profile", rkey: "self" })
     // @ts-ignore - Handling potential type issues
     const avatarUri = profile.data.value.avatar
-    console.log(avatarUri)
     return avatarUri || undefined
+  }
+
+  const transformMessages = async (messages: any[]) => {
+    const transformedMessages: IMessage[] = await Promise.all(messages.map(async msg => {
+      // The sender is the current user if their DID matches the message sender
+      const isSelf = msg.sender?.did === userDid;
+
+      // check if we have an avatar for this user, if not, get it:
+      if (!profileImages[msg.sender?.did]) {
+        const profileImage = await getProfileImage(msg.sender?.did)
+        setProfileImages(prev => ({ ...prev, [msg.sender?.did]: profileImage }))
+      }
+
+      // get the profile image for the sender:
+      const profileImage = profileImages[msg.sender?.did] ?? `https://i.pravatar.cc/150?u=${msg.sender?.did}`
+
+      let message: IMessage = {
+        _id: msg.id,
+        text: msg.text,
+        createdAt: new Date(msg.sentAt),
+
+        user: {
+          _id: msg.sender?.did || "unknown",
+          name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
+          avatar: profileImage
+        },
+        video: "tiktok.com"
+      }
+      return message;
+    }))
+
+    return transformedMessages;
   }
 
   const fetchMessages = async () => {
@@ -74,7 +108,6 @@ export const BskyChat: React.FC<BskyChatProps> = ({
       })
 
       const convoData = convoResponse.data.convo
-      console.log("Conversation data:", convoData)
 
       // Set conversation name and members
       if (convoData) {
@@ -101,31 +134,12 @@ export const BskyChat: React.FC<BskyChatProps> = ({
 
       const messagesData = messagesResponse.data.messages || []
 
+      console.log("messagesData", messagesData)
+
       // Transform messages to GiftedChat format
-      const transformedMessages = await Promise.all(messagesData.map(async msg => {
-        // The sender is the current user if their DID matches the message sender
-        const isSelf = msg.sender?.did === userDid;
+      const transformedMessages: IMessage[] = await transformMessages(messagesData);
 
-        // check if we have an avatar for this user, if not, get it:
-        if (!profileImages[msg.sender?.did]) {
-          const profileImage = await getProfileImage(msg.sender?.did)
-          setProfileImages(prev => ({ ...prev, [msg.sender?.did]: profileImage }))
-        }
-
-        // get the profile image for the sender:
-        const profileImage = profileImages[msg.sender?.did] ?? `https://i.pravatar.cc/150?u=${msg.sender?.did}`
-
-        return {
-          _id: msg.id,
-          text: msg.text,
-          createdAt: new Date(msg.sentAt),
-          user: {
-            _id: msg.sender?.did || "unknown",
-            name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
-            avatar: profileImage
-          },
-        }
-      }))
+      console.log("transformedMessages", transformedMessages)
 
       setMessages(transformedMessages)
     } catch (error) {
@@ -182,15 +196,14 @@ export const BskyChat: React.FC<BskyChatProps> = ({
         try {
           // Get latest messages (assume API supports getting messages since a specific timestamp)
           // @ts-ignore
-          const latestMessage = messagesRef.current[0]
-
-          if (!latestMessage) return
+          // const latestMessage = messagesRef.current[0]
+          // if (!latestMessage) return
 
           const newMessagesResponse = await proxy.chat.bsky.convo.getMessages({
-            convoId: groupId as string,
+            // convoId: groupId as string,
             // @ts-ignore
             cursor: cursor ?? undefined,
-            limit: 10
+            // limit: 10
           })
 
           const newMessagesData = newMessagesResponse.data.messages || []
@@ -199,26 +212,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
 
           if (newMessagesData.length > 0) {
             // Transform new messages
-            const transformedNewMessages = newMessagesData.map(msg => {
-              // @ts-ignore
-              const isSelf = msg.sender?.did === userDid
-
-              return {
-                _id: msg.id,
-                text: msg.text,
-                // createdAt: new Date(msg.sentAt),
-                user: {
-                  // @ts-ignore
-                  _id: msg.sender?.did || "unknown",
-                  // @ts-ignore
-                  name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
-                  // @ts-ignore
-                  avatar: msg.sender?.avatar || `https://i.pravatar.cc/150?u=${msg.sender?.did}`
-                }
-              }
-            })
-
-            // Prepend new messages
+            const transformedMessages = await transformMessages(newMessagesData);
             setMessages(prevMessages => GiftedChat.append(prevMessages, transformedNewMessages))
           }
         } catch (error) {
@@ -373,6 +367,13 @@ export const BskyChat: React.FC<BskyChatProps> = ({
               />
             )
           }}
+          renderAccessory={() => {
+            return (
+              <View>
+                <Text>Accessory</Text>
+              </View>
+            )
+          }}
           placeholder={translate("chatScreen:inputPlaceholder")}
           isTyping={false}
           infiniteScroll
@@ -409,7 +410,14 @@ export const BskyChat: React.FC<BskyChatProps> = ({
               )}
             </View>
           )}
-
+          renderMessageVideo={() => {
+            return (
+              <View>
+                <Text>Video</Text>
+              </View>
+            )
+          }}
+          re
           renderInputToolbar={(props) => (
             <InputToolbar
               {...props}
@@ -424,7 +432,18 @@ export const BskyChat: React.FC<BskyChatProps> = ({
           renderChatFooter={() => (
             <ReplyMessageBar clearReply={() => setReplyMessage(null)} message={replyMessage} />
           )}
-          onLongPress={(context, message) => setReplyMessage(message)}
+          // onLongPress={(context, message) => setReplyMessage(message)}
+          onLongPress={(context, message) => {
+            console.log("onLongPress", context, message)
+            context.actionSheet().showActionSheetWithOptions({
+              options: ["Reply", "Copy", "Cancel"],
+              cancelButtonIndex: 2,
+            }, (buttonIndex) => {
+              if (buttonIndex === 0) {
+                setReplyMessage(message)
+              }
+            })
+          }}
           renderMessage={(props) => (
             <ChatMessageBox
               {...props}

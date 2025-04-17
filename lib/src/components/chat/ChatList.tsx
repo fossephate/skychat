@@ -17,32 +17,9 @@ import { Chat, ChatItem, User } from "../../components/chat/ChatItem";
 import { useAppTheme } from "../../utils/useAppTheme";
 import { ThemedStyle } from "../../theme";
 
-// // Define types for props and data models
-// export interface User {
-//   id: string;
-//   displayName: string;
-//   avatar?: string;
-//   handle?: string;
-//   verified?: boolean;
-// }
-
-// export interface Chat {
-//   id: string;
-//   name?: string;
-//   handle?: string;
-//   members: User[];
-//   lastMessage?: {
-//     text: string;
-//     createdAt: string;
-//     sender: User;
-//   };
-//   unreadCount: number;
-//   isBsky: boolean;
-// }
 
 export interface ChatListProps {
   agent: Agent;
-  userDid: string;
   onChatPress?: (chat: Chat) => void;
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
@@ -52,16 +29,8 @@ export interface ChatListProps {
   loadingComponent?: React.ReactNode;
 }
 
-// interface ChatItemProps {
-//   item: Chat;
-//   onPress: (chat: Chat) => void;
-//   colors: ChatListProps['colors'];
-//   styling?: ChatListProps['styling'];
-// }
-
 export const ChatList: React.FC<ChatListProps> = ({
   agent,
-  userDid,
   onChatPress,
   onInvitesPress,
   showInvitesBanner = true,
@@ -77,6 +46,8 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map());
+
+  const userDid = agent.assertDid;
 
   const { themed } = useAppTheme()
 

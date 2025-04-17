@@ -23,17 +23,10 @@ export default function chatsScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const { themed } = useAppTheme()
   const convoContext = useConvo()
-  const authContext = useAuth()
+  const { session } = useAuth()
 
-  const { session } = authContext;
   if (!session) {
     console.error("No session found")
-    router.push("/login")
-    return <></>
-  }
-  const sessionDid = session.did.toString();
-  if (!sessionDid) {
-    console.error("No session did found")
     router.push("/login")
     return <></>
   }
@@ -69,7 +62,6 @@ export default function chatsScreen() {
       </View> */}
       <ChatList
         agent={agent}
-        userDid={sessionDid}
         onChatPress={(chat) => {
           if (chat.isBsky) {
             router.push(`/bskychats/${chat.id}` as any)

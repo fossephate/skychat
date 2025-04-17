@@ -75,6 +75,7 @@
     "date-fns": "^4.1.0",
     "i18next": "^23.16.8",
     "react-i18next": "^15.4.1",
+    "react-native-emoji-popup": "^0.3.0",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-gifted-chat": "^2.7.3",
     "react-native-keyboard-controller": "^1.16.3",

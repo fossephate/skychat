@@ -1,6 +1,6 @@
 // components/ChatList.tsx
-import { Button, Text, TextField } from "../../components";
-import { Chat, ChatItem, ChatRequestItem, User } from "../../components/chat/ChatItem";
+import { Text } from "../../components";
+import { Chat, ChatRequestItem, User } from "../../components/chat/ChatItem";
 import { useAppTheme } from "../../utils/useAppTheme";
 import { ThemedStyle } from "../../theme";
 import React, { useEffect, useState, useCallback } from "react";
@@ -11,7 +11,6 @@ import {
   ScrollView,
   RefreshControl,
   SectionList,
-  TouchableOpacity,
 } from "react-native";
 import { Agent } from "@atproto/api";
 import { ActivityIndicator } from "react-native";
@@ -28,7 +27,6 @@ export interface ChatListProps {
 
 interface ChatRequestsListProps extends ChatListProps {
   agent: Agent;
-  userDid: string;
   onChatPress?: (chat: Chat) => void;
   acceptButtonText?: string;
   rejectButtonText?: string;
@@ -61,14 +59,12 @@ interface ChatRequest {
 
 export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
   agent,
-  userDid,
   onChatPress,
   showSectionHeaders = true,
   refreshIntervalMs,
   acceptButtonText,
   rejectButtonText,
 }) => {
-  const [searchQuery, setSearchQuery] = useState("")
   const [skyChats, setSkyChats] = useState<Chat[]>([]);
   const [bskyChatRequests, setBskyChatRequests] = useState<ChatRequest[]>([]);
   const [refreshing, setRefreshing] = useState(true);
@@ -76,6 +72,8 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map());
 
   const { themed } = useAppTheme()
+
+  const userDid = agent.assertDid;
 
   // Fetch BlueChat DMs
   const fetchBskyChats = async () => {
@@ -215,6 +213,7 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
 
   const onAccept = (chat: Chat) => {
     console.log("Accepting chat:", chat);
+
   }
 
   const onReject = (chat: Chat) => {

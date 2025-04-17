@@ -82,14 +82,23 @@ export const ChatMessageBox = ({ setReplyOnSwipeOpen, updateRowRef, replyToMessa
           </View>
         )} */}
 
-        <Swipeable
+        {/* <Swipeable
           ref={updateRowRef}
           friction={2}
           rightThreshold={40}
           renderLeftActions={renderRightAction}
           onSwipeableWillOpen={onSwipeOpenAction}>
-          <Message {...props} />
-        </Swipeable>
+            <Message {...props}
+            // renderBubble={() => {
+            //   return (
+            //     <View>
+            //       <Text>Bubble</Text>
+            //     </View>
+            //   )
+            // }}
+          />
+        </Swipeable> */}
+        <Message {...props} />
       </View>
     </GestureHandlerRootView>
   );
