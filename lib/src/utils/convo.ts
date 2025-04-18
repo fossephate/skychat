@@ -363,7 +363,9 @@ export class ConvoClient {
 
     const messages: string[] = await response.json();
 
-    console.log("messages: ", messages);
+    if (messages.length > 0) {
+      console.log("messages: ", messages);
+    }
 
     // messages is a list of base64 encoded strings:
     try {

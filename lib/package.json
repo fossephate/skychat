@@ -47,7 +47,9 @@
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "prepare": "bob build",
-    "release": "release-it"
+    "release": "release-it",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "keywords": [
     "react-native",
@@ -86,7 +88,11 @@
     "react-native-safe-area-context": "4.12.0",
     "react-native-webview": "13.12.5",
     "uniffi-bindgen-react-native": "^0.29.0-0",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "expo-video": "~2.0.6",
+    "expo": "~52.0.46",
+    "react": "18.3.1",
+    "react-native": "0.76.9"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^17.0.2",

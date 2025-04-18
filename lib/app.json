@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.fossephate.skychatlib"
+  },
+  "ios": {
+    "bundleIdentifier": "com.fossephate.skychatlib"
+  }
+}

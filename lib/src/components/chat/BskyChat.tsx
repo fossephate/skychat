@@ -22,16 +22,49 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { EmojiPopup } from 'react-native-emoji-popup';
 import { router, useLocalSearchParams } from "expo-router"
 import { Agent } from "@atproto/api"
+import { PostRenderer } from "../bsky/PostRenderer";
 
 export interface BskyChatProps {
   agent: Agent;
   groupId: string;
   refreshInterval?: number; // Auto-refresh interval in ms
+  inputPlaceholder?: string;
+  onPressAvatar?: (id: string) => void;
+}
+
+const getBskyDirectEmbedUrl = (url) => {
+  // For Bluesky posts, the direct embed URL format is:
+  // https://embed.bsky.app/v1/[post-url]
+
+  // Handle AT protocol URIs
+  if (url.startsWith('at://')) {
+    // Convert AT URI to embed format
+    // at://did:plc:abcdef/app.bsky.feed.post/12345 would become:
+    // did:plc:abcdef/app.bsky.feed.post/12345
+    const atPath = url.replace('at://', '');
+    return `https://embed.bsky.app/v1/${atPath}`;
+  }
+
+  // Handle bsky.app URLs
+  if (url.includes('bsky.app/profile/')) {
+    // Extract the post path from the URL
+    // From: https://bsky.app/profile/username.bsky.social/post/12345
+    // To: https://embed.bsky.app/v1/profile/username.bsky.social/post/12345
+
+    // Get everything after bsky.app
+    const postPath = url.split('bsky.app')[1];
+    return `https://embed.bsky.app/v1${postPath}`;
+  }
+
+  // If it's not in a recognized format, return the original URL
+  return url;
 }
 
 export const BskyChat: React.FC<BskyChatProps> = ({
   agent,
   groupId,
+  inputPlaceholder = "Write a message",
+  onPressAvatar,
 }) => {
   const [messages, setMessages] = useState<IMessage[]>([])
   const [text, setText] = useState("")
@@ -39,6 +72,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
   const [convoName, setConvoName] = useState("Chat")
   const [convoMembers, setConvoMembers] = useState<any[]>([])
   const insets = useSafeAreaInsets()
+  const [cursor, setCursor] = useState<string | undefined>(undefined)
 
   const [replyMessage, setReplyMessage] = useState<IMessage | null>(null)
   const swipeableRowRef = useRef<Swipeable | null>(null)
@@ -72,20 +106,31 @@ export const BskyChat: React.FC<BskyChatProps> = ({
         setProfileImages(prev => ({ ...prev, [msg.sender?.did]: profileImage }))
       }
 
+      let reactions: strint[] = []
+
+      if (msg.reactions) {
+        for (const reaction of msg.reactions) {
+          reactions.push(reaction.value);
+        }
+      }
+
       // get the profile image for the sender:
       const profileImage = profileImages[msg.sender?.did] ?? `https://i.pravatar.cc/150?u=${msg.sender?.did}`
+
+      // extract the first link from the text if it exists:
+      const link = msg.text.match(/https?:\/\/[^\s]+/)?.[0];
 
       let message: IMessage = {
         _id: msg.id,
         text: msg.text,
         createdAt: new Date(msg.sentAt),
-
+        reactions: reactions,
         user: {
           _id: msg.sender?.did || "unknown",
           name: isSelf ? "You" : (msg.sender?.displayName || msg.sender?.handle || "User"),
           avatar: profileImage
         },
-        video: "tiktok.com"
+        video: link,
       }
       return message;
     }))
@@ -130,18 +175,12 @@ export const BskyChat: React.FC<BskyChatProps> = ({
       }
 
       // Fetch messages
-      const messagesResponse = await proxy.chat.bsky.convo.getMessages({
-        convoId: groupId as string
-      })
-
-      const messagesData = messagesResponse.data.messages || []
-
-      console.log("messagesData", messagesData)
+      const messagesData = await getConvoMessages();
 
       // Transform messages to GiftedChat format
       const transformedMessages: IMessage[] = await transformMessages(messagesData);
 
-      console.log("transformedMessages", transformedMessages)
+      // console.log("transformedMessages", transformedMessages)
 
       setMessages(transformedMessages)
     } catch (error) {
@@ -180,6 +219,18 @@ export const BskyChat: React.FC<BskyChatProps> = ({
     startMessageListener()
   }, [groupId, agent, userDid])
 
+  const getConvoMessages = async () => {
+    const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
+    console.log("getConvoMessages", cursor)
+    const messagesResponse = await proxy.chat.bsky.convo.getMessages({
+      convoId: groupId as string,
+      cursor: cursor,
+      limit: 30,
+    })
+    setCursor(messagesResponse.data.cursor ?? undefined);
+    return messagesResponse.data.messages ?? [];
+  }
+
   // Real-time message listener implementation
   const messageListenerRef = useRef<any>(null)
 
@@ -190,7 +241,6 @@ export const BskyChat: React.FC<BskyChatProps> = ({
       const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat")
 
       // Implement real-time message subscription
-      // This is a simplified example - actual implementation will depend on API capabilities
       messageListenerRef.current = setInterval(async () => {
         // Only check for new messages if we're not already loading
         if (loading) return
@@ -201,16 +251,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
           // const latestMessage = messagesRef.current[0]
           // if (!latestMessage) return
 
-          const newMessagesResponse = await proxy.chat.bsky.convo.getMessages({
-            // convoId: groupId as string,
-            // @ts-ignore
-            cursor: cursor ?? undefined,
-            // limit: 10
-          })
-
-          const newMessagesData = newMessagesResponse.data.messages || []
-
-          console.log("newMessagesData.length", newMessagesData.length)
+          const newMessagesData = await getConvoMessages();
 
           if (newMessagesData.length > 0) {
             // Transform new messages
@@ -357,25 +398,36 @@ export const BskyChat: React.FC<BskyChatProps> = ({
         // minComposerHeight={10}
         // bottomOffset={insets.bottom}
         isKeyboardInternallyHandled={false}
-        textInputProps={themed($composer)}
-        renderBubble={(props) => {
+        textInputProps={{ style: themed($textInput) }}
+        renderBubble={(props: any) => {
+          let reactions = props.currentMessage.reactions ?? [];
+          let isSelf = props.currentMessage.user._id === userDid;
           return (
-            <Bubble
-              {...props}
-              textStyle={{
-                right: {
-                  color: "#000",
-                },
-              }}
-              wrapperStyle={{
-                left: {
-                  backgroundColor: "#fff",
-                },
-                right: {
-                  backgroundColor: theme.colors.palette.secondary300,
-                },
-              }}
-            />
+            <View>
+              <Bubble
+                {...props}
+                textStyle={{
+                  right: {
+                    color: "#000",
+                  },
+                }}
+                wrapperStyle={{
+                  left: {
+                    backgroundColor: "#fff",
+                  },
+                  right: {
+                    backgroundColor: theme.colors.palette.secondary300,
+                  },
+                }}
+              />
+              {reactions.length > 0 && (
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: isSelf ? "flex-end" : "flex-start", gap: 2 }}>
+                  {reactions.map((reaction: string) => (
+                    <Text key={reaction}>{reaction}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
           )
         }}
         // renderAccessory={() => {
@@ -385,24 +437,36 @@ export const BskyChat: React.FC<BskyChatProps> = ({
         //     </View>
         //   )
         // }}
-        placeholder={translate("chatScreen:inputPlaceholder")}
+        placeholder={inputPlaceholder}
+
+        //   actionSheet?(): {
+        //     showActionSheetWithOptions: (options: ActionSheetOptions, callback: (buttonIndex: number) => void | Promise<void>) => void;
+        // };
+        // actionSheet={() => {
+
+        //   // return a function that returns a function (showActionSheetWithOptions)
+        //   return (options: ActionSheetOptions, callback: (buttonIndex: number) => void | Promise<void>) => {
+        //     return (
+        //       <View>
+        //         <Text>Action Sheet</Text>
+        //       </View>
+        //     )
+        //   }
+        // }}
         isTyping={false}
         infiniteScroll
         onPressActionButton={() => {
           console.log("action button pressed")
         }}
         isScrollToBottomEnabled={true}
+        // renderComposer={() => (
+        //   <View>
+        //     <Text>Composer</Text>
+        //   </View>
+        // )}
+        onPressAvatar={(user) => { onPressAvatar(user._id) }}
         renderSend={(props) => (
-          <View
-            style={{
-              height: 44,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 14,
-              paddingHorizontal: 14,
-            }}
-          >
+          <View style={themed($sendStyle)}>
             {/* {text === "" && (
                 <>
                   <Ionicons name="camera-outline" color={theme.colors.palette.primary300} size={28} />
@@ -416,30 +480,29 @@ export const BskyChat: React.FC<BskyChatProps> = ({
                   justifyContent: "center",
                 }}
               >
-                <Ionicons name="send" color={theme.colors.palette.primary300} size={28} />
+                <Ionicons name="send" color={themed($sendStyle).color} size={28} />
               </Send>
             )}
           </View>
         )}
         renderMessageVideo={(props) => {
-          // if (!props.currentMessage.video) {
-          //   return null;
-          // }
-          // return (
-          //   <View>
-          //     <Text>{props.currentMessage.video}</Text>
-          //   </View>
-          // )
-
+          if (!props.currentMessage.video) {
+            return null;
+          }
+          let videoUrl = props.currentMessage.video;
           return (
-            <EmojiPopup
-              onEmojiSelected={setEmoji}
-              closeButton={CloseButton}
-              // style={styles.buttonText}
-            >
-              <Text>Open Emoji Picker</Text>
-            </EmojiPopup>
-          )
+            <PostRenderer url={videoUrl} />
+          );
+
+          // return (
+          //   <EmojiPopup
+          //     onEmojiSelected={setEmoji}
+          //     closeButton={CloseButton}
+          //     // style={styles.buttonText}
+          //   >
+          //     <Text>Open Emoji Picker</Text>
+          //   </EmojiPopup>
+          // )
         }}
         renderMessageImage={(props) => {
           if (!props.currentMessage.image) {
@@ -452,12 +515,29 @@ export const BskyChat: React.FC<BskyChatProps> = ({
             </View>
           );
         }}
-        renderMessageImage={(props) => (
+        // renderMessageImage={(props) => (
+        //   <InputToolbar
+        //     {...props}
+        //     containerStyle={{ backgroundColor: "blue" }}
+
+        //     renderActions={() => (
+        //       <View style={{ height: 44, justifyContent: "center", alignItems: "center", left: 5 }}>
+        //         {/* <Ionicons name="add" color={theme.colors.palette.primary300} size={28} /> */}
+        //       </View>
+        //     )}
+        //   />
+        // )}
+        renderInputToolbar={(props) => (
           <InputToolbar
             {...props}
-            containerStyle={{ backgroundColor: theme.colors.background }}
+            containerStyle={themed($inputToolbar)}
+            style={{
+              // backgroundColor: "red",
+              // height: 64,
+              // paddingHorizontal: 16,
+            }}
             renderActions={() => (
-              <View style={{ height: 44, justifyContent: "center", alignItems: "center", left: 5 }}>
+              <View style={{ height: 64, justifyContent: "center", alignItems: "center", left: 5 }}>
                 <Ionicons name="add" color={theme.colors.palette.primary300} size={28} />
               </View>
             )}
@@ -469,12 +549,26 @@ export const BskyChat: React.FC<BskyChatProps> = ({
         // onLongPress={(context, message) => setReplyMessage(message)}
         onLongPress={(context, message) => {
           console.log("onLongPress", context, message)
+          // context.actionSheet().showActionSheetWithOptions({
+          //   options: ["Reply", "Copy", "Cancel"],
+          //   cancelButtonIndex: 2,
+          // }, (buttonIndex) => {
+          //   if (buttonIndex === 0) {
+          //     setReplyMessage(message)
+          //   }
+          // })
           context.actionSheet().showActionSheetWithOptions({
-            options: ["Reply", "Copy", "Cancel"],
-            cancelButtonIndex: 2,
+            options: ["Reply", "Copy", "React", "Cancel"],
+            cancelButtonIndex: 3,
           }, (buttonIndex) => {
             if (buttonIndex === 0) {
               setReplyMessage(message)
+            }
+            if (buttonIndex === 1) {
+              console.log("Copy", message)
+            }
+            if (buttonIndex === 2) {
+              console.log("React", message)
             }
           })
         }}
@@ -490,11 +584,50 @@ export const BskyChat: React.FC<BskyChatProps> = ({
   )
 }
 
-const $composer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  borderRadius: 18,
-  backgroundColor: colors.border,
-  paddingHorizontal: 10,
+const $textInput: ThemedStyle<TextInputStyle> = ({ colors }) => ({
   color: colors.text,
+  // width: 100,
+  // height: 144,
+  backgroundColor: colors.border,
+  // flex: 1,
+  // paddingHorizontal: 24,
+  paddingLeft: 12,
+  marginTop: 4,
+  lineHeight: 20,
+  marginLeft: 16,
+  marginRight: 16,
+  marginBottom: 8,
+  // width: 200,
+  // width: "80%",
+  flex: 1,
+  height: 44,
+  borderRadius: 24,
+})
+
+const $sendStyle: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  color: colors.palette.primary300,
+  // backgroundColor: colors.background,
+  height: 64,
+  marginRight: 14,
+  // flexDirection: "row",
+  // alignItems: "center",
+  // justifyContent: "center",
+  // gap: 14,
+  // paddingHorizontal: 14,
+})
+
+const $inputToolbar: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+  height: 64,
+  // width: 64,
+  // paddingRight: 16,
+  backgroundColor: colors.background,
+  // paddingHorizontal: 8,
+  color: colors.text,
+  // paddingVertical: 8,
+  // marginVertical: 2,
+  // width: "100%",
 })
 
 const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
