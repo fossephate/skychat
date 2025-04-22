@@ -41,25 +41,6 @@ export default function chatsScreen() {
           <Text style={themed($composeIcon)}>✏️</Text>
         </TouchableOpacity> */}
       </View>
-
-      {/* <Button style={themed($invitesBanner)} onPress={() => { router.push("/invites") }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", flex: 1, width: "100%" }}>
-          <View style={{ flexDirection: "row" }}>
-            <FontAwesome name="envelope" size={24} style={themed($invitesBannerIcon)} />
-            <Text tx="chatsScreen:chatRequests" preset="bold" />
-          </View>
-          <FontAwesome name="chevron-right" size={24} style={themed($invitesBannerIcon)} />
-        </View>
-      </Button> */}
-
-      {/* <View style={themed($searchContainer)}>
-        <TextField
-          style={themed($searchInput)}
-          placeholderTx="chatsScreen:searchPlaceholder"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View> */}
       <ChatList
         agent={agent}
         onChatPress={(chat) => {

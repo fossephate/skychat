@@ -7,7 +7,7 @@ import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useAuth } from "@/contexts/AuthContext";
-import { useConvo, ChatSettings } from 'skychat-lib';
+import { useConvo } from 'skychat-lib';
 
 export default function SettingsScreen() {
 
@@ -22,22 +22,14 @@ export default function SettingsScreen() {
     avatar: "",
   })
 
-  const [loading, setLoading] = React.useState(true);
-
-
-  if (!session) {
-    console.error("No session found")
-    router.push("/login")
-    return <></>
-  }
-
-  const agent = new Agent(session)
+  const [loading, setLoading] = React.useState(true)
 
   useEffect(() => {
     async function fetchProfile() {
       if (!client || !session) return;
 
       try {
+        const agent = new Agent(session)
         const profile = await agent.getProfile({
           actor: session.did,
         })
@@ -57,6 +49,10 @@ export default function SettingsScreen() {
 
     fetchProfile()
   }, [client, session])
+
+  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true)
+  const [darkMode, setDarkMode] = React.useState(false)
+  const [autoplay, setAutoplay] = React.useState(true)
 
   const renderSwitch = (value: boolean, onValueChange: (value: boolean) => void) => (
     <Switch
@@ -81,7 +77,7 @@ export default function SettingsScreen() {
       if (client) {
         setDidAuthenticate(false);
       }
-      convoContext?.clearManagerState();
+      convoContext.clearManagerState();
     } catch (err) {
       console.error("Logout error:", err)
     }
@@ -107,118 +103,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          {/* <ListItem
-            tx="settingsScreen:editProfile"
-            LeftComponent={themed(renderIcon("user"))}
-            style={themed($editProfileButton)}
-            textStyle={themed($editProfileText)}
-          /> */}
         </View>
-
-
-        <ChatSettings agent={agent} />
-
-        {/* Account Settings */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:account" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:privacy"
-              LeftComponent={themed(renderIcon("lock"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:security"
-              LeftComponent={themed(renderIcon("shield"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:connectedAccounts"
-              LeftComponent={themed(renderIcon("link"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
-
-        {/* Preferences */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:preferences" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:notifications"
-              LeftComponent={themed(renderIcon("bell"))}
-              style={themed($listItem)}
-              RightComponent={renderSwitch(notificationsEnabled, setNotificationsEnabled)}
-            />
-            <ListItem
-              tx="settingsScreen:darkMode"
-              LeftComponent={themed(renderIcon("moon"))}
-              style={themed($listItem)}
-              RightComponent={renderSwitch(darkMode, setDarkMode)}
-            />
-            <ListItem
-              tx="settingsScreen:autoplayMedia"
-              LeftComponent={themed(renderIcon("play"))}
-              style={themed($listItem)}
-              RightComponent={renderSwitch(autoplay, setAutoplay)}
-            />
-            <ListItem
-              tx="settingsScreen:language"
-              LeftComponent={themed(renderIcon("globe"))}
-              rightIcon="caretRight"
-              rightText="English"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
-
-        {/* Storage and Data */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:storageAndData" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:dataUsage"
-              LeftComponent={themed(renderIcon("database"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:storage"
-              LeftComponent={themed(renderIcon("save"))}
-              rightText="1.2 GB"
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
-
-        {/* Support */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:support" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:helpCenter"
-              LeftComponent={themed(renderIcon("help-circle"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:reportProblem"
-              LeftComponent={themed(renderIcon("alert-triangle"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:termsOfService"
-              LeftComponent={themed(renderIcon("file-text"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
 
         {/* Account Actions */}
         <View style={themed($section)}>

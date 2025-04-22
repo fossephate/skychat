@@ -11,3 +11,4 @@
 // export { ReplyMessageBar } from './components/chat/ReplyMessageBar';
 // export { ChatRequestsList } from './components/chat/ChatRequestsList';
 // export { ChatRequestItem } from './components/chat/ChatItem';
+// export { ChatSettings } from './components/bsky/ChatSettings';

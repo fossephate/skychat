@@ -23,7 +23,7 @@ export interface ChatListProps {
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
   showSectionHeaders?: boolean;
-  refreshIntervalMs?: number; // Auto-refresh interval in ms
+  refreshInterval?: number; // Auto-refresh interval in ms
 }
 
 interface ChatRequestsListProps extends ChatListProps {
@@ -32,7 +32,7 @@ interface ChatRequestsListProps extends ChatListProps {
   onProfilePress?: (chat: Chat) => void;
   acceptButtonText?: string;
   rejectButtonText?: string;
-  refreshIntervalMs?: number; // Auto-refresh interval in ms
+  refreshInterval?: number; // Auto-refresh interval in ms
 }
 
 // interface ChatItemProps {
@@ -63,8 +63,7 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
   agent,
   onChatPress,
   onProfilePress,
-  showSectionHeaders = true,
-  refreshIntervalMs,
+  refreshInterval = 1000 * 5,
   acceptButtonText,
   rejectButtonText,
 }) => {
@@ -157,15 +156,15 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
 
   // Setup auto-refresh if interval provided
   useEffect(() => {
-    if (refreshIntervalMs) {
+    if (refreshInterval) {
       const intervalId = setInterval(() => {
         fetchBskyChats();
-      }, refreshIntervalMs);
+      }, refreshInterval);
 
       return () => clearInterval(intervalId);
     }
     return () => { };
-  }, [refreshIntervalMs, agent, userDid]);
+  }, [refreshInterval, agent, userDid]);
 
   // Create sections for the SectionList
   const sections = [];

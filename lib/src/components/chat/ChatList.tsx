@@ -33,7 +33,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   onProfilePress,
   onInvitesPress,
   showInvitesBanner = true,
-  refreshInterval,
+  refreshInterval = 1000 * 10,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [bskyChats, setBskyChats] = useState<Chat[]>([]);

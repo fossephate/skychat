@@ -1,4 +1,14 @@
-import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TextStyle, ViewStyle, Image, ImageStyle } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Dimensions,
+  TextStyle,
+  ViewStyle,
+  Image,
+  ImageStyle,
+} from 'react-native';
 import { useState, useEffect } from 'react';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { AtpAgent } from '@atproto/api';
@@ -39,7 +49,9 @@ export async function parseBskyUrl(url: string): Promise<ParsedBskyPost> {
     }
     // Otherwise, resolve the handle to a DID
     else {
-      const resolved = await agent.com.atproto.identity.resolveHandle({ handle: didOrHandle });
+      const resolved = await agent.com.atproto.identity.resolveHandle({
+        handle: didOrHandle,
+      });
       return { did: resolved.data.did, postId };
     }
   }
@@ -87,7 +99,9 @@ export async function parseBskyUrl(url: string): Promise<ParsedBskyPost> {
     }
     // Otherwise, resolve the handle to a DID
     else {
-      const resolved = await agent.com.atproto.identity.resolveHandle({ handle: didOrHandle });
+      const resolved = await agent.com.atproto.identity.resolveHandle({
+        handle: didOrHandle,
+      });
       return { did: resolved.data.did, postId };
     }
   }
@@ -114,7 +128,9 @@ export async function parseBskyUrl(url: string): Promise<ParsedBskyPost> {
     }
     // Otherwise, resolve the handle to a DID
     else {
-      const resolved = await agent.com.atproto.identity.resolveHandle({ handle: didOrHandle });
+      const resolved = await agent.com.atproto.identity.resolveHandle({
+        handle: didOrHandle,
+      });
       return { did: resolved.data.did, postId };
     }
   }
@@ -130,12 +146,21 @@ interface Post {
   }[];
 }
 
-export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) => {
+export const PostRenderer = ({
+  url,
+  agent,
+}: {
+  url: string;
+  agent: AtpAgent;
+}) => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [parsedPost, setParsedPost] = useState<ParsedBskyPost | null>(null);
   const { themed, theme } = useAppTheme();
+
+  const mediaWidth = (width * 2) / 5;
+  const mediaHeight = mediaWidth * 1.7777777777777777;
 
   // Use parseBskyUrl to get the did and postId
   useEffect(() => {
@@ -163,7 +188,7 @@ export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) =
 
         // Use the parsed did and postId to construct the URI
         const response = await agent.app.bsky.feed.getPostThread({
-          uri: `at://${parsedPost.did}/app.bsky.feed.post/${parsedPost.postId}`
+          uri: `at://${parsedPost.did}/app.bsky.feed.post/${parsedPost.postId}`,
         });
 
         // Extract post data
@@ -174,18 +199,17 @@ export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) =
         // Extract media
         let media = [];
         if (postData.embed) {
-
-          if (postData.embed.$type === "app.bsky.embed.video#view") {
+          if (postData.embed.$type === 'app.bsky.embed.video#view') {
             media.push({
               type: 'video',
               url: postData.embed.playlist || postData.embed.thumbnail,
-              thumbnailUrl: postData.embed.thumbnail
+              thumbnailUrl: postData.embed.thumbnail,
             });
           }
 
           console.log('postData.embed', postData.embed);
 
-          if (postData.embed.$type === "app.bsky.embed.images#view") {
+          if (postData.embed.$type === 'app.bsky.embed.images#view') {
             for (const image of postData.embed.images) {
               console.log('image', image);
               media.push({
@@ -198,7 +222,7 @@ export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) =
 
         setPost({
           text: postData.record.text,
-          media
+          media,
         });
       } catch (err) {
         setError(err.message || 'Failed to fetch post');
@@ -215,7 +239,10 @@ export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) =
   if (loading) {
     return (
       <View style={themed($container)}>
-        <ActivityIndicator size="large" color={theme.colors.palette.primary300} />
+        <ActivityIndicator
+          size="large"
+          color={theme.colors.palette.primary300}
+        />
       </View>
     );
   }
@@ -237,18 +264,20 @@ export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) =
   }
 
   // Check if the post has video content
-  const videoMedia = post.media?.find(media =>
-    media.type === 'video' ||
-    media.url.endsWith('.mp4') ||
-    media.url.endsWith('.mov') ||
-    media.url.includes('video')
+  const videoMedia = post.media?.find(
+    (media) =>
+      media.type === 'video' ||
+      media.url.endsWith('.mp4') ||
+      media.url.endsWith('.mov') ||
+      media.url.includes('video')
   );
 
-  const imageMedia = post.media?.find(media =>
-    media.type === 'image' ||
-    media.url.endsWith('jpg') ||
-    media.url.endsWith('png') ||
-    media.url.endsWith('gif')
+  const imageMedia = post.media?.find(
+    (media) =>
+      media.type === 'image' ||
+      media.url.endsWith('jpg') ||
+      media.url.endsWith('png') ||
+      media.url.endsWith('gif')
   );
 
   console.log('imageMedia', imageMedia);
@@ -257,14 +286,13 @@ export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) =
     <View style={themed($container)}>
       {/* <Text style={themed($postText)}>{post.text}</Text> */}
 
-      {videoMedia && (
-        <VideoPlayerComponent videoUrl={videoMedia.url} />
-      )}
+      {videoMedia && <VideoPlayerComponent videoUrl={videoMedia.url} />}
 
       {imageMedia && (
-        <View style={themed($imageContainer)}>
-          <Image source={{ uri: imageMedia.url }} style={{width: 200, height: 200}} />
-        </View>
+          <Image
+            source={{ uri: imageMedia.url }}
+            style={themed($imageContainer)}
+          />
       )}
 
       {/* {videoMedia ? (
@@ -283,12 +311,14 @@ export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) =
 
 // Separate component for handling video playback
 const VideoPlayerComponent = ({ videoUrl }: { videoUrl: string }) => {
-  const player = useVideoPlayer(videoUrl, player => {
+  const player = useVideoPlayer(videoUrl, (player) => {
     player.loop = true;
   });
   const { themed } = useAppTheme();
 
-  const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
+  const { isPlaying } = useEvent(player, 'playingChange', {
+    isPlaying: player.playing,
+  });
 
   return (
     <View style={themed($videoContainer)}>
@@ -305,11 +335,9 @@ const VideoPlayerComponent = ({ videoUrl }: { videoUrl: string }) => {
 // Define themed styles
 const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({
   backgroundColor: 'transparent',
-  borderRadius: 8,
-  // paddingVertical: 8,
-  paddingHorizontal: 4,
+  borderRadius: 16,
+  paddingHorizontal: 2,
   paddingBottom: 2,
-  // marginVertical: 10,
   paddingTop: 4,
 });
 
@@ -323,21 +351,18 @@ const $videoContainer: ThemedStyle<ViewStyle> = () => ({
   alignItems: 'center',
 });
 
-const $imageContainer: ThemedStyle<ViewStyle> = () => ({
-  alignItems: 'center',
-  width: (width * 2 / 5),
-  height: (width * 2 / 5) * 1.7777777777777777, // 9:16 aspect ratio
+const $imageContainer: ThemedStyle<ImageStyle> = () => ({
+  resizeMode: 'contain',
+  width: (width * 2) / 5,
+  height: ((width * 2) / 5) * 1.7777777777777777, // 9:16 aspect ratio
+  borderRadius: 8,
 });
 
-const $image: ThemedStyle<ImageStyle> = () => ({
-
-});
-
-
+const $image: ThemedStyle<ImageStyle> = () => ({});
 
 const $video: ThemedStyle<ViewStyle> = () => ({
-  width: (width * 2 / 5),
-  height: (width * 2 / 5) * 1.7777777777777777, // 9:16 aspect ratio
+  width: (width * 2) / 5,
+  height: ((width * 2) / 5) * 1.7777777777777777, // 9:16 aspect ratio
   borderRadius: 8,
   backgroundColor: '#000',
 });
