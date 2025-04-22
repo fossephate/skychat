@@ -201,18 +201,23 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
     return <LoadingView />;
   }
 
-  const onAccept = (chat: Chat) => {
+  const onAccept = async (chat: Chat) => {
     console.log("Accepting chat:", chat);
     if (chat.isBsky) {
-
+      const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+      await proxy.chat.bsky.convo.acceptConvo({ convoId: chat.id });
+      onRefresh();
       return;
     }
 
   }
 
-  const onReject = (chat: Chat) => {
+  const onReject = async (chat: Chat) => {
     console.log("Rejecting chat:", chat);
     if (chat.isBsky) {
+      const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+      await proxy.chat.bsky.convo.leaveConvo({ convoId: chat.id });
+      onRefresh();
       return;
     }
   }

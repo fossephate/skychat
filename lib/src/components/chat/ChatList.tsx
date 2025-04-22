@@ -1,5 +1,4 @@
-// @ts-nocheck
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   ViewStyle,
@@ -17,6 +16,7 @@ import { Chat, ChatItem, User } from '../../components/chat/ChatItem';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
 import { LoadingView } from '../util/utils';
+import ActionSheet, { ActionSheetRef } from 'react-native-actions-sheet';
 
 export interface ChatListProps {
   agent: Agent;
@@ -24,9 +24,7 @@ export interface ChatListProps {
   onProfilePress?: (chat: Chat) => void;
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
-  showSectionHeaders?: boolean;
   refreshInterval?: number; // Auto-refresh interval in ms
-  emptyStateComponent?: React.ReactNode;
 }
 
 export const ChatList: React.FC<ChatListProps> = ({
@@ -35,9 +33,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   onProfilePress,
   onInvitesPress,
   showInvitesBanner = true,
-  showSectionHeaders = true,
   refreshInterval,
-  emptyStateComponent,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [bskyChats, setBskyChats] = useState<Chat[]>([]);
@@ -48,8 +44,10 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(
     new Map()
   );
-
+  const actionSheetRef = useRef<ActionSheetRef>(null);
   const userDid = agent.assertDid;
+
+  const [chatToLeave, setChatToLeave] = useState<Chat | null>(null);
 
   const { themed } = useAppTheme();
 
@@ -208,6 +206,28 @@ export const ChatList: React.FC<ChatListProps> = ({
     }
   }, [agent, userDid]);
 
+  const onLeaveChat = useCallback(
+    async (chat: Chat) => {
+      setChatToLeave(chat);
+      actionSheetRef.current?.show();
+    },
+    [agent]
+  );
+
+  const confirmLeaveChat = useCallback(async () => {
+    try {
+      if (!chatToLeave) {
+        return;
+      }
+      const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+      await proxy.chat.bsky.convo.leaveConvo({ convoId: chatToLeave?.id });
+    } catch (error) {
+      console.error('Error leaving chat:', error);
+    }
+    actionSheetRef.current?.hide();
+    onRefresh();
+  }, [agent, chatToLeave]);
+
   // Initial loading
   useEffect(() => {
     setIsLoading(true);
@@ -324,6 +344,7 @@ export const ChatList: React.FC<ChatListProps> = ({
               item={item}
               onChatPress={onChatPress}
               onProfilePress={onProfilePress}
+              onLeaveChat={onLeaveChat}
             />
           )}
           renderSectionHeader={renderSectionHeader}
@@ -338,9 +359,38 @@ export const ChatList: React.FC<ChatListProps> = ({
       ) : (
         <EmptyListComponent />
       )}
+
+      {/* TODO: expose overrides for the text and button text */}
+      <ActionSheet ref={actionSheetRef}>
+        <View style={themed($actionSheetContainer)}>
+          <Text style={{ fontSize: 24, paddingBottom: 8, fontWeight: 'bold' }}>Leave Conversation</Text>
+          <Text>Are you sure you want to leave this conversation?</Text>
+          <Text>Your message will be deleted for you, but not for the other participant.</Text>
+          <Button onPress={confirmLeaveChat} style={themed($actionSheetButton)}>
+            <Text>Leave</Text>
+          </Button>
+          <Button onPress={() => actionSheetRef.current?.hide()} style={{ marginTop: 6 }}>
+            <Text>Cancel</Text>
+          </Button>
+        </View>
+      </ActionSheet>
     </View>
   );
 };
+
+// action sheet styles
+const $actionSheetContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  paddingBottom: spacing.xl,
+  paddingTop: spacing.md,
+  paddingHorizontal: spacing.lg,
+  backgroundColor: colors.background,
+  color: colors.text,
+});
+
+const $actionSheetButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  marginTop: spacing.md,
+  backgroundColor: colors.error,
+});
 
 // Styles
 const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { StyleProp, useColorScheme } from "react-native"
 import { DarkTheme, DefaultTheme, useTheme as useNavTheme } from "@react-navigation/native"
@@ -11,6 +10,9 @@ import {
   darkTheme,
 } from "../theme"
 import * as SystemUI from "expo-system-ui"
+import { GestureHandlerRootView } from "react-native-gesture-handler"
+import { SheetProvider } from "react-native-actions-sheet";
+import React from "react"
 
 type ThemeContextType = {
   themeScheme: ThemeContexts
@@ -47,11 +49,36 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
     setImperativeTheming(themeContextToTheme(themeScheme))
   }, [themeScheme])
 
+  const GestureThemeProvider = ({ children }: { children: React.ReactNode }) => {
+    // return (
+    //   <GestureHandlerRootView>
+    //     <SheetProvider context="global">
+    //       <ThemeContext.Provider value={{ themeScheme, setThemeContextOverride }}>
+    //         {children}
+    //       </ThemeContext.Provider>
+    //     </SheetProvider>
+    //   </GestureHandlerRootView>
+    // );
+    return React.createElement(
+      GestureHandlerRootView,
+      null,
+      React.createElement(
+        SheetProvider,
+        { context: "global" },
+        React.createElement(
+          ThemeContext.Provider,
+          { value: { themeScheme, setThemeContextOverride } },
+          children
+        )
+      )
+    );
+  }
+
   return {
     themeScheme,
     navigationTheme,
     setThemeContextOverride,
-    ThemeProvider: ThemeContext.Provider,
+    ThemeProvider: GestureThemeProvider,
   }
 }
 

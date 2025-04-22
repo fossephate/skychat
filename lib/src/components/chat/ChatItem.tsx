@@ -1,11 +1,21 @@
-// @ts-nocheck
-import { Image, TextStyle, View, ViewStyle, TouchableOpacity } from 'react-native';
+import {
+  Image,
+  TextStyle,
+  View,
+  ViewStyle,
+  TouchableOpacity,
+} from 'react-native';
+import { useRef } from 'react';
 import { ThemedStyle } from '../../theme';
 import { ListItem } from '../../components/ListItem';
 import { Text, Button } from '../../components';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { useConvo } from '../../contexts/ConvoContext';
-
+import Swipeable, { SwipeableRef } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated, {
+  SharedValue,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 
 export interface User {
   id: string;
@@ -38,7 +48,7 @@ const avatarStyle = {
   borderRadius: 25,
 };
 
-const renderChatAvatar = (chat: Chat, onProfilePress: (chat: Chat) => void) => {
+const renderChatAvatar = (chat: Chat, onProfilePress?: (chat: Chat) => void) => {
   const { themed } = useAppTheme();
   const convoContext = useConvo();
   const client = convoContext?.client;
@@ -58,7 +68,7 @@ const renderChatAvatar = (chat: Chat, onProfilePress: (chat: Chat) => void) => {
   if (isDM && otherMember) {
     return (
       <View style={themed($avatarContainer)}>
-        <TouchableOpacity onPress={() => onProfilePress(chat)}>
+        <TouchableOpacity onPress={() => onProfilePress?.(chat)}>
           <Image source={{ uri: otherMember.avatar }} style={avatarStyle} />
         </TouchableOpacity>
       </View>
@@ -67,7 +77,7 @@ const renderChatAvatar = (chat: Chat, onProfilePress: (chat: Chat) => void) => {
 
   return (
     <View style={themed($avatarContainer)}>
-      <TouchableOpacity onPress={() => onProfilePress(chat)}>
+      <TouchableOpacity onPress={() => onProfilePress?.(chat)}>
         {/* <View style={themed($avatar)}>
         <Text style={themed($groupAvatarText)}>
         {chat.name?.[0]?.toUpperCase() || getChatName(chat, SELF_USER.id)[0]}
@@ -138,7 +148,7 @@ export const ChatRequestItem = ({
   return (
     <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
       <ListItem
-        onPress={() => onChatPress(chat)}
+        onPress={() => onChatPress?.(chat)}
         LeftComponent={renderChatAvatar(chat, onProfilePress)}
         textStyle={[
           themed($chatName),
@@ -189,8 +199,10 @@ export const ChatRequestItem = ({
 };
 
 interface ChatItemProps {
+  item: Chat;
   onChatPress?: (chat: Chat) => void;
   onProfilePress?: (chat: Chat) => void;
+  onLeaveChat?: (chat: Chat) => void;
 }
 
 // Convert to a proper React component
@@ -198,59 +210,117 @@ export const ChatItem = ({
   item: chat,
   onChatPress,
   onProfilePress,
+  onLeaveChat,
 }: ChatItemProps) => {
   const { themed } = useAppTheme();
+
+  const swipeableRef = useRef<SwipeableRef>(null);
+
+  // const renderRightActions = ({ progress }: { progress: number }) => {
+  //   if (progress < 0.5) {
+  //     return null;
+  //   }
+
+  //   return (
+  //     <View style={{ width: "100%", flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+  //       <TouchableOpacity
+  //         style={themed($deleteAction)}
+  //         onPress={() => onLeaveChat?.(chat)}
+  //       >
+  //         <Text style={themed($deleteActionText)}>Leave</Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //   );
+  // };
+
+  function renderRightActions(
+    prog: SharedValue<number>,
+    drag: SharedValue<number>
+  ) {
+    const styleAnimation = useAnimatedStyle(() => {
+      return {
+        transform: [{ translateX: drag.value + 50 }],
+      };
+    });
+
+    return (
+      <Reanimated.View style={styleAnimation}>
+        {/* <TouchableOpacity onPress={() => onLeaveChat?.(chat)}> */}
+        {/* </TouchableOpacity> */}
+          <View style={themed($deleteAction)}>
+            <Text style={themed($deleteActionText)}>Leave</Text>
+          </View>
+      </Reanimated.View>
+    );
+  }
+
   return (
-    <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
-      <ListItem
-        LeftComponent={renderChatAvatar(chat, onProfilePress)}
-        textStyle={[
-          themed($chatName),
-          !chat.lastMessage?.read && themed($unreadChatName),
-        ]}
-        onPress={() => onChatPress(chat)}
-        RightComponent={
-          <View style={themed($rightContainer)}>
-            <TouchableOpacity onPress={() => onChatPress(chat)}>
-              <Text
-                style={[
-                  themed($timestamp),
-                  // !chat.lastMessage?.read && themed($unreadTimestamp),
-                  // chat.muted && themed($mutedText),
-                ]}
-              >
-                {chat.lastMessage?.timestamp}
-              </Text>
-              {chat.unreadCount > 0 && (
-                <View
+    <Swipeable
+      renderRightActions={renderRightActions}
+      onSwipeableOpen={() => {
+        onLeaveChat?.(chat);
+        swipeableRef.current?.close();
+      }}
+      ref={swipeableRef as any}
+      overshootRight={true}
+      // friction={2}
+      rightThreshold={60}
+      onSwipeableWillOpen={() => {
+        // onLeaveChat?.(chat);
+        console.log('onSwipeableWillOpen');
+      }}
+    >
+      <View style={[themed($chatCard), chat.pinned && themed($pinnedChat)]}>
+        <ListItem
+          LeftComponent={renderChatAvatar(chat, onProfilePress)}
+          textStyle={[
+            themed($chatName),
+            !chat.lastMessage?.read && themed($unreadChatName),
+          ]}
+          onPress={() => onChatPress?.(chat)}
+          RightComponent={
+            <View style={themed($rightContainer)}>
+              <TouchableOpacity onPress={() => onChatPress?.(chat)}>
+                <Text
                   style={[
-                    themed($unreadBadge),
-                    chat.muted && themed($mutedBadge),
+                    themed($timestamp),
+                    // !chat.lastMessage?.read && themed($unreadTimestamp),
+                    // chat.muted && themed($mutedText),
                   ]}
                 >
-                  <Text style={themed($unreadText)}>{chat.unreadCount}</Text>
-                </View>
-              )}
-              {/* {chat.muted && <Text style={themed($mutedIcon)}>🔇</Text>} */}
-              {/* {chat.pinned && <Text style={themed($pinnedIcon)}>📌</Text>} */}
-            </TouchableOpacity>
+                  {chat.lastMessage?.timestamp}
+                </Text>
+                {chat.unreadCount > 0 && (
+                  <View
+                    style={[
+                      themed($unreadBadge),
+                      chat.muted && themed($mutedBadge),
+                    ]}
+                  >
+                    <Text style={themed($unreadText)}>{chat.unreadCount}</Text>
+                  </View>
+                )}
+                {/* {chat.muted && <Text style={themed($mutedIcon)}>🔇</Text>} */}
+                {/* {chat.pinned && <Text style={themed($pinnedIcon)}>📌</Text>} */}
+              </TouchableOpacity>
+            </View>
+          }
+          style={themed($listItem)}
+        >
+          <View style={{ flexDirection: 'column' }}>
+            <Text>{chat.name}</Text>
+            {chat.handle && (
+              <Text style={themed($chatHandle)}>{'@' + chat.handle}</Text>
+            )}
+            {chat.lastMessage && (
+              <Text numberOfLines={1} style={themed($lastMessage)}>
+                {chat.lastMessage?.text}
+              </Text>
+            )}
           </View>
-        }
-        style={themed($listItem)}
-      >
-        <View style={{ flexDirection: 'column' }}>
-          <Text>{chat.name}</Text>
-          {chat.handle && (
-            <Text style={themed($chatHandle)}>{'@' + chat.handle}</Text>
-          )}
-          {chat.lastMessage && (
-            <Text numberOfLines={1} style={themed($lastMessage)}>
-              {chat.lastMessage?.text}
-            </Text>
-          )}
-        </View>
-      </ListItem>
-    </View>
+        </ListItem>
+      </View>
+    </Swipeable>
   );
 };
 
@@ -292,6 +362,19 @@ const $verifiedBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({
   alignItems: 'center',
   borderWidth: 2,
   borderColor: colors.background,
+});
+
+const $deleteAction: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  // backgroundColor: colors.error,
+  // borderRadius: 10,
+  // minHeight: 4,
+  // width: 100,
+});
+
+const $deleteActionText: ThemedStyle<TextStyle> = ({ colors }) => ({
+  color: colors.text,
+  backgroundColor: colors.error,
+  width: 50,
 });
 
 // Styles
