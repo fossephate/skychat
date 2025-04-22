@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { ListView, Text, Button, Icon, TextField } from "../../components"
 import { ThemedStyle } from "../../theme"
 import { useAppTheme } from "../../utils/useAppTheme"
@@ -25,10 +25,9 @@ interface NewChatModalProps {
   onClose: () => void
   onSubmit: (groupName: string, selectedUsers: string[]) => void // Returns array of DIDs
   agent: Agent
-  did: string
 }
 
-export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewChatModalProps) {
+export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatModalProps) {
   const [state, setState] = useState({
     searchQuery: "",
     groupName: "",
@@ -38,6 +37,8 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewCh
     error: "",
     isGlobalSearch: true,
   })
+
+  const userDid = agent.assertDid;
 
   const { themed } = useAppTheme()
 
@@ -66,13 +67,13 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewCh
   }, [isVisible])
 
   const fetchFollowing = async () => {
-    if (!agent || !did) return
+    if (!agent || !userDid) return
 
     try {
       setState(prev => ({ ...prev, loading: true, error: "" }))
 
       const following = await agent.getFollows({
-        actor: did,
+        actor: userDid,
         limit: 25,
       })
 
@@ -91,7 +92,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewCh
       }))
 
       // filter out our own profile:
-      formattedUsers = formattedUsers.filter(user => user.id !== did)
+      formattedUsers = formattedUsers.filter(user => user.id !== userDid)
 
       setState(prev => ({
         ...prev,
@@ -166,7 +167,9 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent, did }: NewCh
   }, [state.searchQuery, state.isGlobalSearch])
 
   const toggleUserSelection = (did: string) => {
+    console.log("toggleUserSelection", did)
     const userToAdd = state.users.find(user => user.id === did);
+    console.log("userToAdd", userToAdd)
     if (userToAdd) {
       setState(prev => ({
         ...prev,

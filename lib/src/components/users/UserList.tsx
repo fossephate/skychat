@@ -15,8 +15,11 @@ import { useState } from "react"
 import { Agent } from "@atproto/api"
 import { useAppTheme } from "../../utils/useAppTheme"
 import { TextField } from "../TextField"
-import { ThemedStyle } from "@/theme"
+import { ThemedStyle } from "../../theme"
 import { Text } from "../Text"
+import { Button } from "../Button"
+import { NewChatModal } from "../chat/NewChat"
+import { FontAwesome } from "@expo/vector-icons"
 
 interface User {
   did: string
@@ -34,7 +37,7 @@ interface UserListProps {
   onProfilePress?: (did: string) => void
 }
 
-export default function UserList({ agent, onChatPress, onProfilePress }: UserListProps) {
+export const UserList = ({ agent, onChatPress, onProfilePress }: UserListProps) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,13 +45,13 @@ export default function UserList({ agent, onChatPress, onProfilePress }: UserLis
   const { themed } = useAppTheme()
   const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false)
 
-  const did = agent.assertDid
+  const userDid = agent.assertDid
 
   const fetchFollowing = useCallback(async () => {
     try {
       // Get the user's following list
       const following = await agent.getFollows({
-        actor: did,
+        actor: userDid,
         limit: 25,
       })
 
@@ -81,43 +84,43 @@ export default function UserList({ agent, onChatPress, onProfilePress }: UserLis
     fetchFollowing()
   }, [fetchFollowing])
 
-  // const handleNewChat = async (groupName: string, selectedUsers: string[]) => {
-  //   if (groupName === "") {
-  //     // random group name
-  //     groupName = "Group " + Math.floor(Math.random() * 1000000)
-  //   }
-  //   console.log("Group name:", groupName)
-  //   console.log("getting groups with users: ", selectedUsers)
+  const handleNewChat = async (groupName: string, selectedUsers: string[]) => {
+    if (groupName === "") {
+      // random group name
+      groupName = "Group " + Math.floor(Math.random() * 1000000)
+    }
+    console.log("Group name:", groupName)
+    console.log("getting groups with users: ", selectedUsers)
 
-  //   try {
-  //     let allMembers = [...selectedUsers, convoContext.client!.id]
-  //     const groupId = await convoContext.getGroupIdWithUsers(allMembers)
-  //     console.log("group with these users: ", groupId)
-  //     if (!groupId) {
-  //       throw new Error("No group id found")
-  //     }
-  //     router.push(`/chats/${groupId}`)
-  //     return
-  //   } catch (error) {
-  //     console.log("No group found with these users, creating new group" + error)
-  //   }
+    // try {
+    //   let allMembers = [...selectedUsers, convoContext.client!.id]
+    //   const groupId = await convoContext.getGroupIdWithUsers(allMembers)
+    //   console.log("group with these users: ", groupId)
+    //   if (!groupId) {
+    //     throw new Error("No group id found")
+    //   }
+    //   router.push(`/chats/${groupId}`)
+    //   return
+    // } catch (error) {
+    //   console.log("No group found with these users, creating new group" + error)
+    // }
 
-  //   try {
-  //     const encodedGroupId = await convoContext.createGroupWithUsers(groupName, selectedUsers)
-  //     if (!encodedGroupId) {
-  //       throw new Error("No group id found")
-  //     }
-  //     console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)
-  //     router.push(`/chats/${encodedGroupId}` as any)
-  //     onChatPress?.(encodedGroupId)
-  //   } catch (error) {
-  //     // console.log("error creating group: ", error)
-  //     // console.error('Error creating chat:', error)
-  //     // pop up an error modal:
-  //     Alert.alert("Error creating chat", "This user is not on Skychat (yet!)")
-  //   }
-  //   // Alert.alert('Success', 'This user is not on Skychat (yet!)')
-  // }
+    // try {
+    //   const encodedGroupId = await convoContext.createGroupWithUsers(groupName, selectedUsers)
+    //   if (!encodedGroupId) {
+    //     throw new Error("No group id found")
+    //   }
+    //   console.log(`contacts.tsx: created group!: ${groupName} (${encodedGroupId})`)
+    //   router.push(`/chats/${encodedGroupId}` as any)
+    //   onChatPress?.(encodedGroupId)
+    // } catch (error) {
+    //   // console.log("error creating group: ", error)
+    //   // console.error('Error creating chat:', error)
+    //   // pop up an error modal:
+    //   Alert.alert("Error creating chat", "This user is not on Skychat (yet!)")
+    // }
+    // Alert.alert('Success', 'This user is not on Skychat (yet!)')
+  }
 
   // const handleCreateDm = (user: User) => {
   // TODO: check if we have a group with this user already:
@@ -193,17 +196,18 @@ export default function UserList({ agent, onChatPress, onProfilePress }: UserLis
         }
       />
 
-      {/* <NewChatModal
+      <NewChatModal
         isVisible={isNewChatModalVisible}
         onClose={() => setIsNewChatModalVisible(false)}
         onSubmit={handleNewChat}
-      /> */}
+        agent={agent}
+      />
 
-      {/* <Button
+      <Button
         style={themed($fabButton)}
         onPress={() => setIsNewChatModalVisible(true)}
-        LeftAccessory={() => <FontAwesome name="plus" size={24} color={colors.background} />}
-      /> */}
+        LeftAccessory={() => <FontAwesome name="plus" size={24} />}
+      />
     </View>
   )
 }

@@ -5,11 +5,10 @@ import { colors, ThemedStyle } from "src/theme"
 import { Agent } from '@atproto/api'
 import { useAppTheme } from "src/utils/useAppTheme"
 import { ListItem } from "src/components/ListItem"
-import { NewChatModal } from "skychat-lib"
+import { NewChatModal, UserList } from "skychat-lib"
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuth } from "@/contexts/AuthContext"
 import { router } from "expo-router"
-import UserList from "@/components/users/UserList"
 
 export default function UsersScreen() {
 
