@@ -72,6 +72,10 @@ export default function chatsScreen() {
         onInvitesPress={() => {
           router.push("/invites")
         }}
+        onProfilePress={(chat) => {
+          // router.push(`/profile/${chat.id}` as any)
+          console.log("onProfilePress", chat)
+        }}
         refreshInterval={10000}
       />
     </Screen>

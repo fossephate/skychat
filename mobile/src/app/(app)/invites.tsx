@@ -19,187 +19,161 @@ import { Agent } from "@atproto/api"
 import { router } from "expo-router"
 import { ChatRequestsList } from "skychat-lib"
 
-interface Invite {
-  senderId: string
-  senderName?: string
-  senderHandle: string
-  senderAvatar?: string
-  groupName: string
-  timestamp: string
-  welcomeMessage: ArrayBuffer
-}
-
-// Mock data - will be replaced with actual data from API
-const mockInvites: Invite[] = [
-  {
-    senderId: "did:plc:cn4gldkpxj43zpuqztnwyf6h",
-    senderName: "Alice",
-    senderHandle: "alice.bsky.social",
-    senderAvatar: "https://i.pravatar.cc/150?u=1",
-    groupName: "Alphabet Group",
-    timestamp: new Date().toISOString(),
-    welcomeMessage: new ArrayBuffer(0)
-  },
-  {
-    senderId: "did:plc:4x3vv23ssv6fkqw6zgvqb3tl",
-    senderName: "Bob",
-    senderHandle: "bob.bsky.social",
-    senderAvatar: "https://i.pravatar.cc/150?u=2",
-    groupName: "Design Team",
-    timestamp: new Date().toISOString(),
-    welcomeMessage: new ArrayBuffer(0)
-  },
-]
+// interface Invite {
+//   senderId: string
+//   senderName?: string
+//   senderHandle: string
+//   senderAvatar?: string
+//   groupName: string
+//   timestamp: string
+//   welcomeMessage: ArrayBuffer
+// }
 
 export default function InvitesScreen() {
   const { themed } = useAppTheme()
-  const [invites, setInvites] = useState<Invite[]>([])
-  const [refreshing, setRefreshing] = useState(true)
-  const convoContext = useConvo()
-  const authContext = useAuth()
 
-  const fetchInvites = async () => {
+  // const fetchInvites = async () => {
     // Get invites from context
-    const userInvites = await convoContext.getInvites()
+    // const userInvites = await convoContext.getInvites()
 
-    if (!authContext.session) { return }
+    // if (!authContext.session) { return }
 
     
 
-    if (userInvites.length === 0) {
-      // only change if the mock data is not already set:
-      if (invites != mockInvites) {
-        setInvites(mockInvites)
-      }
-      return
-    }
+  //   if (userInvites.length === 0) {
+  //     // only change if the mock data is not already set:
+  //     if (invites != mockInvites) {
+  //       setInvites(mockInvites)
+  //     }
+  //     return
+  //   }
 
-    const inviteDids = userInvites.map(invite => invite.senderId);
+  //   const inviteDids = userInvites.map(invite => invite.senderId);
 
-    console.log("userInvites: ", userInvites)
-    console.log("welcome message length: ", userInvites[0].welcomeMessage.length)
+  //   console.log("userInvites: ", userInvites)
+  //   console.log("welcome message length: ", userInvites[0].welcomeMessage.length)
 
-    try {
-      const agent = new Agent(authContext.session);
-      const profiles = await agent.getProfiles({
-        actors: inviteDids
-      })
+  //   try {
+  //     const agent = new Agent(authContext.session);
+  //     const profiles = await agent.getProfiles({
+  //       actors: inviteDids
+  //     })
 
-      const profileData = profiles.data.profiles;
+  //     const profileData = profiles.data.profiles;
 
-      // get the avatar url from the profile data and add it to the invite object 
-      const invitesWithProfiles = userInvites.map(invite => {
-        const profile = profileData.find(p => p.did === invite.senderId);
-        return {
-          ...invite,
-          senderAvatar: profile?.avatar,
-          senderHandle: profile?.handle,
-          senderName: profile?.displayName,
-          welcomeMessage: invite.welcomeMessage
-        }
-      })
-      setInvites(invitesWithProfiles)
+  //     // get the avatar url from the profile data and add it to the invite object 
+  //     const invitesWithProfiles = userInvites.map(invite => {
+  //       const profile = profileData.find(p => p.did === invite.senderId);
+  //       return {
+  //         ...invite,
+  //         senderAvatar: profile?.avatar,
+  //         senderHandle: profile?.handle,
+  //         senderName: profile?.displayName,
+  //         welcomeMessage: invite.welcomeMessage
+  //       }
+  //     })
+  //     setInvites(invitesWithProfiles)
 
-    } catch (error) {
-      console.error('Error fetching invites:', error)
-      setRefreshing(false)
-    }
-  }
+  //   } catch (error) {
+  //     console.error('Error fetching invites:', error)
+  //     setRefreshing(false)
+  //   }
+  // }
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    try {
-      await fetchInvites()
-    } catch (error) {
-      console.error('Error refreshing invites:', error)
-    }
-    // Small delay to make refresh feel more natural
-    setTimeout(() => setRefreshing(false), 1500)
-  }, [convoContext, authContext])
+  // const onRefresh = useCallback(async () => {
+  //   setRefreshing(true)
+  //   try {
+  //     await fetchInvites()
+  //   } catch (error) {
+  //     console.error('Error refreshing invites:', error)
+  //   }
+  //   // Small delay to make refresh feel more natural
+  //   setTimeout(() => setRefreshing(false), 1500)
+  // }, [convoContext, authContext])
 
-  useEffect(() => {
-    fetchInvites()
-    setTimeout(() => setRefreshing(false), 1500)
-  }, [convoContext, authContext])
+  // useEffect(() => {
+  //   fetchInvites()
+  //   setTimeout(() => setRefreshing(false), 1500)
+  // }, [convoContext, authContext])
 
-  function refreshInvites() {
-    fetchInvites();
-    setTimeout(() => setRefreshing(false), 1500)
-  }
+  // function refreshInvites() {
+  //   fetchInvites();
+  //   setTimeout(() => setRefreshing(false), 1500)
+  // }
 
-  const handleAccept = async (inviteWelcomeMessage: ArrayBuffer) => {
-    console.log("handleAccept: ", inviteWelcomeMessage);
+  // const handleAccept = async (inviteWelcomeMessage: ArrayBuffer) => {
+  //   console.log("handleAccept: ", inviteWelcomeMessage);
 
-    const groupId = await convoContext.acceptPendingInvite(inviteWelcomeMessage);
+  //   const groupId = await convoContext.acceptPendingInvite(inviteWelcomeMessage);
 
-    // convert groupId (ArrayBuffer) to base64 string:
-    let groupIdBase64 = Buffer.from(groupId).toString('base64');
+  //   // convert groupId (ArrayBuffer) to base64 string:
+  //   let groupIdBase64 = Buffer.from(groupId).toString('base64');
 
-    console.log("groupIdBase64: ", groupIdBase64);
-    // navigate to the skychat (/chats/:groupId)
-    router.replace(`/chats/${groupIdBase64}` as any);
+  //   console.log("groupIdBase64: ", groupIdBase64);
+  //   // navigate to the skychat (/chats/:groupId)
+  //   router.replace(`/chats/${groupIdBase64}` as any);
 
-    refreshInvites();
-  }
+  //   refreshInvites();
+  // }
 
-  const handleDecline = (inviteId: string) => {
-    // TODO: Implement decline functionality with convoContext
-    // convoContext.declineInvite(inviteId)
+  // const handleDecline = (inviteId: string) => {
+  //   // TODO: Implement decline functionality with convoContext
+  //   // convoContext.declineInvite(inviteId)
 
-    // For now, just remove from UI
-    setInvites(current => current.filter(invite => invite.senderId !== inviteId))
-  }
+  //   // For now, just remove from UI
+  //   setInvites(current => current.filter(invite => invite.senderId !== inviteId))
+  // }
 
-  const renderInvite = (invite: Invite) => {
-    return (
-      <ListItem
-        key={invite.senderId + invite.timestamp + invite.groupName}
-        topSeparator
-        height={72}
-        bottomSeparator
-        LeftComponent={
-          <View style={themed($avatarContainer)}>
-            <Image
-              source={{ uri: invite.senderAvatar || 'https://i.pravatar.cc/150' }}
-              style={themed($avatar)}
-            />
-          </View>
-        }
-        RightComponent={
-          <View style={themed($actionContainer)}>
-            <FontAwesome.Button
-              name="check"
-              backgroundColor="transparent"
-              color={themed($acceptIcon).color}
-              onPress={() => handleAccept(invite.welcomeMessage)}
-              style={themed($actionButton)}
-              iconStyle={themed($icon)}
-            />
-            <FontAwesome.Button
-              name="times"
-              backgroundColor="transparent"
-              color={themed($declineIcon).color}
-              onPress={() => handleDecline(invite.senderId)}
-              style={themed($actionButton)}
-              iconStyle={themed($icon)}
-            />
-          </View>
-        }
-      >
-        <View style={themed($inviteContent)}>
-          {invite.senderName && <Text style={themed($inviteSender)} numberOfLines={1}>
-            {invite.senderName}
-          </Text>}
-          <Text style={themed($inviteSender)} numberOfLines={1}>
-            {invite.senderHandle}
-          </Text>
-          <Text style={themed($inviteGroupName)} numberOfLines={2}>
-            {translate("invitesScreen:inviteMessage", { sender: invite.senderName, group: invite.groupName })}
-          </Text>
-        </View>
-      </ListItem>
-    )
-  }
+  // const renderInvite = (invite: Invite) => {
+  //   return (
+  //     <ListItem
+  //       key={invite.senderId + invite.timestamp + invite.groupName}
+  //       topSeparator
+  //       height={72}
+  //       bottomSeparator
+  //       LeftComponent={
+  //         <View style={themed($avatarContainer)}>
+  //           <Image
+  //             source={{ uri: invite.senderAvatar || 'https://i.pravatar.cc/150' }}
+  //             style={themed($avatar)}
+  //           />
+  //         </View>
+  //       }
+  //       RightComponent={
+  //         <View style={themed($actionContainer)}>
+  //           <FontAwesome.Button
+  //             name="check"
+  //             backgroundColor="transparent"
+  //             color={themed($acceptIcon).color}
+  //             onPress={() => handleAccept(invite.welcomeMessage)}
+  //             style={themed($actionButton)}
+  //             iconStyle={themed($icon)}
+  //           />
+  //           <FontAwesome.Button
+  //             name="times"
+  //             backgroundColor="transparent"
+  //             color={themed($declineIcon).color}
+  //             onPress={() => handleDecline(invite.senderId)}
+  //             style={themed($actionButton)}
+  //             iconStyle={themed($icon)}
+  //           />
+  //         </View>
+  //       }
+  //     >
+  //       <View style={themed($inviteContent)}>
+  //         {invite.senderName && <Text style={themed($inviteSender)} numberOfLines={1}>
+  //           {invite.senderName}
+  //         </Text>}
+  //         <Text style={themed($inviteSender)} numberOfLines={1}>
+  //           {invite.senderHandle}
+  //         </Text>
+  //         <Text style={themed($inviteGroupName)} numberOfLines={2}>
+  //           {translate("invitesScreen:inviteMessage", { sender: invite.senderName, group: invite.groupName })}
+  //         </Text>
+  //       </View>
+  //     </ListItem>
+  //   )
+  // }
 
   // // Create a refreshable empty list component
   // const EmptyListComponent = () => (
@@ -213,15 +187,23 @@ export default function InvitesScreen() {
   //   </ScrollView>
   // )
 
-  const { session } = authContext;
+  // const { session } = authContext;
+  // if (!session) {
+  //   console.error("No session found")
+  //   router.push("/login")
+  //   return <></>
+  // }
+  // const sessionDid = session.did.toString();
+  // if (!sessionDid) {
+  //   console.error("No session did found")
+  //   router.push("/login")
+  //   return <></>
+  // }
+
+  const { session } = useAuth();
+
   if (!session) {
     console.error("No session found")
-    router.push("/login")
-    return <></>
-  }
-  const sessionDid = session.did.toString();
-  if (!sessionDid) {
-    console.error("No session did found")
     router.push("/login")
     return <></>
   }
@@ -255,10 +237,16 @@ export default function InvitesScreen() {
 
       <ChatRequestsList
         agent={agent as any}
-        userDid={sessionDid}
-        onChatPress={() => { }}
+        onChatPress={(chat) => {
+          if (chat.isBsky) {
+            router.push(`/bskychats/${chat.id}` as any)
+          }
+        }}
         onInvitesPress={() => { }}
         showInvitesBanner={false}
+        onProfilePress={(chat) => {
+          console.log("onProfilePress", chat)
+        }}
       />
     </Screen >
   )

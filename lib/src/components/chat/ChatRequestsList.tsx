@@ -18,8 +18,8 @@ import { LoadingView } from "../util/utils";
 
 export interface ChatListProps {
   agent: Agent;
-  userDid: string;
   onChatPress?: (chat: Chat) => void;
+  onProfilePress?: (chat: Chat) => void;
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
   showSectionHeaders?: boolean;
@@ -29,6 +29,7 @@ export interface ChatListProps {
 interface ChatRequestsListProps extends ChatListProps {
   agent: Agent;
   onChatPress?: (chat: Chat) => void;
+  onProfilePress?: (chat: Chat) => void;
   acceptButtonText?: string;
   rejectButtonText?: string;
   refreshIntervalMs?: number; // Auto-refresh interval in ms
@@ -61,6 +62,7 @@ interface ChatRequest {
 export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
   agent,
   onChatPress,
+  onProfilePress,
   showSectionHeaders = true,
   refreshIntervalMs,
   acceptButtonText,
@@ -201,17 +203,25 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
 
   const onAccept = (chat: Chat) => {
     console.log("Accepting chat:", chat);
+    if (chat.isBsky) {
+
+      return;
+    }
 
   }
 
   const onReject = (chat: Chat) => {
     console.log("Rejecting chat:", chat);
+    if (chat.isBsky) {
+      return;
+    }
   }
 
   const renderChatRequestItem = ({ item }: { item: Chat }) => {
     return (<ChatRequestItem
       item={item}
-      onPress={onChatPress ?? (() => { })}
+      onChatPress={onChatPress}
+      onProfilePress={onProfilePress}
       onAccept={onAccept}
       onReject={onReject}
       acceptButtonText={acceptButtonText}
