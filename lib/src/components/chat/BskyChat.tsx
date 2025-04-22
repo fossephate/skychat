@@ -81,7 +81,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
 
   const { themed, theme } = useAppTheme()
 
-  const [emoji, setEmoji] = useState("🫡");
+  const [emoji, setEmoji] = useState("");
 
 
 
@@ -119,6 +119,10 @@ export const BskyChat: React.FC<BskyChatProps> = ({
 
       // extract the first link from the text if it exists:
       const link = msg.text.match(/https?:\/\/[^\s]+/)?.[0];
+      // if the link is the entire text, set text to an empty string:
+      if (link === msg.text) {
+        msg.text = "";
+      }
 
       let message: IMessage = {
         _id: msg.id,
@@ -491,7 +495,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
           }
           let videoUrl = props.currentMessage.video;
           return (
-            <PostRenderer url={videoUrl} />
+            <PostRenderer url={videoUrl} agent={agent} />
           );
 
           // return (

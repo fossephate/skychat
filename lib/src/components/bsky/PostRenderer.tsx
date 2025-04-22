@@ -1,15 +1,17 @@
-import { View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TextStyle, ViewStyle, Image, ImageStyle } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { AtpAgent } from '@atproto/api';
-import { Button } from '../Button';
 import { useEvent } from 'expo';
-
+import { useAppTheme } from '../../utils/useAppTheme';
+import { ThemedStyle } from '../../theme';
 
 interface ParsedBskyPost {
   did: string;
   postId: string;
 }
+
+const { width } = Dimensions.get('window');
 
 export async function parseBskyUrl(url: string): Promise<ParsedBskyPost> {
   // Initialize ATP agent for handle resolution
@@ -120,12 +122,6 @@ export async function parseBskyUrl(url: string): Promise<ParsedBskyPost> {
   throw new Error('Unsupported URL format');
 }
 
-
-
-
-
-const { width } = Dimensions.get('window');
-
 interface Post {
   text: string;
   media?: {
@@ -134,17 +130,19 @@ interface Post {
   }[];
 }
 
-export const PostRenderer = ({ url }: { url: string }) => {
+export const PostRenderer = ({ url, agent }: { url: string, agent: AtpAgent }) => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [parsedPost, setParsedPost] = useState<ParsedBskyPost | null>(null);
+  const { themed, theme } = useAppTheme();
 
   // Use parseBskyUrl to get the did and postId
   useEffect(() => {
     const parseUrl = async () => {
       try {
         const parsed = await parseBskyUrl(url);
+        console.log('parsed', parsed);
         setParsedPost(parsed);
       } catch (err) {
         setError(err?.message || 'Failed to parse URL');
@@ -163,9 +161,6 @@ export const PostRenderer = ({ url }: { url: string }) => {
       try {
         setLoading(true);
 
-        // Initialize ATP Agent
-        const agent = new AtpAgent({ service: 'https://bsky.social' });
-
         // Use the parsed did and postId to construct the URI
         const response = await agent.app.bsky.feed.getPostThread({
           uri: `at://${parsedPost.did}/app.bsky.feed.post/${parsedPost.postId}`
@@ -174,11 +169,32 @@ export const PostRenderer = ({ url }: { url: string }) => {
         // Extract post data
         const postData = response.data.thread.post;
 
+        console.log('postData', postData);
+
         // Extract media
-        const media = postData.record.embed?.media?.map(item => ({
-          type: item.type,
-          url: item.url
-        })) || [];
+        let media = [];
+        if (postData.embed) {
+
+          if (postData.embed.$type === "app.bsky.embed.video#view") {
+            media.push({
+              type: 'video',
+              url: postData.embed.playlist || postData.embed.thumbnail,
+              thumbnailUrl: postData.embed.thumbnail
+            });
+          }
+
+          console.log('postData.embed', postData.embed);
+
+          if (postData.embed.$type === "app.bsky.embed.images#view") {
+            for (const image of postData.embed.images) {
+              console.log('image', image);
+              media.push({
+                type: 'image',
+                url: image.fullsize,
+              });
+            }
+          }
+        }
 
         setPost({
           text: postData.record.text,
@@ -198,24 +214,24 @@ export const PostRenderer = ({ url }: { url: string }) => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={themed($container)}>
+        <ActivityIndicator size="large" color={theme.colors.palette.primary300} />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Error: {error}</Text>
+      <View style={themed($container)}>
+        <Text style={themed($errorText)}>Error: {error}</Text>
       </View>
     );
   }
 
   if (!post) {
     return (
-      <View style={styles.container}>
-        <Text>No post data available</Text>
+      <View style={themed($container)}>
+        <Text style={themed($postText)}>No post data available</Text>
       </View>
     );
   }
@@ -228,20 +244,39 @@ export const PostRenderer = ({ url }: { url: string }) => {
     media.url.includes('video')
   );
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.postText}>{post.text}</Text>
+  const imageMedia = post.media?.find(media =>
+    media.type === 'image' ||
+    media.url.endsWith('jpg') ||
+    media.url.endsWith('png') ||
+    media.url.endsWith('gif')
+  );
 
-      {videoMedia ? (
+  console.log('imageMedia', imageMedia);
+
+  return (
+    <View style={themed($container)}>
+      {/* <Text style={themed($postText)}>{post.text}</Text> */}
+
+      {videoMedia && (
+        <VideoPlayerComponent videoUrl={videoMedia.url} />
+      )}
+
+      {imageMedia && (
+        <View style={themed($imageContainer)}>
+          <Image source={{ uri: imageMedia.url }} style={{width: 200, height: 200}} />
+        </View>
+      )}
+
+      {/* {videoMedia ? (
         <VideoPlayerComponent videoUrl={videoMedia.url} />
       ) : (
         post.media?.map((media, index) => (
-          <View key={index} style={styles.mediaContainer}>
-            <Text>Media type: {media.type}</Text>
-            <Text>URL: {media.url}</Text>
+          <View key={index} style={themed($mediaContainer)}>
+            <Text style={themed($postText)}>Media type: {media.type}</Text>
+            <Text style={themed($postText)}>URL: {media.url}</Text>
           </View>
         ))
-      )}
+      )} */}
     </View>
   );
 };
@@ -251,68 +286,63 @@ const VideoPlayerComponent = ({ videoUrl }: { videoUrl: string }) => {
   const player = useVideoPlayer(videoUrl, player => {
     player.loop = true;
   });
+  const { themed } = useAppTheme();
 
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
 
   return (
-    <View style={styles.videoContainer}>
+    <View style={themed($videoContainer)}>
       <VideoView
-        style={styles.video}
+        style={themed($video)}
         player={player}
         allowsFullscreen
         allowsPictureInPicture
       />
-      <View style={styles.controlsContainer}>
-        <Button
-          onPress={() => {
-            if (isPlaying) {
-              player.pause();
-            } else {
-              player.play();
-            }
-          }}
-        >
-          {isPlaying ? 'Pause' : 'Play'}
-        </Button>
-      </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 10,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    marginVertical: 10,
-  },
-  postText: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  mediaContainer: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#eee',
-    borderRadius: 5,
-  },
-  videoContainer: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  video: {
-    width: width - 40,
-    height: (width - 40) * 0.5625, // 16:9 aspect ratio
-    borderRadius: 8,
-    backgroundColor: '#000',
-  },
-  controlsContainer: {
-    marginTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  errorText: {
-    color: 'red',
-    fontWeight: 'bold',
-  },
+// Define themed styles
+const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: 'transparent',
+  borderRadius: 8,
+  // paddingVertical: 8,
+  paddingHorizontal: 4,
+  paddingBottom: 2,
+  // marginVertical: 10,
+  paddingTop: 4,
+});
+
+const $postText: ThemedStyle<TextStyle> = ({ colors }) => ({
+  fontSize: 16,
+  marginBottom: 10,
+  color: colors.text,
+});
+
+const $videoContainer: ThemedStyle<ViewStyle> = () => ({
+  alignItems: 'center',
+});
+
+const $imageContainer: ThemedStyle<ViewStyle> = () => ({
+  alignItems: 'center',
+  width: (width * 2 / 5),
+  height: (width * 2 / 5) * 1.7777777777777777, // 9:16 aspect ratio
+});
+
+const $image: ThemedStyle<ImageStyle> = () => ({
+
+});
+
+
+
+const $video: ThemedStyle<ViewStyle> = () => ({
+  width: (width * 2 / 5),
+  height: (width * 2 / 5) * 1.7777777777777777, // 9:16 aspect ratio
+  borderRadius: 8,
+  backgroundColor: '#000',
+});
+
+const $errorText: ThemedStyle<TextStyle> = ({ colors }) => ({
+  color: colors.error || 'red',
+  fontWeight: 'bold',
 });

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Agent } from "@atproto/api";
 import { ActivityIndicator } from "react-native";
+import { LoadingView } from "../util/utils";
 
 export interface ChatListProps {
   agent: Agent;
@@ -193,19 +194,6 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
       <Text tx="chatRequestsScreen:empty" preset="bold" />
     </ScrollView>
   )
-
-  // Loading component
-  const LoadingView = () => {
-    return (
-      <View style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center"
-      }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  };
 
   if (isLoading) {
     return <LoadingView />;

@@ -71,7 +71,15 @@
             ]
           }
         }
-      ]
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "tsconfigPaths": true,

@@ -16,6 +16,7 @@ import { ActivityIndicator } from "react-native";
 import { Chat, ChatItem, User } from "../../components/chat/ChatItem";
 import { useAppTheme } from "../../utils/useAppTheme";
 import { ThemedStyle } from "../../theme";
+import { LoadingView } from "../util/utils";
 
 
 export interface ChatListProps {
@@ -26,7 +27,6 @@ export interface ChatListProps {
   showSectionHeaders?: boolean;
   refreshInterval?: number; // Auto-refresh interval in ms
   emptyStateComponent?: React.ReactNode;
-  loadingComponent?: React.ReactNode;
 }
 
 export const ChatList: React.FC<ChatListProps> = ({
@@ -37,7 +37,6 @@ export const ChatList: React.FC<ChatListProps> = ({
   showSectionHeaders = true,
   refreshInterval,
   emptyStateComponent,
-  loadingComponent,
 }) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [bskyChats, setBskyChats] = useState<Chat[]>([]);
@@ -46,6 +45,8 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(new Map());
+
+
 
   const userDid = agent.assertDid;
 
@@ -247,21 +248,6 @@ export const ChatList: React.FC<ChatListProps> = ({
       <Text tx="chatScreen:noChats" preset="bold" />
     </ScrollView>
   )
-
-  // Loading component
-  const LoadingView = () => {
-    if (loadingComponent) return <>{loadingComponent}</>;
-
-    return (
-      <View style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center"
-      }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  };
 
   if (isLoading) {
     return <LoadingView />;
