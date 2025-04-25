@@ -107,118 +107,10 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          {/* <ListItem
-            tx="settingsScreen:editProfile"
-            LeftComponent={themed(renderIcon("user"))}
-            style={themed($editProfileButton)}
-            textStyle={themed($editProfileText)}
-          /> */}
         </View>
 
 
         <ChatSettings agent={agent} />
-
-        {/* Account Settings */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:account" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:privacy"
-              LeftComponent={themed(renderIcon("lock"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:security"
-              LeftComponent={themed(renderIcon("shield"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:connectedAccounts"
-              LeftComponent={themed(renderIcon("link"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
-
-        {/* Preferences */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:preferences" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:notifications"
-              LeftComponent={themed(renderIcon("bell"))}
-              style={themed($listItem)}
-              RightComponent={renderSwitch(notificationsEnabled, setNotificationsEnabled)}
-            />
-            <ListItem
-              tx="settingsScreen:darkMode"
-              LeftComponent={themed(renderIcon("moon"))}
-              style={themed($listItem)}
-              RightComponent={renderSwitch(darkMode, setDarkMode)}
-            />
-            <ListItem
-              tx="settingsScreen:autoplayMedia"
-              LeftComponent={themed(renderIcon("play"))}
-              style={themed($listItem)}
-              RightComponent={renderSwitch(autoplay, setAutoplay)}
-            />
-            <ListItem
-              tx="settingsScreen:language"
-              LeftComponent={themed(renderIcon("globe"))}
-              rightIcon="caretRight"
-              rightText="English"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
-
-        {/* Storage and Data */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:storageAndData" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:dataUsage"
-              LeftComponent={themed(renderIcon("database"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:storage"
-              LeftComponent={themed(renderIcon("save"))}
-              rightText="1.2 GB"
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
-
-        {/* Support */}
-        {/* <View style={themed($section)}>
-          <Text preset="heading" style={themed($sectionTitle)} tx="settingsScreen:support" />
-          <View style={themed($sectionContent)}>
-            <ListItem
-              tx="settingsScreen:helpCenter"
-              LeftComponent={themed(renderIcon("help-circle"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:reportProblem"
-              LeftComponent={themed(renderIcon("alert-triangle"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-            <ListItem
-              tx="settingsScreen:termsOfService"
-              LeftComponent={themed(renderIcon("file-text"))}
-              rightIcon="caretRight"
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
 
         {/* Account Actions */}
         <View style={themed($section)}>
@@ -312,19 +204,8 @@ const $bio: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.text,
 })
 
-const $editProfileButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.palette.primary100,
-  borderRadius: 12,
-  marginTop: spacing.sm,
-})
-
-const $editProfileText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.palette.primary500,
-  fontWeight: "bold",
-})
-
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
+  marginTop: spacing.md,
 })
 
 const $sectionTitle: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({

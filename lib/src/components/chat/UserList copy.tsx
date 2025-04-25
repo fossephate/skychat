@@ -18,7 +18,7 @@ import { TextField } from "../TextField"
 import { ThemedStyle } from "../../theme"
 import { Text } from "../Text"
 import { Button } from "../Button"
-import { NewChatModal } from "../chat/NewChat"
+import { NewChatModal } from "./NewChat"
 import { FontAwesome } from "@expo/vector-icons"
 
 interface User {
@@ -293,20 +293,6 @@ const $userStatus: ThemedStyle<TextStyle> = ({ colors }) => ({
   marginTop: 1,
 })
 
-const $followButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.palette.primary500,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.xs,
-  borderRadius: 15,
-  marginLeft: spacing.sm,
-})
-
-const $followButtonText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.background,
-  fontSize: 13,
-  fontWeight: "600",
-})
-
 // Add the FAB button styles
 const $fabButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   position: "absolute",
@@ -319,8 +305,4 @@ const $fabButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   justifyContent: "center",
   alignItems: "center",
   elevation: 4,
-  // shadowColor: colors.palette.neutral900,
-  // shadowOffset: { width: 0, height: 2 },
-  // shadowOpacity: 0.25,
-  // shadowRadius: 3.84,
 })

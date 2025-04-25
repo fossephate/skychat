@@ -1,4 +1,7 @@
-
 packages:
-  - "./lib"
-  - "./mobile"
+  - ./lib
+  - ./mobile
+
+onlyBuiltDependencies:
+  - '@evilmartians/lefthook'
+  - postinstall-prepare

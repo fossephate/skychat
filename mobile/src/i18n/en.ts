@@ -13,12 +13,13 @@ const en = {
   navigator: {
     contactsTab: "Contacts",
     chatsTab: "Chats",
+    searchTab: "Search",
     settingsTab: "Settings",
     invitesTab: "Invites",
   },
-  contactsScreen: {
-    title: "Contacts",
-    searchPlaceholder: "Search contacts...",
+  searchScreen: {
+    title: "Search",
+    searchPlaceholder: "Search...",
   },
   chatsScreen: {
     title: "Chats",

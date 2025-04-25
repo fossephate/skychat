@@ -7,9 +7,9 @@ import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { View, ViewStyle, TextStyle, Image, ImageStyle, Modal, TouchableOpacity, Dimensions } from "react-native"
 import { Agent } from '@atproto/api'
 import debounce from 'lodash/debounce'
-import { FlatList, GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
-
+import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Screen } from "../../components/Screen"
 interface User {
   id: string
   handle: string
@@ -205,15 +205,6 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatMod
             accessibilityLabel={`${user.displayName}'s avatar`}
           />
         }
-        // RightComponent={
-        //   <View style={themed($checkboxContainer)}>
-        //     <Checkbox
-        //       value={true}
-        //       onValueChange={() => toggleUserSelection(user.id)}
-        //       accessibilityLabel={`Unselect ${user.displayName}`}
-        //     />
-        //   </View>
-        // }
         onPress={() => toggleUserSelection(user.id)}
         topSeparator={false}
         bottomSeparator
@@ -244,15 +235,6 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatMod
             accessibilityLabel={`${user.displayName}'s avatar`}
           />
         }
-        // RightComponent={
-        //   <View style={themed($checkboxContainer)}>
-        //     <Checkbox
-        //       value={false}
-        //       onValueChange={() => toggleUserSelection(user.id)}
-        //       accessibilityLabel={`Select ${user.displayName}`}
-        //     />
-        //   </View>
-        // }
         onPress={() => toggleUserSelection(user.id)}
         topSeparator={false}
         bottomSeparator
@@ -284,6 +266,15 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatMod
   // get safe area insets
   const insets = useSafeAreaInsets();
 
+  let dmText = "New DM"
+  let groupText = "New Group"
+  let newText;
+  if (state.selectedUsers.length === 1) {
+    newText = dmText
+  } else if (state.selectedUsers.length > 1) {
+    newText = groupText
+  }
+
 
   return (
     <Modal
@@ -294,12 +285,10 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatMod
     >
       <View style={[themed($modalContainer), { paddingTop: insets.top }]}>
         <GestureHandlerRootView>
-          {/* <Screen
+          <Screen
             preset="fixed"
             contentContainerStyle={themed($screenContainer)}
-          > */}
-
-
+          >
             <View style={themed($header)}>
               <TouchableOpacity
                 onPress={onClose}
@@ -315,13 +304,15 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatMod
                 style={themed($headerText)}
                 accessibilityRole="header"
               />
-              <Button
-                tx="newChat:createGroupButton"
-                preset="reversed"
-                onPress={handleSubmit}
-                style={themed($submitButton)}
-                disabled={!state.selectedUsers.length}
-              />
+              {state.selectedUsers.length > 0 ? (
+                <Button
+                  text={newText}
+                  preset="reversed"
+                  onPress={handleSubmit}
+                  style={themed($submitButton)}
+                  disabled={!state.selectedUsers.length}
+                />
+              ) : <></>}
             </View>
 
             <View style={themed($searchContainer)}>
@@ -400,7 +391,7 @@ export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatMod
             /> */}
             </View>
 
-          {/* </Screen> */}
+          </Screen>
         </GestureHandlerRootView>
       </View>
     </Modal>
@@ -527,7 +518,7 @@ const $submitButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
 
 const $selectedUsersContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingHorizontal: spacing.lg,
-  height: 100,
+  height: 120,
 })
 
 const $selectedUsersListContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({

@@ -14,6 +14,10 @@ const en = {
     settingsTab: "Settings",
     invitesTab: "Invites",
   },
+  searchScreen: {
+    title: "Search",
+    searchPlaceholder: "Search...",
+  },
   contactsScreen: {
     title: "Contacts",
     searchPlaceholder: "Search contacts...",

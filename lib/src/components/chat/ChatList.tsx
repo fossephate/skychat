@@ -16,12 +16,12 @@ import { Chat, ChatItem, User } from '../../components/chat/ChatItem';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
 import { LoadingView } from '../util/utils';
-import ActionSheet, { ActionSheetRef } from 'react-native-actions-sheet';
-
+import ActionSheet, { ActionSheetRef, SheetManager } from 'react-native-actions-sheet';
+import { NewChatModal } from '../chat/NewChat';
 export interface ChatListProps {
   agent: Agent;
   onChatPress?: (chat: Chat) => void;
-  onProfilePress?: (chat: Chat) => void;
+  onProfilePress?: (id: string) => void;
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
   refreshInterval?: number; // Auto-refresh interval in ms
@@ -44,48 +44,13 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(
     new Map()
   );
-  const actionSheetRef = useRef<ActionSheetRef>(null);
+  const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false)
   const userDid = agent.assertDid;
 
   const [chatToLeave, setChatToLeave] = useState<Chat | null>(null);
 
   const { themed } = useAppTheme();
 
-  // Fetch user profile function
-  const fetchUserProfile = async (did: string): Promise<User> => {
-    if (memberProfiles.has(did)) {
-      return memberProfiles.get(did) as User;
-    }
-
-    try {
-      const profile = await agent.getProfile({ actor: did });
-      const userProfile = {
-        id: did,
-        displayName: profile.data.displayName || did.substring(0, 8) + '...',
-        avatar: profile.data.avatar,
-        handle: profile.data.handle,
-      };
-
-      // Update memberProfiles map
-      setMemberProfiles((prev) => new Map(prev).set(did, userProfile));
-
-      return userProfile;
-    } catch (error) {
-      console.error(`Error fetching profile for ${did}:`, error);
-      const userProfile = {
-        id: did,
-        displayName: did.substring(0, 8) + '...',
-        avatar: `https://i.pravatar.cc/150?u=${did}`,
-      };
-
-      // Update memberProfiles map with fallback
-      setMemberProfiles((prev) => new Map(prev).set(did, userProfile));
-
-      return userProfile;
-    }
-  };
-
-  // Fetch BlueChat DMs
   const fetchBskyChats = async () => {
     try {
       const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
@@ -110,7 +75,8 @@ export const ChatList: React.FC<ChatListProps> = ({
             id: member.did,
             displayName: member.displayName || member.handle,
             avatar: member.avatar,
-            // verified: !!member.verified,
+            verified: member.verification?.verifiedStatus == 'valid',
+            verifier: member.verification?.trustedVerifierStatus == 'valid',
             handle: member.handle,
           }));
 
@@ -124,10 +90,14 @@ export const ChatList: React.FC<ChatListProps> = ({
           // Find other user (not current user)
           let handle;
           let name;
+          let verified = false;
+          let verifier = false;
           for (const member of memberUsers) {
             if (member.id !== userDid) {
               handle = member.handle;
               name = member.displayName;
+              verified = member.verified;
+              verifier = member.verifier;
               break;
             }
           }
@@ -140,6 +110,8 @@ export const ChatList: React.FC<ChatListProps> = ({
             lastMessage: convo.lastMessage,
             unreadCount: convo.unreadCount || 0,
             isBsky: true,
+            verified: verified,
+            verifier: verifier,
           };
         })
       );
@@ -153,8 +125,9 @@ export const ChatList: React.FC<ChatListProps> = ({
             id: member.did,
             displayName: member.displayName || member.handle,
             avatar: member.avatar,
-            // verified: !!member.verified,
             handle: member.handle,
+            verified: member.verification?.verifiedStatus == 'valid',
+            verifier: member.verification?.trustedVerifierStatus == 'valid',
           }));
 
           // Update member profiles
@@ -167,10 +140,14 @@ export const ChatList: React.FC<ChatListProps> = ({
           // Find other user (not current user)
           let handle;
           let name;
+          let verified = false;
+          let verifier = false;
           for (const member of memberUsers) {
             if (member.id !== userDid) {
               handle = member.handle;
               name = member.displayName;
+              verified = member.verified;
+              verifier = member.verifier;
               break;
             }
           }
@@ -183,6 +160,8 @@ export const ChatList: React.FC<ChatListProps> = ({
             lastMessage: convo.lastMessage,
             unreadCount: convo.unreadCount || 0,
             isBsky: true,
+            verified: verified,
+            verifier: verifier,
           };
         })
       );
@@ -209,13 +188,28 @@ export const ChatList: React.FC<ChatListProps> = ({
   const onLeaveChat = useCallback(
     async (chat: Chat) => {
       setChatToLeave(chat);
-      actionSheetRef.current?.show();
+      SheetManager.show('leaveChatSheet', {
+        payload: {
+          onLeave: confirmLeaveChat,
+          themed: themed,
+        },
+      });
     },
     [agent]
   );
 
+  const handleNewChat = async (groupName: string, selectedUsers: string[]) => {
+    if (groupName === "") {
+      // random group name
+      groupName = "Group " + Math.floor(Math.random() * 1000000)
+    }
+    console.log("Group name:", groupName)
+    console.log("getting groups with users: ", selectedUsers)
+  }
+
   const confirmLeaveChat = useCallback(async () => {
     try {
+      console.log("leaving chat: ", chatToLeave)
       if (!chatToLeave) {
         return;
       }
@@ -224,7 +218,6 @@ export const ChatList: React.FC<ChatListProps> = ({
     } catch (error) {
       console.error('Error leaving chat:', error);
     }
-    actionSheetRef.current?.hide();
     onRefresh();
   }, [agent, chatToLeave]);
 
@@ -360,37 +353,29 @@ export const ChatList: React.FC<ChatListProps> = ({
         <EmptyListComponent />
       )}
 
-      {/* TODO: expose overrides for the text and button text */}
-      <ActionSheet ref={actionSheetRef}>
-        <View style={themed($actionSheetContainer)}>
-          <Text style={{ fontSize: 24, paddingBottom: 8, fontWeight: 'bold' }}>Leave Conversation</Text>
-          <Text>Are you sure you want to leave this conversation?</Text>
-          <Text>Your message will be deleted for you, but not for the other participant.</Text>
-          <Button onPress={confirmLeaveChat} style={themed($actionSheetButton)}>
-            <Text>Leave</Text>
-          </Button>
-          <Button onPress={() => actionSheetRef.current?.hide()} style={{ marginTop: 6 }}>
-            <Text>Cancel</Text>
-          </Button>
-        </View>
-      </ActionSheet>
+      {/* <NewChatModal
+        isVisible={isNewChatModalVisible}
+        onClose={() => setIsNewChatModalVisible(false)}
+        onSubmit={handleNewChat}
+        agent={agent}
+      /> */}
+
+      <Button
+        style={themed($fabButton)}
+        onPress={() => {
+          SheetManager.show('searchCreateSheet', {
+            payload: {
+              themed: themed,
+              agent: agent,
+            },
+          });
+        }}
+      >
+        <FontAwesome name="pencil-square-o" color="white" size={20} />
+      </Button>
     </View>
   );
 };
-
-// action sheet styles
-const $actionSheetContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  paddingBottom: spacing.xl,
-  paddingTop: spacing.md,
-  paddingHorizontal: spacing.lg,
-  backgroundColor: colors.background,
-  color: colors.text,
-});
-
-const $actionSheetButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  marginTop: spacing.md,
-  backgroundColor: colors.error,
-});
 
 // Styles
 const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
@@ -398,13 +383,13 @@ const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
   backgroundColor: colors.background,
 });
 
-const $invitesBanner: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+const $invitesBanner: ThemedStyle<ViewStyle> = ({ colors, spacing, isDark }) => ({
   paddingHorizontal: spacing.sm,
   paddingVertical: 1,
   marginBottom: spacing.md,
   border: 0,
   borderRadius: 0,
-  backgroundColor: colors.palette.secondary500,
+  backgroundColor: isDark ? colors.palette.secondary500 : colors.palette.secondary100,
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -479,3 +464,20 @@ const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingBottom: spacing.lg,
   flexGrow: 1, // Ensure it fills the space for proper pull to refresh
 });
+
+const $fabButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  position: "absolute",
+  bottom: spacing.lg,
+  right: spacing.lg,
+  width: 56,
+  height: 56,
+  lineHeight: 56,
+  minHeight: 56,
+  borderRadius: 28,
+  backgroundColor: colors.palette.primary500,
+  justifyContent: "center",
+  alignItems: "center",
+  // elevation: 4,
+  padding: 0,
+  margin: 0,
+})

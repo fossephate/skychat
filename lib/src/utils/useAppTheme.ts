@@ -13,6 +13,7 @@ import * as SystemUI from "expo-system-ui"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { SheetProvider } from "react-native-actions-sheet";
 import React from "react"
+import '../components/sheets/sheets';
 
 type ThemeContextType = {
   themeScheme: ThemeContexts

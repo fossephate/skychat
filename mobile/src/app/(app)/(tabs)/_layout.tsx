@@ -36,14 +36,14 @@ export default observer(function Layout() {
       }}
     >
       <Tabs.Screen
-        name="contacts"
+        name="search"
         options={{
-          href: "/contacts",
+          href: "/search",
           headerShown: false,
-          tabBarAccessibilityLabel: translate("navigator:contactsTab"),
-          tabBarLabel: showLabel ? translate("navigator:contactsTab") : "",
+          tabBarAccessibilityLabel: translate("navigator:searchTab"),
+          tabBarLabel: showLabel ? translate("navigator:searchTab") : "",
           tabBarIcon: ({ focused, color }) => (
-            <FontAwesome name="users" size={28} color={color} />
+            <FontAwesome name="search" size={28} color={color} />
           ),
         }}
       />

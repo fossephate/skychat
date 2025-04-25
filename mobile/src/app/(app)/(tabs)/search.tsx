@@ -39,7 +39,7 @@ export default function UsersScreen() {
       <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
 
         <View style={themed($header)}>
-          <Text tx="contactsScreen:title" preset="heading" style={themed($headerText)} />
+          <Text tx="searchScreen:title" preset="heading" style={themed($headerText)} />
         </View>
 
         <UserList agent={agent} onChatPress={handleChatPress} onProfilePress={handleProfilePress} />

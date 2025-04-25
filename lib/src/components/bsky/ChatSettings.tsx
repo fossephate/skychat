@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { View, ViewStyle, TextStyle, Switch, ActivityIndicator } from "react-native";
-import { Text, ListItem } from "../../components";
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  ViewStyle,
+  TextStyle,
+  Switch,
+  ActivityIndicator,
+} from 'react-native';
+import { Text, ListItem } from '../../components';
 import { Agent } from '@atproto/api';
-import { useAppTheme } from "@/utils/useAppTheme";
-import type { ThemedStyle } from "@/theme";
+import { useAppTheme } from '@/utils/useAppTheme';
+import type { ThemedStyle } from '@/theme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 // Types for the AT Protocol preferences
@@ -16,12 +22,10 @@ interface ChatSettingsProps {
 }
 
 export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
-  const { themed } = useAppTheme();
+  const { themed, theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState<ChatPreferences>({
     allowMessagesFrom: 'following',
-    // notificationSoundsEnabled: true,
   });
 
   // Fetch current preferences on component mount
@@ -35,18 +39,19 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
     try {
       setLoading(true);
       // Create a proxy to the chat API
-      const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat");
+      const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
 
       // Fetch the user's chat preferences
       // First, get user declaration for message permissions
-      const profile = await agent.getProfile({ actor: userDid })
-      const declaration = profile?.data.associated?.chat?.allowIncoming ?? 'following';
+      const profile = await agent.getProfile({ actor: userDid });
+      const declaration =
+        profile?.data.associated?.chat?.allowIncoming ?? 'following';
 
       setPreferences({
         allowMessagesFrom: declaration as 'all' | 'following' | 'none',
       });
     } catch (error) {
-      console.error("Error fetching chat preferences:", error);
+      console.error('Error fetching chat preferences:', error);
     } finally {
       setLoading(false);
     }
@@ -54,9 +59,8 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
 
   const savePreferences = async () => {
     try {
-      setSaving(true);
       // Create a proxy to the chat API
-      const proxy = agent.withProxy("bsky_chat", "did:web:api.bsky.chat");
+      const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
 
       // Save the user's chat preferences
       // await proxy.chat.bsky.actor.declaration.create({
@@ -77,18 +81,18 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
         record: declarationRecord,
       });
     } catch (error) {
-      console.error("Error saving chat preferences:", error);
+      console.error('Error saving chat preferences:', error);
       // Optionally show an error message to the user
-    } finally {
-      setSaving(false);
     }
   };
 
   // Handle message permission change
-  const handleMessagePermissionChange = (value: 'all' | 'following' | 'none') => {
-    setPreferences(prev => ({
+  const handleMessagePermissionChange = (
+    value: 'all' | 'following' | 'none'
+  ) => {
+    setPreferences((prev) => ({
       ...prev,
-      allowMessagesFrom: value
+      allowMessagesFrom: value,
     }));
 
     // Save changes after state update
@@ -96,50 +100,29 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
       savePreferences();
     }, 0);
   };
-
-  // Handle notification sound toggle
-  const handleNotificationSoundToggle = (value: boolean) => {
-    setPreferences(prev => ({
-      ...prev,
-      notificationSoundsEnabled: value
-    }));
-
-    // Save changes after state update
-    setTimeout(() => {
-      savePreferences();
-    }, 0);
-  };
-
-  // Render a switch component
-  const renderSwitch = (value: boolean, onValueChange: (value: boolean) => void) => (
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      trackColor={themed($switchTrackColor)}
-      thumbColor={themed($switchThumbColor(value))}
-    />
-  );
 
   // Render icon helper
-  const renderIcon = (name: string) => ({ colors }: { colors: { text: string } }) => {
-    return (
-      <View style={themed($iconContainer)}>
-        <FontAwesome name={name as any} size={24} color={colors.text} />
-      </View>
-    );
-  };
+  const renderIcon =
+    (name: string) =>
+    ({ colors }: { colors: { text: string } }) => {
+      return (
+        <View style={themed($iconContainer)}>
+          <FontAwesome name={name as any} size={24} color={colors.text} />
+        </View>
+      );
+    };
 
   // Radio option renderer
   const RadioOption = ({
     label,
     value,
     currentValue,
-    onSelect
+    onSelect,
   }: {
-    label: string,
-    value: 'all' | 'following' | 'none',
-    currentValue: string,
-    onSelect: (value: 'all' | 'following' | 'none') => void
+    label: string;
+    value: 'all' | 'following' | 'none';
+    currentValue: string;
+    onSelect: (value: 'all' | 'following' | 'none') => void;
   }) => (
     <ListItem
       text={label}
@@ -162,74 +145,51 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
     );
   }
 
+  const allowMessagesFromInfo =
+    'You can continue ongoing conversations regardless of which setting you choose.';
+
   return (
-      <View style={themed($container)}>
-        {/* Message Permissions Section */}
-        <View style={themed($section)}>
-          <Text style={themed($sectionTitle)}>Allow new messages from</Text>
-          <View style={themed($sectionContent)}>
-            <RadioOption
-              label="Everyone"
-              value="all"
-              currentValue={preferences.allowMessagesFrom}
-              onSelect={handleMessagePermissionChange}
-            />
-            <RadioOption
-              label="Users I follow"
-              value="following"
-              currentValue={preferences.allowMessagesFrom}
-              onSelect={handleMessagePermissionChange}
-            />
-            <RadioOption
-              label="No one"
-              value="none"
-              currentValue={preferences.allowMessagesFrom}
-              onSelect={handleMessagePermissionChange}
-            />
-          </View>
+    <View style={themed($container)}>
+      <View style={themed($section)}>
+        <Text style={themed($sectionTitle)}>Allow new messages from</Text>
+        <View style={themed($sectionContent)}>
+          <RadioOption
+            label="Everyone"
+            value="all"
+            currentValue={preferences.allowMessagesFrom}
+            onSelect={handleMessagePermissionChange}
+          />
+          <RadioOption
+            label="Users I follow"
+            value="following"
+            currentValue={preferences.allowMessagesFrom}
+            onSelect={handleMessagePermissionChange}
+          />
+          <RadioOption
+            label="No one"
+            value="none"
+            currentValue={preferences.allowMessagesFrom}
+            onSelect={handleMessagePermissionChange}
+          />
         </View>
-
-        {/* Notification Sounds Section */}
-        {/* <View style={themed($section)}>
-          <Text style={themed($sectionTitle)}>Notifications</Text>
-          <View style={themed($sectionContent)}>
-            <ListItem
-              text="Notification sounds"
-              LeftComponent={themed(renderIcon("bell"))}
-              RightComponent={renderSwitch(
-                preferences.notificationSoundsEnabled,
-                handleNotificationSoundToggle
-              )}
-              style={themed($listItem)}
-            />
-          </View>
-        </View> */}
-
-        {/* Show saving indicator if currently saving */}
-        {saving && (
-          <View style={themed($savingContainer)}>
-            <ActivityIndicator size="small" />
-            <Text style={themed($savingText)}>Saving preferences...</Text>
-          </View>
-        )}
       </View>
+
+      <View style={themed($infoContainer)}>
+        <View style={themed($iconContainer)}>
+          <FontAwesome name="info-circle" size={24} color={theme.colors.text} />
+        </View>
+        <Text style={themed($infoText)}>{allowMessagesFromInfo}</Text>
+      </View>
+    </View>
   );
 };
 
-// Styles
-const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
-  backgroundColor: colors.background,
+  paddingVertical: spacing.md,
 });
 
-const $container: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  paddingTop: 16,
-});
-
-const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-});
+const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({});
 
 const $sectionTitle: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 18,
@@ -239,8 +199,24 @@ const $sectionTitle: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   marginBottom: spacing.sm,
 });
 
+const $infoContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  marginHorizontal: spacing.lg,
+  marginTop: spacing.sm,
+  backgroundColor: colors.palette.neutral300,
+  borderRadius: 16,
+  padding: spacing.md,
+  borderWidth: 1,
+  borderColor: colors.palette.neutral200,
+  flexDirection: 'row',
+});
+
+const $infoText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+  fontSize: 14,
+  color: colors.textDim,
+});
+
 const $sectionContent: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.palette.neutral100,
+  backgroundColor: colors.palette.neutral300,
   borderRadius: 16,
   marginHorizontal: spacing.lg,
   overflow: 'hidden',
@@ -260,8 +236,10 @@ const $switchTrackColor: ThemedStyle<any> = ({ colors }) => ({
   true: colors.palette.primary300,
 });
 
-const $switchThumbColor = (value: boolean): ThemedStyle<string> => ({ colors }) =>
-  value ? colors.palette.primary500 : colors.palette.neutral200;
+const $switchThumbColor =
+  (value: boolean): ThemedStyle<string> =>
+  ({ colors }) =>
+    value ? colors.palette.primary500 : colors.palette.neutral200;
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   justifyContent: 'center',
