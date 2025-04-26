@@ -14,16 +14,10 @@ declare module 'react-native-actions-sheet' {
     'leaveChatSheet': SheetDefinition<{
       payload: {
         onLeave: () => void;
-        themed: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T;
-        // theme: Theme;
-        themeContext: ThemeContexts;
       };
     }>;
     'searchCreateSheet': SheetDefinition<{
       payload: {
-        themed: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T;
-        // theme: Theme;
-        // themeContext: ThemeContexts;
         agent: Agent;
       };
     }>;

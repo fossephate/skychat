@@ -194,8 +194,6 @@ export const ChatList: React.FC<ChatListProps> = ({
       SheetManager.show("leaveChatSheet", {
         payload: {
           onLeave: confirmLeaveChat,
-          themed: themed,
-          themeContext: themeContext,
         },
       });
     },
@@ -369,9 +367,7 @@ export const ChatList: React.FC<ChatListProps> = ({
         onPress={() => {
           SheetManager.show('searchCreateSheet', {
             payload: {
-              themed: themed,
               agent: agent,
-              theme: theme,
             },
           });
         }}
@@ -403,7 +399,7 @@ const $invitesBannerIcon: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
 });
 
 const $notificationDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  position: 'absolute',
+  position: "absolute",
   top: -2,
   right: 2,
   width: 8,
@@ -413,16 +409,8 @@ const $notificationDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
 });
 
 const $invitesEnvelope: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  position: 'relative',
+  position: "relative",
   marginRight: spacing.md,
-});
-
-const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingVertical: spacing.md,
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
 });
 
 const $sectionHeader: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
@@ -476,7 +464,6 @@ const $fabButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.palette.primary500,
   justifyContent: "center",
   alignItems: "center",
-  // elevation: 4,
   padding: 0,
   margin: 0,
 })

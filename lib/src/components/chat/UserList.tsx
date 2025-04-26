@@ -100,6 +100,15 @@ export const UserList = ({
       return;
     }
 
+    // if the only user is the X user, clear the selectedUsers array
+    if (state.selectedUsers.length === 1 && state.selectedUsers[0]!.id === 'X') {
+      setState((prev) => ({
+        ...prev,
+        selectedUsers: [],
+      }));
+      return;
+    }
+
     let lastUser = state.selectedUsers[state.selectedUsers.length - 1]!;
     // if the x user is in the array and it's not last, move it to the end of the array
     if (lastUser.id !== 'X') {
