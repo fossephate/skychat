@@ -26,10 +26,11 @@ export const $userInfo: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginLeft: spacing.sm,
 });
 
-export const $userName: ThemedStyle<TextStyle> = ({ spacing }) => ({
+export const $userName: ThemedStyle<TextStyle> = ({ spacing, colors }) => ({
   fontSize: 15,
   fontWeight: '600',
   marginRight: spacing.xs,
+  color: colors.text,
 });
 
 export const $userHandle: ThemedStyle<TextStyle> = ({ colors }) => ({

@@ -21,6 +21,9 @@ const en = {
     title: "Search",
     searchPlaceholder: "Search...",
   },
+  profileScreen: {
+    title: "Profile",
+  },
   chatsScreen: {
     title: "Chats",
     searchPlaceholder: "Search chats...",

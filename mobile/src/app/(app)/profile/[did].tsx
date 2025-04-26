@@ -1,7 +1,7 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect } from "react"
 import { View, ViewStyle, TextStyle, ScrollView, Image, ImageStyle, Switch } from "react-native"
-import { Screen, Text, ListItem } from "src/components"
+import { Screen, Text, ListItem, Header } from "src/components"
 import { Agent } from '@atproto/api'
 import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
@@ -14,6 +14,8 @@ export default function SettingsScreen() {
   const { themed } = useAppTheme();
   const { client, session, setDidAuthenticate } = useAuth();
   const convoContext = useConvo();
+
+  const { did } = useLocalSearchParams()
 
   const [userProfile, setUserProfile] = React.useState({
     displayName: "",
@@ -31,7 +33,7 @@ export default function SettingsScreen() {
       try {
         const agent = new Agent(session)
         const profile = await agent.getProfile({
-          actor: session.did,
+          actor: did as string,
         })
 
         setUserProfile({
@@ -72,20 +74,9 @@ export default function SettingsScreen() {
     )
   }
 
-  const handleLogout = async () => {
-    try {
-      if (client) {
-        setDidAuthenticate(false);
-      }
-      convoContext.clearManagerState();
-    } catch (err) {
-      console.error("Logout error:", err)
-    }
-    router.replace("/welcome" as any)
-  }
-
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
+      <Header titleTx="profileScreen:title" leftIcon="back" onLeftPress={() => router.back()} />
       <ScrollView style={themed($container)} showsVerticalScrollIndicator={false}>
         {/* Profile Card */}
         <View style={themed($profileCard)}>
@@ -103,17 +94,6 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-        </View>
-
-        {/* Account Actions */}
-        <View style={themed($section)}>
-          <ListItem
-            tx="common:logOut"
-            LeftComponent={themed(renderIcon("sign-out"))}
-            style={[themed($listItem), themed($destructiveItem)]}
-            textStyle={themed($destructiveText)}
-            onPress={handleLogout}
-          />
         </View>
 
         <View style={themed($footer)}>

@@ -5,6 +5,7 @@ import {
   ViewStyle,
   Image,
   TouchableOpacity,
+  StyleProp,
 } from 'react-native';
 import { ListView } from '../ListView';
 import { ListItem } from '../ListItem';
@@ -13,7 +14,7 @@ import { useState } from 'react';
 import { Agent } from '@atproto/api';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { TextField } from '../TextField';
-import { ThemedStyle } from '../../theme';
+import { ThemedStyle, ThemedStyleArray } from '../../theme';
 import { Text } from '../Text';
 import { Button } from '../Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,12 +40,14 @@ interface UserListProps {
   agent: Agent;
   onChatPress?: (groupId: string) => void;
   onProfilePress?: (did: string) => void;
+  themedOverride?: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T
 }
 
 export const UserList = ({
   agent,
   onChatPress,
   onProfilePress,
+  themedOverride,
 }: UserListProps) => {
   const [state, setState] = useState({
     searchQuery: '',
@@ -53,12 +56,15 @@ export const UserList = ({
     selectedUsers: [] as User[],
     loading: false,
     error: '',
-    isGlobalSearch: true,
   });
 
   const userDid = agent.assertDid;
 
-  const { themed } = useAppTheme();
+  let { themed } = useAppTheme();
+  if (themedOverride) {
+    themed = themedOverride;
+  }
+
   const insets = useSafeAreaInsets();
 
   // Get unselected users for main list
@@ -121,8 +127,8 @@ export const UserList = ({
       selectedUsers: [],
       loading: true,
       error: '',
-      isGlobalSearch: true,
     });
+    fetchFollowing();
   };
 
   const fetchFollowing = async () => {
@@ -224,10 +230,8 @@ export const UserList = ({
   }, [searchGlobal]);
 
   useEffect(() => {
-    if (state.isGlobalSearch && state.searchQuery.length >= 3) {
-      searchGlobal(state.searchQuery);
-    }
-  }, [state.searchQuery, state.isGlobalSearch]);
+    searchGlobal(state.searchQuery);
+  }, [state.searchQuery]);
 
   const toggleUserSelection = (did: string) => {
     if (did === 'X') {
@@ -276,15 +280,13 @@ export const UserList = ({
           <ListItem
             style={themed($smallUserClearButton)}
             onPress={() => toggleUserSelection(user.id)}
-            topSeparator={false}
-            bottomSeparator
             height={24}
           >
             <View style={themed($smallUserInfo)}>
               <Text
                 text={'Clear'}
                 size="xxs"
-                style={themed($userName)}
+                style={[themed($userName), { paddingLeft: 10 }]}
                 numberOfLines={1}
               />
             </View>
@@ -304,8 +306,6 @@ export const UserList = ({
             />
           }
           onPress={() => toggleUserSelection(user.id)}
-          topSeparator={false}
-          bottomSeparator
           height={24}
           accessibilityRole="button"
           accessibilityLabel={`Unselect ${user.displayName}`}
@@ -349,7 +349,6 @@ export const UserList = ({
             </View>
           }
           onPress={() => toggleUserSelection(user.id)}
-          topSeparator={false}
           bottomSeparator
           height={72}
           accessibilityRole="button"
@@ -398,25 +397,31 @@ export const UserList = ({
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* <View style={themed($header)}> */}
-      {/* <Text
-          tx="newChat:title"
-          preset="heading"
-          style={themed($headerText)}
-          accessibilityRole="header"
-        /> */}
-      {/* {state.selectedUsers.length > 0 && (
-          <Button
-            text={newText}
-            preset="reversed"
-            onPress={handleSubmit}
-            style={themed($submitButton)}
-            disabled={!state.selectedUsers.length}
+    <View style={themed($container)}>
+      <View style={themed($footer)}>
+        <View style={themed($searchButtonContainer)}>
+          <TextField
+            style={themed($searchInput)}
+            containerStyle={themed($searchContainer)}
+            inputWrapperStyle={themed($searchInputWrapper)}
+            placeholder="Search..."
+            value={state.searchQuery}
+            onChangeText={(text) =>
+              setState((prev) => ({ ...prev, searchQuery: text }))
+            }
+            accessibilityLabel="Search users"
           />
-        )} */}
-      {/* </View> */}
-
+          {state.selectedUsers.length > 0 && (
+            <Button
+              text={newText}
+              preset="reversed"
+              onPress={handleSubmit}
+              style={themed($submitButton)}
+              disabled={!state.selectedUsers.length}
+            />
+          )}
+        </View>
+      </View>
       <View style={themed($listsContainer)}>
         {state.selectedUsers.length > 0 && (
           <View style={themed($selectedUsersContainer)}>
@@ -459,52 +464,30 @@ export const UserList = ({
           )}
         </View>
       </View>
-
-      <View style={themed($footer)}>
-        {/* {state.selectedUsers.length > 0 && (
-          <TextField
-            style={themed($searchInput)}
-            placeholderTx="newChat:groupNamePlaceholder"
-            value={state.groupName}
-            onChangeText={(text) =>
-              setState((prev) => ({ ...prev, groupName: text }))
-            }
-          />
-        )} */}
-        <View style={themed($searchContainer)}>
-          <TextField
-            style={themed($searchInput)}
-            placeholder="Search..."
-            value={state.searchQuery}
-            onChangeText={(text) =>
-              setState((prev) => ({ ...prev, searchQuery: text }))
-            }
-            accessibilityLabel="Search users"
-          />
-          {state.selectedUsers.length > 0 && (
-            <Button
-              text={newText}
-              preset="reversed"
-              onPress={handleSubmit}
-              style={themed($submitButton)}
-              disabled={!state.selectedUsers.length}
-            />
-          )}
-        </View>
-      </View>
     </View>
   );
 };
 
-const $searchContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
+const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  flex: 1,
+  backgroundColor: colors.background,
+  color: colors.text,
+});
+
+const $searchButtonContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   paddingHorizontal: spacing.lg,
   backgroundColor: colors.palette.neutral200,
-  // paddingBottom: spacing.sm,
-  // gap: spacing.sm,
-  // flexDirection: 'row',
-  // alignItems: 'center',
-  // justifyContent: 'space-between',
-  // width: '100%',
+});
+
+
+const $searchContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
+  backgroundColor: colors.palette.neutral200,
+  color: colors.text,
+});
+
+const $searchInputWrapper: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
+  backgroundColor: colors.palette.neutral200,
+  color: colors.text,
 });
 
 const $searchInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
@@ -525,24 +508,18 @@ const $errorText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   padding: spacing.md,
 });
 
-const $listsContainer: ThemedStyle<ViewStyle> = () => ({
+const $listsContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
   flex: 1,
   flexGrow: 1,
   minHeight: 0,
   display: 'flex',
 });
 
-const $availableUsersContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+const $availableUsersContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   flex: 1,
   paddingHorizontal: spacing.lg,
   paddingTop: spacing.md,
-});
-
-const $sectionHeader: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  fontSize: 16,
-  fontWeight: '600',
-  color: colors.textDim,
-  paddingVertical: spacing.sm,
+  borderBottomColor: colors.separator,
 });
 
 const $footer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({

@@ -353,6 +353,7 @@ const $deleteAction: ThemedStyle<ViewStyle> = ({ colors }) => ({
   // borderRadius: 10,
   // minHeight: 4,
   // width: 100,
+  justifyContent: 'center',
   alignItems: 'center',
   // paddingRight: 10,
   height: '100%',
@@ -369,13 +370,9 @@ const $deleteActionText: ThemedStyle<TextStyle> = ({ colors }) => ({
 
 const $lastMessage: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 14,
-  // color: colors.palette.neutral600,
   color: colors.text,
-  // marginTop: spacing.xs,
   textOverflow: 'ellipsis',
   overflow: 'hidden',
-  // marginBottom: spacing.xs,
-  // maxWidth: 240,
 });
 
 const $chatCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({

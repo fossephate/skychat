@@ -1,6 +1,6 @@
 import {registerSheet, SheetDefinition} from 'react-native-actions-sheet';
 import { LeaveChatSheet, SearchCreateSheet } from './chatSheets';
-import { ThemedStyle, ThemedStyleArray } from '../../theme';
+import { Theme, ThemeContexts, ThemedStyle, ThemedStyleArray } from '../../theme';
 import { StyleProp } from 'react-native';
 import { Agent } from '@atproto/api';
 
@@ -15,11 +15,15 @@ declare module 'react-native-actions-sheet' {
       payload: {
         onLeave: () => void;
         themed: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T;
+        // theme: Theme;
+        themeContext: ThemeContexts;
       };
     }>;
     'searchCreateSheet': SheetDefinition<{
       payload: {
         themed: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T;
+        // theme: Theme;
+        // themeContext: ThemeContexts;
         agent: Agent;
       };
     }>;

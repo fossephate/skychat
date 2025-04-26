@@ -47,8 +47,8 @@ export default function InvitesScreen() {
         }}
         onInvitesPress={() => {}}
         showInvitesBanner={false}
-        onProfilePress={(chat) => {
-          console.log("onProfilePress", chat)
+        onProfilePress={(id) => {
+          router.push(`/profile/${id}` as any)
         }}
       />
     </Screen>

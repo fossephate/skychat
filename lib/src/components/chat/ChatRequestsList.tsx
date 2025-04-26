@@ -1,4 +1,4 @@
-// components/ChatList.tsx
+// components/ChatRequestsList.tsx
 import { Text } from "../../components";
 import { Chat, ChatRequestItem, User } from "../../components/chat/ChatItem";
 import { useAppTheme } from "../../utils/useAppTheme";
@@ -15,11 +15,13 @@ import {
 import { Agent } from "@atproto/api";
 import { ActivityIndicator } from "react-native";
 import { LoadingView } from "../util/utils";
+import { useStrings } from "../../contexts/strings";
 
 export interface ChatListProps {
   agent: Agent;
   onChatPress?: (chat: Chat) => void;
-  onProfilePress?: (chat: Chat) => void;
+  onProfilePress?: (id: string) => void;
+  onGroupPress?: (id: string) => void;
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
   showSectionHeaders?: boolean;
@@ -29,7 +31,8 @@ export interface ChatListProps {
 interface ChatRequestsListProps extends ChatListProps {
   agent: Agent;
   onChatPress?: (chat: Chat) => void;
-  onProfilePress?: (chat: Chat) => void;
+  onProfilePress?: (id: string) => void;
+  onGroupPress?: (id: string) => void;
   acceptButtonText?: string;
   rejectButtonText?: string;
   refreshInterval?: number; // Auto-refresh interval in ms
@@ -57,6 +60,8 @@ interface ChatRequest {
   unreadCount: number
   pinned?: boolean
   muted?: boolean
+  verified: boolean
+  verifier: boolean
 }
 
 export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
@@ -67,6 +72,7 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
   acceptButtonText,
   rejectButtonText,
 }) => {
+  const s = useStrings();
   const [skyChats, setSkyChats] = useState<Chat[]>([]);
   const [bskyChatRequests, setBskyChatRequests] = useState<ChatRequest[]>([]);
   const [refreshing, setRefreshing] = useState(true);
@@ -192,7 +198,7 @@ export const ChatRequestsList: React.FC<ChatRequestsListProps> = ({
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Text tx="chatRequestsScreen:empty" preset="bold" />
+      <Text text={s('chatRequestsEmpty')} preset="bold" />
     </ScrollView>
   )
 

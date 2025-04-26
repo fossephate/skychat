@@ -28,8 +28,9 @@ export const ThemeContext = createContext<ThemeContextType>({
   },
 })
 
-const themeContextToTheme = (themeContext: ThemeContexts): Theme =>
-  themeContext === "dark" ? darkTheme : lightTheme
+// const themeContextToTheme = (themeContext: ThemeContexts): Theme =>
+//   themeContext === "dark" ? darkTheme : lightTheme
+const themeContextToTheme = (themeContext: ThemeContexts): Theme => globalTheme.t
 
 const setImperativeTheming = (theme: Theme) => {
   SystemUI.setBackgroundColorAsync(theme.colors.background)
@@ -47,41 +48,46 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
   const navigationTheme: any = themeScheme === "dark" ? DarkTheme : DefaultTheme
 
   useEffect(() => {
+    globalTheme.t = themeContextToTheme(themeScheme)
     setImperativeTheming(themeContextToTheme(themeScheme))
   }, [themeScheme])
 
-  const GestureThemeProvider = ({ children }: { children: React.ReactNode }) => {
+
+  const EnhancedThemeProvider: React.FC<any> = ({ children, overrideT }) => {
+    // If an override function is provided, use it to wrap the default function
+    // const stringFunction = overrideS ? overrideS(defaultS) : defaultS;
+    const th = overrideT ?? globalTheme.t;
+
+    // Update the global instance when the provider mounts or the function changes
+    useEffect(() => {
+      globalTheme.t = th;
+
+      // Clean up when unmounting
+      return () => {
+        globalTheme.t = lightTheme;
+      };
+    }, [th]);
+
     // return (
-    //   <GestureHandlerRootView>
-    //     <SheetProvider context="global">
-    //       <ThemeContext.Provider value={{ themeScheme, setThemeContextOverride }}>
-    //         {children}
-    //       </ThemeContext.Provider>
-    //     </SheetProvider>
-    //   </GestureHandlerRootView>
+    //   <ThemeContext.Provider value={th}>
+    //     {children}
+    //   </ThemeContext.Provider>
     // );
-    return React.createElement(
-      GestureHandlerRootView,
-      null,
-      React.createElement(
-        SheetProvider,
-        { context: "global" },
-        React.createElement(
-          ThemeContext.Provider,
-          { value: { themeScheme, setThemeContextOverride } },
-          children
-        )
-      )
-    );
-  }
+    // don't use jsx:
+    return React.createElement(ThemeContext.Provider, { value: th }, children);
+  };
 
   return {
     themeScheme,
     navigationTheme,
     setThemeContextOverride,
-    ThemeProvider: GestureThemeProvider,
+    ThemeProvider: EnhancedThemeProvider,
   }
 }
+
+let globalTheme = {
+  t: lightTheme
+};
 
 interface UseAppThemeValue {
   // The theme object from react-navigation
@@ -140,7 +146,8 @@ export const useAppTheme = (): UseAppThemeValue => {
   return {
     navTheme,
     setThemeContextOverride,
-    theme: themeVariant,
+    // theme: themeVariant,
+    theme: globalTheme.t,
     themeContext,
     themed,
   }

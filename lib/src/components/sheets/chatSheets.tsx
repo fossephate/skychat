@@ -2,41 +2,54 @@ import ActionSheet, {
   SheetProps,
   useSheetRef,
 } from 'react-native-actions-sheet';
-import { View, Text, ViewStyle, TextStyle } from 'react-native';
+import { View, ViewStyle, TextStyle } from 'react-native';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
-import { Button } from '../../components/';
+import { Button, Text } from '../../components/';
 import { UserList } from '../../components/chat/UserList';
-import { Screen } from '../Screen';
-
+import { useStrings } from '../../contexts/strings';
+import { ThemeProvider } from '@react-navigation/native';
+import { useEffect } from 'react';
 export function LeaveChatSheet(props: SheetProps<'leaveChatSheet'>) {
-  const { themed: backupThemed } = useAppTheme();
+  const s = useStrings();
   const ref = useSheetRef();
-  let themed = props.payload?.themed;
+  const { themed } = useAppTheme();
+  // let themed = props.payload?.themed;
 
-  if (!themed) {
-    themed = backupThemed;
-  }
+  // if (!themed) {
+  //   themed = backupThemed;
+  // }
+
+  // console.log('themeContext', themeContext);
+
+  // useEffect(() => {
+  //   setThemeContextOverride(themeContext);
+  // }, [themeContext]);
+
+  // console.log('theme', theme);
+
+  // return <ThemeProvider value={theme as any}>{sheet()}</ThemeProvider>;
 
   return (
     <ActionSheet id={props.sheetId}>
       <View style={themed($leaveChatSheetContainer)}>
-        <Text style={themed($leaveChatSheetTitle)}>Leave Conversation</Text>
-        <Text style={themed($leaveChatSheetText)}>
-          Are you sure you want to leave this conversation?
-        </Text>
-        <Text style={themed($leaveChatSheetText)}>
-          Your messages will be deleted for you, but not for the other
-          participant.
-        </Text>
+        <Text text={s('leaveChat')} style={themed($leaveChatSheetTitle)} />
+        <Text
+          text={s('leaveChatConfirmation1')}
+          style={themed($leaveChatSheetText)}
+        />
+        <Text
+          text={s('leaveChatConfirmation2')}
+          style={themed($leaveChatSheetText)}
+        />
         <Button
           onPress={props.payload?.onLeave}
           style={themed($leaveChatSheetButton)}
         >
-          <Text>Leave</Text>
+          <Text text={s('leave')} />
         </Button>
         <Button onPress={() => ref.current?.hide()} style={{ marginTop: 6 }}>
-          <Text>Cancel</Text>
+          <Text text={s('cancel')} />
         </Button>
       </View>
     </ActionSheet>
@@ -77,28 +90,30 @@ const $leaveChatSheetButton: ThemedStyle<ViewStyle> = ({
 });
 
 export function SearchCreateSheet(props: SheetProps<'searchCreateSheet'>) {
-  const { themed: backupThemed } = useAppTheme();
   const ref = useSheetRef();
+  const { themed: backupThemed } = useAppTheme();
   let themed = props.payload?.themed;
+  let theme = props.payload?.theme;
 
-  if (!themed) {
-    themed = backupThemed;
-  }
+  // if (!themed) {
+  //   themed = backupThemed;
+  // }
+
   if (!props.payload?.agent) {
     return (
-      <View>
+      <View style={{ height: 650, paddingBottom: 32 }}>
         <Text>No agent</Text>
       </View>
     );
   }
 
   return (
-    <ActionSheet id={props.sheetId}>
-      <Screen>
+    <ThemeProvider value={theme}>
+      <ActionSheet id={props.sheetId}>
         <View style={{ height: 650, paddingBottom: 32 }}>
           <UserList agent={props.payload?.agent} />
         </View>
-      </Screen>
-    </ActionSheet>
+      </ActionSheet>
+    </ThemeProvider>
   );
 }

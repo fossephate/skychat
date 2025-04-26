@@ -30,8 +30,7 @@ export default function UsersScreen() {
   }
 
   const handleProfilePress = (did: string) => {
-    // router.push(`/profile/${did}`)
-    console.log("handleProfilePress", did)
+    router.push(`/profile/${did}`)
   }
 
   return (

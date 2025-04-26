@@ -1,14 +1,13 @@
 // app/_layout.tsx
 import React, { useEffect, useState } from "react"
 import { SplashScreen, Stack } from "expo-router"
-import { initI18n } from "@/i18n";
-import { customFontsToLoad } from "@/theme";
-import { loadDateFnsLocale } from "@/utils/formatDate";
-import { useThemeProvider } from "@/utils/useAppTheme";
-import { useFonts } from "expo-font";
-import { AppProvider } from '@/contexts/AppProvider';
-import { AppInitializer } from '@/components/AppInitializer';
-import { useChatThemeProvider } from "skychat-lib";
+import { initI18n } from "@/i18n"
+import { customFontsToLoad } from "@/theme"
+import { loadDateFnsLocale } from "@/utils/formatDate"
+import { useThemeProvider } from "@/utils/useAppTheme"
+import { useFonts } from "expo-font"
+import { AppProvider } from "@/contexts/AppProvider"
+import { AppInitializer } from "@/components/AppInitializer"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -25,7 +24,6 @@ export default function Root() {
   const [fontsLoaded, fontError] = useFonts(customFontsToLoad)
   const [isI18nInitialized, setIsI18nInitialized] = useState(false)
   const { themeScheme, setThemeContextOverride, ThemeProvider } = useThemeProvider()
-  const { themeScheme: chatThemeScheme, setThemeContextOverride: setChatThemeContextOverride, ThemeProvider: ChatThemeProvider } = useChatThemeProvider()
 
   useEffect(() => {
     initI18n()
@@ -45,12 +43,10 @@ export default function Root() {
 
   return (
     <ThemeProvider value={{ themeScheme, setThemeContextOverride }}>
-      <ChatThemeProvider value={{ themeScheme: chatThemeScheme, setThemeContextOverride: setChatThemeContextOverride }}>
       <AppProvider loaded={loaded}>
         <AppInitializer />
-          <Stack screenOptions={{ headerShown: false }} />
-        </AppProvider>
-      </ChatThemeProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </AppProvider>
     </ThemeProvider>
-  );
+  )
 }

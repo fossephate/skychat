@@ -18,6 +18,8 @@ import { ThemedStyle } from '../../theme';
 import { LoadingView } from '../util/utils';
 import ActionSheet, { ActionSheetRef, SheetManager } from 'react-native-actions-sheet';
 import { NewChatModal } from '../chat/NewChat';
+import { useStrings } from '../../contexts/strings';
+
 export interface ChatListProps {
   agent: Agent;
   onChatPress?: (chat: Chat) => void;
@@ -35,6 +37,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   showInvitesBanner = true,
   refreshInterval = 1000 * 10,
 }) => {
+  const s = useStrings();
   const [searchQuery, setSearchQuery] = useState('');
   const [bskyChats, setBskyChats] = useState<Chat[]>([]);
   const [skyChats, setSkyChats] = useState<Chat[]>([]);
@@ -49,7 +52,7 @@ export const ChatList: React.FC<ChatListProps> = ({
 
   const [chatToLeave, setChatToLeave] = useState<Chat | null>(null);
 
-  const { themed } = useAppTheme();
+  const { themed, themeContext } = useAppTheme();
 
   const fetchBskyChats = async () => {
     try {
@@ -188,10 +191,11 @@ export const ChatList: React.FC<ChatListProps> = ({
   const onLeaveChat = useCallback(
     async (chat: Chat) => {
       setChatToLeave(chat);
-      SheetManager.show('leaveChatSheet', {
+      SheetManager.show("leaveChatSheet", {
         payload: {
           onLeave: confirmLeaveChat,
           themed: themed,
+          themeContext: themeContext,
         },
       });
     },
@@ -307,7 +311,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                   <View style={themed($notificationDot)} />
                 )}
               </View>
-              <Text tx="chatsScreen:chatRequests" />
+              <Text text={s('chatRequests')} />
             </View>
             <View style={{ alignItems: 'center' }}>
               <FontAwesome
@@ -367,6 +371,7 @@ export const ChatList: React.FC<ChatListProps> = ({
             payload: {
               themed: themed,
               agent: agent,
+              theme: theme,
             },
           });
         }}
@@ -376,12 +381,6 @@ export const ChatList: React.FC<ChatListProps> = ({
     </View>
   );
 };
-
-// Styles
-const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  flex: 1,
-  backgroundColor: colors.background,
-});
 
 const $invitesBanner: ThemedStyle<ViewStyle> = ({ colors, spacing, isDark }) => ({
   paddingHorizontal: spacing.sm,
