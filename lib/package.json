@@ -75,6 +75,7 @@
     "@expo/vector-icons": "^14.0.0",
     "@shopify/flash-list": "1.7.3",
     "date-fns": "^4.1.0",
+    "expo-secure-store": "~14.0.1",
     "i18next": "^23.16.8",
     "react-i18next": "^15.4.1",
     "react-native-actions-sheet": "^0.9.7",
@@ -120,6 +121,7 @@
   "peerDependencies": {
     "expo": "*",
     "expo-video": "*",
+    "expo-secure-store": "*",
     "react": "*",
     "react-dom": "*",
     "react-native": "*"

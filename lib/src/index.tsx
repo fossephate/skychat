@@ -45,3 +45,4 @@ export { ChatRequestsList } from './components/chat/ChatRequestsList';
 export { ChatRequestItem } from './components/chat/ChatItem';
 export { ChatSettings } from './components/bsky/ChatSettings';
 export { UserList } from './components/chat/UserList';
+export { AccountBackup } from './components/bsky/AccountBackup';

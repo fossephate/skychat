@@ -15,7 +15,7 @@ import { ActivityIndicator } from 'react-native';
 import { Chat, ChatItem, User } from '../../components/chat/ChatItem';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
-import { LoadingView } from '../util/utils';
+import { LoadingView } from '../utils/utils';
 import ActionSheet, { ActionSheetRef, SheetManager } from 'react-native-actions-sheet';
 import { NewChatModal } from '../chat/NewChat';
 import { useStrings } from '../../contexts/strings';

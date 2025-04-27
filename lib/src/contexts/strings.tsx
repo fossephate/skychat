@@ -85,6 +85,10 @@ export const defaultS = (key: string) => {
     newChat: "New Group",
     chatRequests: "Chat requests",
     chatRequestsEmpty: "No chat requests",
+    allowMessagesFromInfo: "You can continue ongoing conversations regardless of which setting you choose.",
+    allowMessagesFromEveryone: "Everyone",
+    allowMessagesFromFollowing: "Users I follow",
+    allowMessagesFromNone: "No one",
   };
   return strings[key as keyof typeof strings] ?? "Error: String key not found";
 };

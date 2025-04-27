@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Agent } from "@atproto/api";
 import { ActivityIndicator } from "react-native";
-import { LoadingView } from "../util/utils";
+import { LoadingView } from "../utils/utils";
 import { useStrings } from "../../contexts/strings";
 
 export interface ChatListProps {

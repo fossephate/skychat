@@ -23,7 +23,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import React from 'react';
 
 import { $avatar, $avatarContainer, $userInfo, $userName, $userHandle, $userStatus } from './styles';
-import { FontAwesome } from '@expo/vector-icons';
+import { blueCheck } from '../utils/utils';
 
 interface User {
   id: string;
@@ -125,7 +125,7 @@ export const UserList = ({
 
   // Fetch following list on initial load
   useEffect(() => {
-    fetchFollowing();
+    fetchMutuals();
   }, []);
 
   const resetState = () => {
@@ -137,10 +137,10 @@ export const UserList = ({
       loading: true,
       error: '',
     });
-    fetchFollowing();
+    fetchMutuals();
   };
 
-  const fetchFollowing = async () => {
+  const fetchMutuals = async () => {
     if (!agent || !userDid) return;
 
     try {
@@ -185,7 +185,7 @@ export const UserList = ({
       debounce(async (query: string) => {
         if (!agent) return;
         if (!query) {
-          resetState();
+          fetchMutuals();
           return;
         }
 
@@ -250,7 +250,7 @@ export const UserList = ({
         loading: true,
         selectedUsers: [],
       }));
-      fetchFollowing();
+      fetchMutuals();
       return;
     }
 
@@ -332,14 +332,6 @@ export const UserList = ({
     },
     [themed, toggleUserSelection]
   );
-
-  const blueCheck = () => {
-    return (
-      <View style={{ backgroundColor: '#208bfe', borderRadius: 30, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
-        <FontAwesome name="check" size={12} color="white" />
-      </View>
-    );
-  };
 
   const renderUnselectedUser = useCallback(
     ({ item: user }: { item: User }) => {
@@ -466,7 +458,7 @@ export const UserList = ({
               estimatedItemSize={72}
               showsVerticalScrollIndicator={false}
               refreshing={state.loading}
-              onRefresh={fetchFollowing}
+              onRefresh={fetchMutuals}
             />
           ) : (
             <Text text="No users found" style={themed($errorText)} />

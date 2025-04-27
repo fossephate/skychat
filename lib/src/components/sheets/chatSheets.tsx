@@ -15,7 +15,7 @@ export function LeaveChatSheet(props: SheetProps<'leaveChatSheet'>) {
   const { themed } = useAppTheme();
 
   return (
-    <ActionSheet id={props.sheetId}>
+    <ActionSheet id={props.sheetId} useBottomSafeAreaPadding>
       <View style={themed($leaveChatSheetContainer)}>
         <Text text={s('leaveChat')} style={themed($leaveChatSheetTitle)} />
         <Text
@@ -78,15 +78,15 @@ export function SearchCreateSheet(props: SheetProps<'searchCreateSheet'>) {
 
   if (!props.payload?.agent) {
     return (
-      <View style={{ height: 650, paddingBottom: 36 }}>
+      <View style={{ height: 650 }}>
         <Text>No agent</Text>
       </View>
     );
   }
 
   return (
-    <ActionSheet id={props.sheetId}>
-      <View style={{ height: 650, paddingBottom: 36 }}>
+    <ActionSheet id={props.sheetId} useBottomSafeAreaPadding>
+      <View style={{ height: 650 }}>
         <UserList agent={props.payload?.agent} />
       </View>
     </ActionSheet>

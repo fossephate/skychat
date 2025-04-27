@@ -7,7 +7,7 @@ import { useAppTheme } from "@/utils/useAppTheme"
 import type { ThemedStyle } from "@/theme"
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useAuth } from "@/contexts/AuthContext";
-import { useConvo, ChatSettings } from 'skychat-lib';
+import { useConvo, ChatSettings, AccountBackup } from 'skychat-lib';
 
 export default function SettingsScreen() {
 
@@ -58,15 +58,6 @@ export default function SettingsScreen() {
     fetchProfile()
   }, [client, session])
 
-  const renderSwitch = (value: boolean, onValueChange: (value: boolean) => void) => (
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      trackColor={themed($switchTrackColor)}
-      thumbColor={themed($switchThumbColor(value))}
-    />
-  )
-
   // Update the ListItem icons to use FontAwesome
   const renderIcon = (name: string) => ({ colors }: { colors: { text: string } }) => {
     return (
@@ -111,6 +102,8 @@ export default function SettingsScreen() {
 
 
         <ChatSettings agent={agent} />
+
+        {/* <AccountBackup agent={agent} /> */}
 
         {/* Account Actions */}
         <View style={themed($section)}>

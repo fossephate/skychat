@@ -11,6 +11,7 @@ import { Agent } from '@atproto/api';
 import { useAppTheme } from '@/utils/useAppTheme';
 import type { ThemedStyle } from '@/theme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useStrings } from '../../contexts/strings';
 
 // Types for the AT Protocol preferences
 interface ChatPreferences {
@@ -22,6 +23,7 @@ interface ChatSettingsProps {
 }
 
 export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
+  const s = useStrings();
   const { themed, theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [preferences, setPreferences] = useState<ChatPreferences>({
@@ -74,7 +76,7 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
       };
 
       // Put the record into your repository
-      await agent.api.com.atproto.repo.putRecord({
+      await agent.com.atproto.repo.putRecord({
         repo: userDid, // Your DID
         collection: 'chat.bsky.actor.declaration',
         rkey: 'self', // Use 'self' as the record key for actor declarations
@@ -86,6 +88,10 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
     }
   };
 
+  useEffect(() => {
+    savePreferences();
+  }, [preferences]);
+
   // Handle message permission change
   const handleMessagePermissionChange = (
     value: 'all' | 'following' | 'none'
@@ -94,23 +100,7 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
       ...prev,
       allowMessagesFrom: value,
     }));
-
-    // Save changes after state update
-    setTimeout(() => {
-      savePreferences();
-    }, 0);
   };
-
-  // Render icon helper
-  const renderIcon =
-    (name: string) =>
-    ({ colors }: { colors: { text: string } }) => {
-      return (
-        <View style={themed($iconContainer)}>
-          <FontAwesome name={name as any} size={24} color={colors.text} />
-        </View>
-      );
-    };
 
   // Radio option renderer
   const RadioOption = ({
@@ -145,28 +135,25 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
     );
   }
 
-  const allowMessagesFromInfo =
-    'You can continue ongoing conversations regardless of which setting you choose.';
-
   return (
     <View style={themed($container)}>
       <View style={themed($section)}>
         <Text style={themed($sectionTitle)}>Allow new messages from</Text>
         <View style={themed($sectionContent)}>
           <RadioOption
-            label="Everyone"
+            label={s("allowMessagesFromEveryone")}
             value="all"
             currentValue={preferences.allowMessagesFrom}
             onSelect={handleMessagePermissionChange}
           />
           <RadioOption
-            label="Users I follow"
+            label={s("allowMessagesFromFollowing")}
             value="following"
             currentValue={preferences.allowMessagesFrom}
             onSelect={handleMessagePermissionChange}
           />
           <RadioOption
-            label="No one"
+            label={s("allowMessagesFromNone")}
             value="none"
             currentValue={preferences.allowMessagesFrom}
             onSelect={handleMessagePermissionChange}
@@ -178,7 +165,7 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
         <View style={themed($iconContainer)}>
           <FontAwesome name="info-circle" size={24} color={theme.colors.text} />
         </View>
-        <Text style={themed($infoText)}>{allowMessagesFromInfo}</Text>
+        <Text style={themed($infoText)}>{s("allowMessagesFromInfo")}</Text>
       </View>
     </View>
   );
@@ -230,16 +217,6 @@ const $listItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   alignItems: 'center',
   minHeight: 50,
 });
-
-const $switchTrackColor: ThemedStyle<any> = ({ colors }) => ({
-  false: colors.palette.neutral400,
-  true: colors.palette.primary300,
-});
-
-const $switchThumbColor =
-  (value: boolean): ThemedStyle<string> =>
-  ({ colors }) =>
-    value ? colors.palette.primary500 : colors.palette.neutral200;
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   justifyContent: 'center',
