@@ -4,7 +4,7 @@ import { ImageStyle, TextStyle, ViewStyle } from "react-native";
 
 export const $avatarContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   // height: '100%',
-  height: 80,
+  height: 72,
   alignItems: 'center',
   justifyContent: 'center',
 });

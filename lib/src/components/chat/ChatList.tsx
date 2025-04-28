@@ -281,11 +281,11 @@ export const ChatList: React.FC<ChatListProps> = ({
   const sections = [];
 
   if (skyChats.length > 0) {
-    sections.push({ title: 'Skychats', data: skyChats, type: 'sky' });
+    sections.push({ title: s("skyListHeader"), data: skyChats, type: 'sky' });
   }
 
   if (bskyChats.length > 0) {
-    sections.push({ title: 'Bsky DMs', data: bskyChats, type: 'bsky' });
+    sections.push({ title: s("bskyListHeader"), data: bskyChats, type: 'bsky' });
   }
 
   // Render section header

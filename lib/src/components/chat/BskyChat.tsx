@@ -118,10 +118,15 @@ export const BskyChat: React.FC<BskyChatProps> = ({
       const profileImage = profileImages[msg.sender?.did] ?? `https://i.pravatar.cc/150?u=${msg.sender?.did}`
 
       // extract the first link from the text if it exists:
-      const link = msg.text.match(/https?:\/\/[^\s]+/)?.[0];
+      let link = msg.text.match(/https?:\/\/[^\s]+/)?.[0];
       // if the link is the entire text, set text to an empty string:
       if (link === msg.text) {
         msg.text = "";
+      }
+
+      if (msg.embed) {
+        console.log("embed", msg.embed)
+        link = msg.embed?.record?.uri;
       }
 
       let message: IMessage = {
