@@ -9,10 +9,9 @@ import {
 } from "react-native"
 import { Screen, Text, Button } from "src/components"
 import { router } from "expo-router"
-import { ChatList, Chat, User } from "skychat-lib"
+import { ChatList, Chat, User, useConvo } from "skychat-lib"
 import { colors, spacing, ThemedStyle } from "src/theme"
 import { useAppTheme } from "src/utils/useAppTheme"
-import { useConvo } from 'skychat-lib';
 import { useAuth } from "@/contexts/AuthContext"
 import { Agent } from "@atproto/api"
 
