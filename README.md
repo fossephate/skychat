@@ -5,14 +5,16 @@ A secure chat application built with OpenMLS (Messaging Layer Security) providin
 ___
 <div style="display: flex; flex-direction: column; gap: 5px;">
    <div style="display: flex; flex-direction: row; gap: 10px;">
-      <img src="/screenshots/chats.png" width="200">
+      <img src="/.screenshots/chats1.png" width="200">
+      <img src="/.screenshots/chats2.png" width="200">
    </div>
    <div style="display: flex; flex-direction: row; gap: 10px;">
-      <img src="/screenshots/chatsettings.png" width="200">
+      <img src="/.screenshots/chatsettings.png" width="200">
+      <img src="/.screenshots/chatrequests.png" width="200">
    </div>
    <div style="display: flex; flex-direction: row; gap: 10px;">
-      <img src="/screenshots/search1.png" width="200">
-      <img src="/screenshots/search2.png" width="200">
+      <img src="/.screenshots/search1.png" width="200">
+      <img src="/.screenshots/search2.png" width="200">
    </div>
 </div>
 
@@ -54,6 +56,7 @@ pnpm install
 ./scripts/remake-lib.sh
 ```
 
+___
 
 ## Usage examples
 Most components require an atproto agent instance, which handles authentication and API interactions:
@@ -62,13 +65,16 @@ import { Agent } from "@atproto/api"
 const agent = new Agent(session)
 ```
 
-Before using any components, you must wrap your app in the ChatProvider component
-The ChatProvider has the following props:
-- stringsOverride?: an optional strings override (for translations)
-- lightThemeOverride?: an optional light theme override
-- darkThemeOverride?: an optional dark theme override
-- initialTheme?: 'light' | 'dark' | undefined (defaults to system theme)
+Before using any components, you must wrap your app in the ChatProvider component.
+The ChatProvider has the following props
+```tsx
+stringsOverride?: an optional strings override (for translations)
+lightThemeOverride?: an optional light theme override
+darkThemeOverride?: an optional dark theme override
+initialTheme?: 'light' | 'dark' | undefined (defaults to system theme)
 ```
+
+```tsx
 import { ChatProvider } from "skychat-lib"
 
 function App() {
@@ -130,7 +136,7 @@ function App() {
 
 ### ChatList Component
 Displays a list of user chats
-```
+```tsx
 import { ChatList } from "skychat-lib"
 import { router } from "expo-router" // or your preferred navigation
 
@@ -162,7 +168,7 @@ function ChatsScreen() {
 
 ### Chat Component
 Renders an individual chat conversation with messages:
-```
+```tsx
 import { Chat, useConvo } from "skychat-lib"
 
 function ChatScreen({ route }) {
@@ -186,8 +192,8 @@ function ChatScreen({ route }) {
 ```
 
 ### SearchCreate Component
-Allows users to search for other users and create new chats:
-```
+Allows users to search for other users and create new chats
+```tsx
 import { SearchCreate } from "skychat-lib"
 
 function SearchScreen() {
@@ -208,7 +214,7 @@ function SearchScreen() {
 
 ### ChatRequestsList Component
 Displays incoming chat requests/invites:
-```
+```tsx
 import { ChatRequestsList } from "skychat-lib"
 
 function InvitesScreen() {
@@ -238,9 +244,8 @@ function InvitesScreen() {
 
 
 ### ChatSettings Component
-[ChatSettings](https://github.com)
-Displays chat preferences and settings:
-```
+Displays chat preferences and settings
+```tsx
 import { ChatSettings } from "skychat-lib"
 
 function ChatSettingsScreen() {
