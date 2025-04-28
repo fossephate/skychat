@@ -89,6 +89,7 @@ export const defaultS = (key: string) => {
     allowMessagesFromEveryone: "Everyone",
     allowMessagesFromFollowing: "Users I follow",
     allowMessagesFromNone: "No one",
+    cantBeMessaged: "can't be messaged",
   };
   return strings[key as keyof typeof strings] ?? "Error: String key not found";
 };

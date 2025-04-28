@@ -19,6 +19,7 @@ declare module 'react-native-actions-sheet' {
     'searchCreateSheet': SheetDefinition<{
       payload: {
         agent: Agent;
+        onSubmit: (ids: string[]) => void;
       };
     }>;
   }

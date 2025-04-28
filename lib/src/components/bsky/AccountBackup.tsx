@@ -80,23 +80,23 @@ export const AccountBackup: React.FC<AccountBackupProps> = ({ agent }) => {
       plcData.rotationKeys.push(newKeyStr);
     }
 
-    // 3. Sign the operation
-    const operationInput = {
-      ...plcData,
-    };
+    // // 3. Sign the operation
+    // const operationInput = {
+    //   ...plcData,
+    // };
 
-    if (token) {
-      operationInput.token = token;
-    }
+    // if (token) {
+    //   operationInput.token = token;
+    // }
 
-    // Using the atproto identity API to sign the operation
-    const signedOp =
-      await agent.api.com.atproto.identity.signPlcOperation(operationInput);
+    // // Using the atproto identity API to sign the operation
+    // const signedOp =
+    //   await agent.api.com.atproto.identity.signPlcOperation(operationInput);
 
-    // 4. Submit the signed operation
-    await agent.api.com.atproto.identity.submitPlcOperation({
-      operation: signedOp.operation,
-    });
+    // // 4. Submit the signed operation
+    // await agent.api.com.atproto.identity.submitPlcOperation({
+    //   operation: signedOp.operation,
+    // });
 
     console.log('Success! Rotation key added.');
   }

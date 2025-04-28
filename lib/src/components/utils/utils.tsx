@@ -1,3 +1,4 @@
+import { ProfileViewBasic, VerificationState } from '@atproto/api/dist/client/types/app/bsky/actor/defs';
 import { FontAwesome } from '@expo/vector-icons';
 import { ActivityIndicator, Text } from 'react-native';
 import { View } from 'react-native';
@@ -33,3 +34,28 @@ export const blueCheck = () => {
     </View>
   );
 };
+
+
+export const isVerified = (verification: VerificationState | undefined) => {
+  return verification?.trustedVerifierStatus === "valid" ;
+};
+
+export const isVerifier = (verification: VerificationState | undefined) => {
+  return verification?.trustedVerifierStatus === "valid" ;
+};
+
+
+export function canBeMessaged(profile: any) {
+  switch (profile.associated?.chat?.allowIncoming) {
+    case 'none':
+      return false
+    case 'all':
+      return true
+    // default to following
+    case 'following':
+    case undefined:
+      return Boolean(profile.viewer?.followedBy)
+    default:
+      return false
+  }
+}

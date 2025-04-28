@@ -5,7 +5,7 @@ import { colors, ThemedStyle } from "src/theme"
 import { Agent } from '@atproto/api'
 import { useAppTheme } from "src/utils/useAppTheme"
 import { ListItem } from "src/components/ListItem"
-import { NewChatModal, UserList } from "skychat-lib"
+import { NewChatModal, SearchCreate } from "skychat-lib"
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuth } from "@/contexts/AuthContext"
 import { router } from "expo-router"
@@ -41,7 +41,7 @@ export default function UsersScreen() {
           <Text tx="searchScreen:title" preset="heading" style={themed($headerText)} />
         </View>
 
-        <UserList agent={agent} onChatPress={handleChatPress} onProfilePress={handleProfilePress} />
+        <SearchCreate agent={agent} onChatPress={handleChatPress} onProfilePress={handleProfilePress} />
 
       </Screen>
     </>

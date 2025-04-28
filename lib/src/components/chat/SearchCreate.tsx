@@ -22,8 +22,9 @@ import debounce from 'lodash/debounce';
 import { ScrollView } from 'react-native-gesture-handler';
 import React from 'react';
 
-import { $avatar, $avatarContainer, $userInfo, $userName, $userHandle, $userStatus } from './styles';
-import { blueCheck } from '../utils/utils';
+import { $avatar, $avatarContainer, $userInfo, $userName, $userHandle, $userStatus, $userStatusError } from './styles';
+import { blueCheck, canBeMessaged, isVerified, isVerifier } from '../utils/utils';
+import { useStrings } from '../../contexts/strings';
 
 interface User {
   id: string;
@@ -34,21 +35,25 @@ interface User {
   verfier: boolean;
   online: boolean;
   description?: string;
+  canBeMessaged: boolean;
 }
 
-interface UserListProps {
+interface SearchCreateProps {
   agent: Agent;
   onChatPress?: (groupId: string) => void;
   onProfilePress?: (did: string) => void;
+  onSubmit?: (ids: string[]) => void;
   themedOverride?: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T
 }
 
-export const UserList = ({
+export const SearchCreate = ({
   agent,
   onChatPress,
   onProfilePress,
   themedOverride,
-}: UserListProps) => {
+  onSubmit,
+}: SearchCreateProps) => {
+  const s = useStrings();
   const [state, setState] = useState({
     searchQuery: '',
     groupName: '',
@@ -89,6 +94,7 @@ export const UserList = ({
       verified: true,
       online: true,
       verfier: true,
+      canBeMessaged: true,
     };
 
     // if selectedUsers contains more than 1 user, and we don't already have the X user, add them to the selectedUsers array
@@ -128,18 +134,6 @@ export const UserList = ({
     fetchMutuals();
   }, []);
 
-  const resetState = () => {
-    setState({
-      searchQuery: '',
-      groupName: '',
-      users: [],
-      selectedUsers: [],
-      loading: true,
-      error: '',
-    });
-    fetchMutuals();
-  };
-
   const fetchMutuals = async () => {
     if (!agent || !userDid) return;
 
@@ -157,9 +151,10 @@ export const UserList = ({
         displayName: profile.displayName || profile.handle,
         description: profile.description,
         avatar: profile.avatar,
-        verified: profile.verification?.verifiedStatus === 'valid',
-        verfier: profile.verification?.trustedVerifierStatus === 'valid',
+        verified: isVerified(profile.verification),
+        verfier: isVerifier(profile.verification),
         online: false,
+        canBeMessaged: canBeMessaged(profile),
       }));
 
       // filter out our own profile:
@@ -213,9 +208,10 @@ export const UserList = ({
               handle: profile.handle,
               displayName: profile.displayName || profile.handle,
               avatar: profile.avatar,
-              verified: profile.verification?.verifiedStatus === 'valid',
-              verfier: profile.verification?.trustedVerifierStatus === 'valid',
+              verified: isVerified(profile.verification),
+              verfier: isVerifier(profile.verification),
               online: false,
+              canBeMessaged: canBeMessaged(profile),
             })
           );
 
@@ -275,11 +271,9 @@ export const UserList = ({
   };
 
   const handleSubmit = useCallback(() => {
-    // onSubmit(
-    //   state.groupName,
-    //   state.selectedUsers.map((user) => user.id)
-    // );
-    // onClose();
+    onSubmit?.(
+      state.selectedUsers.map((user) => user.id).filter((id) => id !== 'X')
+    );
   }, [state.selectedUsers, state.groupName]);
 
   const renderSmallUsers = useCallback(
@@ -335,8 +329,10 @@ export const UserList = ({
 
   const renderUnselectedUser = useCallback(
     ({ item: user }: { item: User }) => {
+
       return (
         <ListItem
+          style={!user.canBeMessaged && { opacity: 0.8 }}
           LeftComponent={
             <View style={themed($avatarContainer)}>
               <TouchableOpacity onPress={() => onProfilePress?.(user.id)}>
@@ -349,7 +345,7 @@ export const UserList = ({
               </TouchableOpacity>
             </View>
           }
-          onPress={() => toggleUserSelection(user.id)}
+          onPress={user.canBeMessaged ? () => toggleUserSelection(user.id) : undefined}
           bottomSeparator
           height={72}
           accessibilityRole="button"
@@ -371,6 +367,7 @@ export const UserList = ({
                 text={`@${user.handle}`}
                 size="xxs"
                 style={themed($userHandle)}
+                numberOfLines={1}
               />
             )}
             {user.description && (
@@ -380,6 +377,9 @@ export const UserList = ({
                 style={themed($userStatus)}
                 numberOfLines={1}
               />
+            )}
+            {!user.canBeMessaged && (
+              <Text text={s("cantBeMessaged")} size="xxs" style={themed($userStatusError)} />
             )}
           </View>
         </ListItem>

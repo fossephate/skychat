@@ -42,3 +42,8 @@ export const $userStatus: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.textDim,
   marginTop: 1,
 });
+
+export const $userStatusError: ThemedStyle<TextStyle> = ({ colors }) => ({
+  color: colors.error,
+  marginTop: 1,
+});

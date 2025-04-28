@@ -15,9 +15,12 @@ import { ActivityIndicator } from 'react-native';
 import { Chat, ChatItem, User } from '../../components/chat/ChatItem';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
-import { LoadingView } from '../utils/utils';
-import ActionSheet, { ActionSheetRef, SheetManager } from 'react-native-actions-sheet';
-import { NewChatModal } from '../chat/NewChat';
+import { isVerified, isVerifier, LoadingView } from '../utils/utils';
+import ActionSheet, {
+  ActionSheetRef,
+  SheetManager,
+} from 'react-native-actions-sheet';
+import { createNewChat, NewChatModal } from '../chat/NewChat';
 import { useStrings } from '../../contexts/strings';
 
 export interface ChatListProps {
@@ -27,6 +30,7 @@ export interface ChatListProps {
   onInvitesPress?: () => void;
   showInvitesBanner?: boolean;
   refreshInterval?: number; // Auto-refresh interval in ms
+  showCreateChatButton?: boolean;
 }
 
 export const ChatList: React.FC<ChatListProps> = ({
@@ -35,6 +39,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   onProfilePress,
   onInvitesPress,
   showInvitesBanner = true,
+  showCreateChatButton = true,
   refreshInterval = 1000 * 10,
 }) => {
   const s = useStrings();
@@ -47,7 +52,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(
     new Map()
   );
-  const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false)
+  const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false);
   const userDid = agent.assertDid;
 
   const [chatToLeave, setChatToLeave] = useState<Chat | null>(null);
@@ -78,8 +83,8 @@ export const ChatList: React.FC<ChatListProps> = ({
             id: member.did,
             displayName: member.displayName || member.handle,
             avatar: member.avatar,
-            verified: member.verification?.verifiedStatus == 'valid',
-            verifier: member.verification?.trustedVerifierStatus == 'valid',
+            verified: isVerified(member.verification),
+            verifier: isVerifier(member.verification),
             handle: member.handle,
           }));
 
@@ -129,8 +134,8 @@ export const ChatList: React.FC<ChatListProps> = ({
             displayName: member.displayName || member.handle,
             avatar: member.avatar,
             handle: member.handle,
-            verified: member.verification?.verifiedStatus == 'valid',
-            verifier: member.verification?.trustedVerifierStatus == 'valid',
+            verified: isVerified(member.verification),
+            verifier: isVerifier(member.verification),
           }));
 
           // Update member profiles
@@ -191,7 +196,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   const onLeaveChat = useCallback(
     async (chat: Chat) => {
       setChatToLeave(chat);
-      SheetManager.show("leaveChatSheet", {
+      SheetManager.show('leaveChatSheet', {
         payload: {
           onLeave: confirmLeaveChat,
         },
@@ -200,18 +205,49 @@ export const ChatList: React.FC<ChatListProps> = ({
     [agent]
   );
 
-  const handleNewChat = async (groupName: string, selectedUsers: string[]) => {
-    if (groupName === "") {
-      // random group name
-      groupName = "Group " + Math.floor(Math.random() * 1000000)
+  const handleNewChat = async (selectedUsers: string[]) => {
+    SheetManager.hide('searchCreateSheet');
+
+    try {
+
+      const chat = await createNewChat({ agent, ids: selectedUsers });
+
+      onChatPress?.({
+        id: chat.id,
+        isBsky: chat.isBsky,
+        members: chat.memberIds.map((id) => ({
+          id: id,
+          displayName: '',
+          handle: '',
+          avatar: '',
+          verified: false,
+          verifier: false,
+        })),
+        name: chat.name,
+        handle: '',
+        lastMessage: undefined,
+        unreadCount: 0,
+        verified: false,
+        verifier: false,
+      });
+
+    } catch(e) {
+      console.error("Error creating new chat!");
     }
-    console.log("Group name:", groupName)
-    console.log("getting groups with users: ", selectedUsers)
-  }
+
+
+
+    // if (groupName === "") {
+    //   // random group name
+    //   groupName = "Group " + Math.floor(Math.random() * 1000000)
+    // }
+    // console.log("Group name:", groupName)
+    // console.log("getting groups with users: ", selectedUsers)
+  };
 
   const confirmLeaveChat = useCallback(async () => {
     try {
-      console.log("leaving chat: ", chatToLeave)
+      console.log('leaving chat: ', chatToLeave);
       if (!chatToLeave) {
         return;
       }
@@ -362,29 +398,38 @@ export const ChatList: React.FC<ChatListProps> = ({
         agent={agent}
       /> */}
 
-      <Button
-        style={themed($fabButton)}
-        onPress={() => {
-          SheetManager.show('searchCreateSheet', {
-            payload: {
-              agent: agent,
-            },
-          });
-        }}
-      >
-        <FontAwesome name="pencil-square-o" color="white" size={20} />
-      </Button>
+      {showCreateChatButton && (
+        <Button
+          style={themed($fabButton)}
+          onPress={() => {
+            SheetManager.show('searchCreateSheet', {
+              payload: {
+                agent: agent,
+                onSubmit: handleNewChat,
+              },
+            });
+          }}
+        >
+          <FontAwesome name="pencil-square-o" color="white" size={20} />
+        </Button>
+      )}
     </View>
   );
 };
 
-const $invitesBanner: ThemedStyle<ViewStyle> = ({ colors, spacing, isDark }) => ({
+const $invitesBanner: ThemedStyle<ViewStyle> = ({
+  colors,
+  spacing,
+  isDark,
+}) => ({
   paddingHorizontal: spacing.sm,
   paddingVertical: 1,
   marginBottom: spacing.md,
   border: 0,
   borderRadius: 0,
-  backgroundColor: isDark ? colors.palette.secondary500 : colors.palette.secondary100,
+  backgroundColor: isDark
+    ? colors.palette.secondary500
+    : colors.palette.secondary100,
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -399,7 +444,7 @@ const $invitesBannerIcon: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
 });
 
 const $notificationDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  position: "absolute",
+  position: 'absolute',
   top: -2,
   right: 2,
   width: 8,
@@ -409,7 +454,7 @@ const $notificationDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
 });
 
 const $invitesEnvelope: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  position: "relative",
+  position: 'relative',
   marginRight: spacing.md,
 });
 
@@ -453,7 +498,7 @@ const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 });
 
 const $fabButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  position: "absolute",
+  position: 'absolute',
   bottom: spacing.lg,
   right: spacing.lg,
   width: 56,
@@ -462,8 +507,8 @@ const $fabButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   minHeight: 56,
   borderRadius: 28,
   backgroundColor: colors.palette.primary500,
-  justifyContent: "center",
-  alignItems: "center",
+  justifyContent: 'center',
+  alignItems: 'center',
   padding: 0,
   margin: 0,
-})
+});

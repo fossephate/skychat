@@ -10,6 +10,7 @@ import debounce from 'lodash/debounce'
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Screen } from "../../components/Screen"
+import { isVerified, isVerifier } from "../utils/utils"
 interface User {
   id: string
   handle: string
@@ -25,6 +26,82 @@ interface NewChatModalProps {
   onClose: () => void
   onSubmit: (groupName: string, selectedUsers: string[]) => void // Returns array of DIDs
   agent: Agent
+}
+
+interface CreateNewChat {
+  agent: Agent;
+  ids: string[];
+}
+
+interface CreateNewChatResponse {
+  id: string;
+  isBsky: boolean;
+  name: string;
+  memberIds: string[];
+  members: User[];
+}
+export async function createNewChat({ agent, ids }: CreateNewChat): Promise<CreateNewChatResponse> {
+  // const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+  // const response = await proxy.chat.bsky.convo.createConvo({
+  //   members: [userDid],
+  // });
+  // return response;
+
+  if (!agent || !agent.assertDid) {
+    throw new Error('Agent is not authenticated');
+  }
+
+  if (ids.length == 0) {
+    throw new Error('No IDs provided');
+  }
+
+
+  // TODO: skychat
+  if (ids.length == 1) {
+
+    let otherId: string = ids[0]!;
+
+    // if we don't have a convo with this user it will create one:
+    const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+    // @ts-ignore
+    const convo = (
+      await proxy.chat.bsky.convo.getConvoForMembers({
+        members: [otherId],
+      })
+    ).data.convo;
+
+    // const convo = convoRequests.find(convo => convo.members.some(member => member.did === otherId));
+
+    if (convo) {
+      return {
+        id: convo.id,
+        isBsky: true,
+        name: convo.members.find(member => member.did !== otherId)?.displayName || '',
+        memberIds: convo.members.map(member => member.did),
+        members: convo.members.map(member => ({
+          id: member.did,
+          handle: member.handle,
+          displayName: member.displayName || member.handle,
+          avatar: member.avatar,
+          verified: isVerified(member.verification),
+          verifier: isVerifier(member.verification),
+          online: false,
+        })),
+      };
+    } else {
+
+      // // create a new convo, if possible:
+      // const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+      // // @ts-ignore
+      // const convo = await proxy.chat.bsky.convo.sendMessage({
+      //   members: [otherId],
+      // });
+      // return convo;
+    }
+
+  }
+
+  throw new Error("Group chats not supported (yet!)");
 }
 
 export function NewChatModal({ isVisible, onClose, onSubmit, agent }: NewChatModalProps) {

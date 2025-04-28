@@ -6,7 +6,7 @@ import { View, ViewStyle, TextStyle } from 'react-native';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
 import { Button, Text } from '../../components/';
-import { UserList } from '../../components/chat/UserList';
+import { SearchCreate } from '../chat/SearchCreate';
 import { useStrings } from '../../contexts/strings';
 
 export function LeaveChatSheet(props: SheetProps<'leaveChatSheet'>) {
@@ -87,7 +87,7 @@ export function SearchCreateSheet(props: SheetProps<'searchCreateSheet'>) {
   return (
     <ActionSheet id={props.sheetId} useBottomSafeAreaPadding>
       <View style={{ height: 650 }}>
-        <UserList agent={props.payload?.agent} />
+        <SearchCreate agent={props.payload?.agent} onSubmit={props.payload?.onSubmit} />
       </View>
     </ActionSheet>
   );
