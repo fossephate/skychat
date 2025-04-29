@@ -68,23 +68,6 @@ const $screenContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
   backgroundColor: colors.background,
 })
 
-const $invitesBanner: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  marginBottom: spacing.md,
-  // border: 0,
-  backgroundColor: colors.palette.secondary400,
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  width: "100%",
-})
-
-const $invitesBannerIcon: ThemedStyle<TextStyle> = ({ colors }) => ({
-  marginRight: spacing.sm,
-  color: colors.text,
-})
-
 const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingHorizontal: spacing.lg,
   paddingVertical: spacing.md,
@@ -93,41 +76,8 @@ const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "center",
 })
 
-const $sectionHeader: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.background,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.sm,
-  borderBottomWidth: 1,
-  borderBottomColor: colors.palette.neutral300,
-})
-
-const $sectionHeaderText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  fontSize: 18,
-  color: colors.text,
-})
 
 const $headerText: ThemedStyle<TextStyle> = ({ colors }) => ({
   fontSize: 32,
   color: colors.text,
-})
-
-const $searchContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingBottom: spacing.sm,
-})
-
-const $searchInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  height: 40,
-  backgroundColor: colors.palette.neutral200,
-  borderRadius: 20,
-  paddingHorizontal: spacing.md,
-  fontSize: 16,
-  color: colors.text,
-  textAlignVertical: "center",
-})
-
-const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.md,
-  paddingBottom: spacing.lg,
-  flexGrow: 1, // Ensure it fills the space for proper pull to refresh
 })

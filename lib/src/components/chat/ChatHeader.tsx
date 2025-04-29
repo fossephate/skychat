@@ -1,73 +1,61 @@
-// import React from "react"
-// import { View, ViewStyle, TextStyle } from "react-native"
-// import { Text } from "@/components"
-// import { colors, spacing } from "@/theme"
-// import { useRouter } from "expo-router"
-// import FontAwesome from '@expo/vector-icons/FontAwesome'
+import React from "react"
+import { View, ViewStyle, TextStyle } from "react-native"
+import { Text } from "@/components"
+import { colors, spacing } from "@/theme"
+import FontAwesome from '@expo/vector-icons/FontAwesome'
 
-// interface ChatHeaderProps {
-//   title: string
-//   onInfoPress?: () => void
-// }
+interface ChatHeaderProps {
+  title: string
+}
 
-// export function ChatHeader({ title, onInfoPress }: ChatHeaderProps) {
-//   const router = useRouter()
+export function ChatHeader({ title,  }: ChatHeaderProps) {
 
-//   const handleBackPress = () => {
-//     router.push("/chats")
-//   }
+  return (
+    <View style={$headerContainer}>
+      <View style={$leftContainer}>
+        <FontAwesome
+          name="chevron-left"
+          size={20}
+          color={colors.text}
+          style={$backButton}
+        />
+        <Text text={title} preset="heading" style={$title} />
+      </View>
+        <FontAwesome
+          name="ellipsis-h"
+          size={24}
+          color={colors.text}
+          style={$infoButton}
+        />
+    </View>
+  )
+}
 
-//   return (
-//     <View style={$headerContainer}>
-//       <View style={$leftContainer}>
-//         <FontAwesome
-//           name="chevron-left"
-//           size={20}
-//           color={colors.text}
-//           onPress={handleBackPress}
-//           style={$backButton}
-//         />
-//         <Text text={title} preset="heading" style={$title} />
-//       </View>
+const $headerContainer: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
+  borderBottomWidth: 1,
+  borderBottomColor: colors.separator,
+  backgroundColor: colors.background,
+}
 
-//       {onInfoPress && (
-//         <FontAwesome
-//           name="info-circle"
-//           size={24}
-//           color={colors.text}
-//           onPress={onInfoPress}
-//           style={$infoButton}
-//         />
-//       )}
-//     </View>
-//   )
-// }
+const $leftContainer: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  flex: 1,
+}
 
-// const $headerContainer: ViewStyle = {
-//   flexDirection: "row",
-//   alignItems: "center",
-//   justifyContent: "space-between",
-//   paddingHorizontal: spacing.md,
-//   paddingVertical: spacing.sm,
-//   borderBottomWidth: 1,
-//   borderBottomColor: colors.separator,
-//   backgroundColor: colors.background,
-// }
+const $backButton: ViewStyle = {
+  padding: spacing.xs,
+}
 
-// const $leftContainer: ViewStyle = {
-//   flexDirection: "row",
-//   alignItems: "center",
-//   flex: 1,
-// }
+const $title: TextStyle = {
+  marginLeft: spacing.sm,
+}
 
-// const $backButton: ViewStyle = {
-//   padding: spacing.xs,
-// }
-
-// const $title: TextStyle = {
-//   marginLeft: spacing.sm,
-// }
-
-// const $infoButton: ViewStyle = {
-//   padding: spacing.xs,
-// }
+const $infoButton: ViewStyle = {
+  padding: spacing.xs,
+}

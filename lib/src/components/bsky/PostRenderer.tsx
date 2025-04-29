@@ -15,6 +15,8 @@ import { AtpAgent } from '@atproto/api';
 import { useEvent } from 'expo';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
+import Lightbox from 'react-native-lightbox-v2';
+import styles from 'react-native-gifted-chat/src/styles';
 
 interface ParsedBskyPost {
   did: string;
@@ -138,12 +140,80 @@ export async function parseBskyUrl(url: string): Promise<ParsedBskyPost> {
   throw new Error('Unsupported URL format');
 }
 
+const AspectRatioImage = ({
+  uri,
+  maxWidth = 300,
+}: {
+  uri: string;
+  maxWidth?: number;
+}) => {
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const screenWidth = Dimensions.get('window').width;
+  const imageWidth = maxWidth || screenWidth - 40; // Full width minus some padding
+
+  useEffect(() => {
+    // Get the image dimensions from the network
+    Image.getSize(
+      uri,
+      (width, height) => {
+        // Calculate the aspect ratio
+        const aspectRatio = width / height;
+
+        // Calculate the height based on the desired width and the aspect ratio
+        const calculatedHeight = imageWidth / aspectRatio;
+
+        setImageSize({
+          width: imageWidth,
+          height: calculatedHeight,
+        });
+      },
+      (error) => {
+        console.error('Error getting image size:', error);
+      }
+    );
+  }, [uri, imageWidth]);
+
+  // for web:
+  // return (
+  //   <Image
+  //     source={{ uri }}
+  //     style={{
+  //       width: imageSize.width,
+  //       height: imageSize.height,
+  //       resizeMode: "contain",
+  //       borderRadius: 8,
+  //     }}
+  //   />
+  // );
+
+  return (
+    // @ts-ignore
+    <Lightbox>
+      <Image
+        source={{ uri }}
+        style={{
+          width: imageSize.width,
+          height: imageSize.height,
+          resizeMode: "contain",
+          borderRadius: 8,
+        }}
+      />
+    </Lightbox>
+  )
+};
+
 interface Post {
   text: string;
   media?: {
     type: string;
     url: string;
   }[];
+  author: {
+    displayName: string;
+    handle: string;
+    avatar: string;
+  };
+  createdAt: string;
 }
 
 export const PostRenderer = ({
@@ -159,15 +229,13 @@ export const PostRenderer = ({
   const [parsedPost, setParsedPost] = useState<ParsedBskyPost | null>(null);
   const { themed, theme } = useAppTheme();
 
-  const mediaWidth = (width * 2) / 5;
-  const mediaHeight = mediaWidth * 1.7777777777777777;
+  const mediaWidth = (width * 3) / 5;
 
   // Use parseBskyUrl to get the did and postId
   useEffect(() => {
     const parseUrl = async () => {
       try {
         const parsed = await parseBskyUrl(url);
-        console.log('parsed', parsed);
         setParsedPost(parsed);
       } catch (err) {
         setError(err?.message || 'Failed to parse URL');
@@ -192,9 +260,10 @@ export const PostRenderer = ({
         });
 
         // Extract post data
+        // @ts-ignore
         const postData = response.data.thread.post;
 
-        console.log('postData', postData);
+        // console.log('postData', postData);
 
         // Extract media
         let media = [];
@@ -218,11 +287,24 @@ export const PostRenderer = ({
               });
             }
           }
+
+          if (postData.embed.$type === 'app.bsky.embed.record#view') {
+            media.push({
+              type: 'embed',
+              url: postData.embed.record.uri,
+            });
+          }
         }
 
         setPost({
           text: postData.record.text,
           media,
+          author: {
+            displayName: postData.author.displayName,
+            handle: postData.author.handle,
+            avatar: postData.author.avatar,
+          },
+          createdAt: postData.createdAt,
         });
       } catch (err) {
         setError(err.message || 'Failed to fetch post');
@@ -282,17 +364,45 @@ export const PostRenderer = ({
 
   console.log('imageMedia', imageMedia);
 
+  const embedMedia = post.media?.find((media) => media.type === 'embed');
+
   return (
     <View style={themed($container)}>
-      {/* <Text style={themed($postText)}>{post.text}</Text> */}
+      <View style={themed($authorContainer)}>
+        <Image source={{ uri: post.author.avatar }} style={themed($avatar)} />
+        <View style={themed($displayNameContainer)}>
+          <Text numberOfLines={1} style={themed($displayName)}>
+            {post.author.displayName}
+          </Text>
+          <Text numberOfLines={1} style={themed($handle)}>
+            {`@${post.author.handle}`}
+          </Text>
+        </View>
+        {/* <Text numberOfLines={1} style={themed($postTime)}>
+          •{`1d`}
+        </Text> */}
+        {/* <Text numberOfLines={1} style={themed($postTime)}> </Text> */}
+      </View>
+
+      <Text style={themed($postText)}>{post.text}</Text>
 
       {videoMedia && <VideoPlayerComponent videoUrl={videoMedia.url} />}
 
       {imageMedia && (
-          <Image
+        <View style={{ borderRadius: 24 }}>
+          {/* <Image
             source={{ uri: imageMedia.url }}
             style={themed($imageContainer)}
-          />
+
+          /> */}
+          <AspectRatioImage uri={imageMedia.url} maxWidth={mediaWidth} />
+        </View>
+      )}
+
+      {embedMedia && (
+        <View style={themed($embedContainer)}>
+          <PostRenderer url={embedMedia.url} agent={agent} />
+        </View>
       )}
 
       {/* {videoMedia ? (
@@ -334,35 +444,86 @@ const VideoPlayerComponent = ({ videoUrl }: { videoUrl: string }) => {
 
 // Define themed styles
 const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  backgroundColor: 'transparent',
+  backgroundColor: colors.background,
   borderRadius: 16,
-  paddingHorizontal: 2,
-  paddingBottom: 2,
-  paddingTop: 4,
+  paddingHorizontal: 8,
+  paddingBottom: 8,
+  paddingTop: 8,
+  // marginBottom: 8,
+  borderWidth: 1,
+  borderColor: colors.border,
+});
+
+const $embedContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: colors.border,
+});
+
+const $authorContainer: ThemedStyle<ViewStyle> = () => ({
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  justifyContent: 'flex-start',
+  width: (width * 3) / 5,
+  flexShrink: 1,
+});
+
+const $avatar: ThemedStyle<ImageStyle> = () => ({
+  width: 16,
+  height: 16,
+  borderRadius: 16,
+  marginRight: 4,
+});
+
+const $displayNameContainer: ThemedStyle<ViewStyle> = () => ({
+  flexDirection: 'row',
+  flexShrink: 1,
+  // flexGrow: 1,
+});
+
+const $displayName: ThemedStyle<TextStyle> = ({ colors }) => ({
+  fontSize: 12,
+  fontWeight: 'bold',
+  color: colors.text,
+  marginRight: 4,
+  ellipsizeMode: 'tail',
+  numberOfLines: 1,
+  minWidth: 10,
+  maxWidth: '70%',
+  flexShrink: 1,
+});
+
+const $handle: ThemedStyle<TextStyle> = ({ colors }) => ({
+  fontSize: 12,
+  color: colors.textDim,
+  ellipsizeMode: 'tail',
+  numberOfLines: 1,
+  flexShrink: 10,
+});
+
+const $postTime: ThemedStyle<TextStyle> = ({ colors }) => ({
+  fontSize: 12,
+  color: colors.textDim,
 });
 
 const $postText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  fontSize: 16,
+  fontSize: 14,
   marginBottom: 10,
+  marginTop: 8,
   color: colors.text,
+  width: (width * 3) / 5,
+  paddingHorizontal: 8,
 });
 
 const $videoContainer: ThemedStyle<ViewStyle> = () => ({
   alignItems: 'center',
 });
 
-const $imageContainer: ThemedStyle<ImageStyle> = () => ({
-  resizeMode: 'contain',
-  width: (width * 2) / 5,
-  height: ((width * 2) / 5) * 1.7777777777777777, // 9:16 aspect ratio
-  borderRadius: 8,
-});
-
 const $image: ThemedStyle<ImageStyle> = () => ({});
 
 const $video: ThemedStyle<ViewStyle> = () => ({
-  width: (width * 2) / 5,
-  height: ((width * 2) / 5) * 1.7777777777777777, // 9:16 aspect ratio
+  width: (width * 3) / 5,
+  height: ((width * 3) / 5) * 1.7777777777777777, // 9:16 aspect ratio
   borderRadius: 8,
   backgroundColor: '#000',
 });

@@ -90,6 +90,7 @@ export const defaultS = (key: string) => {
     allowMessagesFromFollowing: "Users I follow",
     allowMessagesFromNone: "No one",
     cantBeMessaged: "can't be messaged",
+    inputPlaceholder: "Write a message",
   };
   return strings[key as keyof typeof strings] ?? "Error: String key not found";
 };

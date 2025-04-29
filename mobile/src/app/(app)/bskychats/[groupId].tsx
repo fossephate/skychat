@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons"
 import messageData from "assets/data/messages.json"
 import { ThemedStyle } from "@/theme"
 
-import { BskyChat, ChatMessageBox, ReplyMessageBar } from "skychat-lib"
+import { BskyChat, ChatHeader } from "skychat-lib"
 import { Screen } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
 import React, { useState, useRef, useEffect, useCallback } from "react"
@@ -10,11 +10,6 @@ import { ImageBackground, View, ViewStyle, Image, ActivityIndicator } from "reac
 import { Swipeable } from "react-native-gesture-handler"
 import {
   IMessage,
-  GiftedChat,
-  SystemMessage,
-  Bubble,
-  Send,
-  InputToolbar,
 } from "react-native-gifted-chat"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Header, Text } from "@/components"
@@ -79,16 +74,17 @@ export default function Page() {
       safeAreaEdges={["bottom"]}
     >
       {/* // <View style={{ flex: 1, backgroundColor: theme.colors.background, paddingBottom: insets.bottom }}> */}
-      <ImageBackground
+      {/* <ImageBackground
         source={backgroundImage}
         style={{
           flex: 1,
           backgroundColor: theme.colors.background,
         }}
-      >
-        <Header title={chatTitle} leftIcon="back" onLeftPress={() => router.back()} />
+      > */}
+        <Header title={chatTitle} leftIcon="back" onLeftPress={() => router.back()}/>
+        {/* <ChatHeader id={groupId as string} type="bsky" onBackPress={() => router.back()} /> */}
         <BskyChat agent={agent} groupId={groupId as string} refreshInterval={10000} />
-      </ImageBackground>
+      {/* </ImageBackground> */}
       {/* </View> */}
     </Screen>
   )

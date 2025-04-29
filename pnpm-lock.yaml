@@ -73,8 +73,8 @@ importers:
         specifier: ^0.9.7
         version: 0.9.7(react-native-gesture-handler@2.20.2(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1))(react-native-safe-area-context@4.12.0(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1))(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))
       react-native-emoji-popup:
-        specifier: ^0.3.0
-        version: 0.3.0(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
+        specifier: ^0.1.2
+        version: 0.1.2(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
       react-native-gesture-handler:
         specifier: ~2.20.2
         version: 2.20.2(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
@@ -6202,8 +6202,8 @@ packages:
       react-native-gesture-handler: '>= 2.0.0'
       react-native-reanimated: '>= 2.0.0'
 
-  react-native-emoji-popup@0.3.0:
-    resolution: {integrity: sha512-6OvZYCd1Tq/MyiJQTA50CPxLBUOu7awpNpXZCIFZ7RAFCaJ/51O2aKKDj4xTrrNWp0LVr/95W97Poi7eYBGcLA==}
+  react-native-emoji-popup@0.1.2:
+    resolution: {integrity: sha512-YxuAwubxe6VLNfTyMlpw9g2WQVUIuJb4flWVZjfR7r6fmVvXw4Sxo6ZD6m/fG9AQP3pHkZptzNUr4gdF23m3ZQ==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -15283,7 +15283,7 @@ snapshots:
       react-native-reanimated: 3.16.7(@babel/core@7.26.10)(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1)
       use-latest-callback: 0.2.3(react@18.3.1)
 
-  react-native-emoji-popup@0.3.0(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1):
+  react-native-emoji-popup@0.1.2(react-native@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
       react-native: 0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@react-native-community/cli-server-api@18.0.0)(@types/react@18.3.20)(react@18.3.1)

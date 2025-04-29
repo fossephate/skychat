@@ -14,3 +14,4 @@
 // export { ChatSettings } from './components/bsky/ChatSettings';
 // export { SearchCreate } from './components/chat/SearchCreate';
 // export { AccountBackup } from './components/bsky/AccountBackup';
+// export { ChatHeader } from './components/chat/ChatHeader';
