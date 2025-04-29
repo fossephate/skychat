@@ -22,8 +22,21 @@ import debounce from 'lodash/debounce';
 import { ScrollView } from 'react-native-gesture-handler';
 import React from 'react';
 
-import { $avatar, $avatarContainer, $userInfo, $userName, $userHandle, $userStatus, $userStatusError } from './styles';
-import { blueCheck, canBeMessaged, isVerified, isVerifier } from '../utils/utils';
+import {
+  $avatar,
+  $avatarContainer,
+  $userInfo,
+  $userName,
+  $userHandle,
+  $userStatus,
+  $userStatusError,
+} from './styles';
+import {
+  blueCheck,
+  canBeMessaged,
+  isVerified,
+  isVerifier,
+} from '../utils/utils';
 import { useStrings } from '../../contexts/strings';
 
 interface User {
@@ -43,7 +56,9 @@ interface SearchCreateProps {
   onChatPress?: (groupId: string) => void;
   onProfilePress?: (did: string) => void;
   onSubmit?: (ids: string[]) => void;
-  themedOverride?: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T
+  themedOverride?: <T>(
+    styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>
+  ) => T;
 }
 
 export const SearchCreate = ({
@@ -107,7 +122,10 @@ export const SearchCreate = ({
     }
 
     // if the only user is the X user, clear the selectedUsers array
-    if (state.selectedUsers.length === 1 && state.selectedUsers[0]!.id === 'X') {
+    if (
+      state.selectedUsers.length === 1 &&
+      state.selectedUsers[0]!.id === 'X'
+    ) {
       setState((prev) => ({
         ...prev,
         selectedUsers: [],
@@ -329,7 +347,6 @@ export const SearchCreate = ({
 
   const renderUnselectedUser = useCallback(
     ({ item: user }: { item: User }) => {
-
       return (
         <ListItem
           style={!user.canBeMessaged && { opacity: 0.8 }}
@@ -345,7 +362,9 @@ export const SearchCreate = ({
               </TouchableOpacity>
             </View>
           }
-          onPress={user.canBeMessaged ? () => toggleUserSelection(user.id) : undefined}
+          onPress={
+            user.canBeMessaged ? () => toggleUserSelection(user.id) : undefined
+          }
           bottomSeparator
           height={72}
           accessibilityRole="button"
@@ -379,7 +398,11 @@ export const SearchCreate = ({
               />
             )}
             {!user.canBeMessaged && (
-              <Text text={s("cantBeMessaged")} size="xxs" style={themed($userStatusError)} />
+              <Text
+                text={s('cantBeMessaged')}
+                size="xxs"
+                style={themed($userStatusError)}
+              />
             )}
           </View>
         </ListItem>
@@ -418,6 +441,7 @@ export const SearchCreate = ({
               preset="reversed"
               onPress={handleSubmit}
               style={themed($submitButton)}
+              textStyle={themed($submitButtonText)}
               disabled={!state.selectedUsers.length}
             />
           )}
@@ -468,24 +492,23 @@ const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({
   color: colors.text,
 });
 
-const $searchButtonContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
+const $searchButtonContainer: ThemedStyle<ViewStyle> = ({
+  spacing,
+  colors,
+}) => ({
   paddingHorizontal: spacing.lg,
   backgroundColor: colors.palette.neutral200,
 });
 
-
 const $searchContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
-  // backgroundColor: colors.palette.neutral200,
-  backgroundColor: 'green',
-  color: colors.text,
-  borderRadius: 20,
+  // color: colors.text,
+  // backgroundColor: colors.palette.neutral300,
 });
 
 const $searchInputWrapper: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   backgroundColor: colors.palette.neutral300,
   color: colors.text,
-  // borderRadius: 20,
-  // backgroundColor: 'red',
+  borderRadius: 20,
 });
 
 const $searchInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
@@ -513,7 +536,10 @@ const $listsContainer: ThemedStyle<ViewStyle> = ({ colors }) => ({
   display: 'flex',
 });
 
-const $availableUsersContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
+const $availableUsersContainer: ThemedStyle<ViewStyle> = ({
+  spacing,
+  colors,
+}) => ({
   flex: 1,
   paddingHorizontal: spacing.lg,
   paddingTop: spacing.md,
@@ -528,13 +554,18 @@ const $footer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   // gap: spacing.xl,
 });
 
-const $submitButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
+const $submitButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.palette.primary500,
   // width: 130,
-  marginTop: 8,
+  marginTop: spacing.lg,
   height: 44,
   minHeight: 44,
   // marginBottom: 20,
+  color: colors.text,
+});
+
+const $submitButtonText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+  color: colors.text,
 });
 
 // small avatar for selected users list:
@@ -543,7 +574,7 @@ const $selectedUsersContainer: ThemedStyle<ViewStyle> = ({
   colors,
   spacing,
 }) => ({
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.md,
   height: 120,
   // maxWidth: 240,
 });
