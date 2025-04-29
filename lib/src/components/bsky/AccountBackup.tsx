@@ -80,18 +80,22 @@ export const AccountBackup: React.FC<AccountBackupProps> = ({ agent }) => {
       plcData.rotationKeys.push(newKeyStr);
     }
 
-    // // 3. Sign the operation
-    // const operationInput = {
-    //   ...plcData,
-    // };
+    console.log('Requesting signature');
+    const tok = await agent.com.atproto.identity.requestPlcOperationSignature();
+    console.log('token', tok);
 
-    // if (token) {
-    //   operationInput.token = token;
-    // }
+    // // 3. Sign the operation
+    const operationInput = {
+      ...plcData,
+    };
+
+    if (token) {
+      operationInput.token = token;
+    }
 
     // // Using the atproto identity API to sign the operation
-    // const signedOp =
-    //   await agent.api.com.atproto.identity.signPlcOperation(operationInput);
+    const signedOp =
+      await agent.com.atproto.identity.signPlcOperation(operationInput);
 
     // // 4. Submit the signed operation
     // await agent.api.com.atproto.identity.submitPlcOperation({
@@ -111,30 +115,24 @@ export const AccountBackup: React.FC<AccountBackupProps> = ({ agent }) => {
       );
     };
 
-  if (loading) {
-    return (
-      <View style={themed($loadingContainer)}>
-        <ActivityIndicator size="large" />
-        <Text style={themed($loadingText)}>Loading preferences...</Text>
-      </View>
-    );
-  }
-
-  const handleBackup = () => {
+  const handleBackup = async () => {
     console.log('Backup');
+    try {
+      await addRotationKey('did:key:test', {});
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
     <View style={themed($container)}>
-      <View style={themed($section)}>
-        <ListItem
-          tx="common:logOut"
-          LeftComponent={themed(renderIcon('sign-out'))}
-          style={[themed($listItem), themed($destructiveItem)]}
-          textStyle={themed($destructiveText)}
-          onPress={handleBackup}
-        />
-      </View>
+      <ListItem
+        text="Backup Account"
+        LeftComponent={themed(renderIcon('warning'))}
+        style={[themed($listItem), themed($destructiveItem)]}
+        textStyle={themed($destructiveText)}
+        onPress={handleBackup}
+      />
     </View>
   );
 };
@@ -143,8 +141,6 @@ const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
   paddingVertical: spacing.md,
 });
-
-const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({});
 
 const $sectionTitle: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   fontSize: 18,
@@ -165,18 +161,6 @@ const $infoContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   flexDirection: 'row',
 });
 
-const $infoText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  fontSize: 14,
-  color: colors.textDim,
-});
-
-const $sectionContent: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.palette.neutral300,
-  borderRadius: 16,
-  marginHorizontal: spacing.lg,
-  overflow: 'hidden',
-});
-
 const $listItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingVertical: spacing.sm,
   paddingHorizontal: spacing.md,
@@ -186,16 +170,6 @@ const $listItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   minHeight: 50,
 });
 
-const $switchTrackColor: ThemedStyle<any> = ({ colors }) => ({
-  false: colors.palette.neutral400,
-  true: colors.palette.primary300,
-});
-
-const $switchThumbColor =
-  (value: boolean): ThemedStyle<string> =>
-  ({ colors }) =>
-    value ? colors.palette.primary500 : colors.palette.neutral200;
-
 const $iconContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   justifyContent: 'center',
   alignItems: 'center',
@@ -203,41 +177,12 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginRight: spacing.md,
 });
 
-const $radioButton: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  width: 24,
-  height: 24,
-  borderRadius: 12,
-  borderWidth: 2,
-  borderColor: colors.palette.primary500,
-  justifyContent: 'center',
-  alignItems: 'center',
-});
-
-const $radioSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  width: 12,
-  height: 12,
-  borderRadius: 6,
-  backgroundColor: colors.palette.primary500,
-});
-
-const $loadingContainer: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-});
-
-const $loadingText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  marginTop: spacing.sm,
-  color: colors.textDim,
-});
-
-
 const $destructiveItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.error,
+  backgroundColor: colors.tint,
   marginHorizontal: spacing.lg,
   borderRadius: 16,
-})
+});
 
 const $destructiveText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.text,
-})
+});

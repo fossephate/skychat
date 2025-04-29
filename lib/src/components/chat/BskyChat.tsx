@@ -25,7 +25,6 @@ import {
   InputToolbar,
 } from 'react-native-gifted-chat';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmojiPopup } from 'react-native-emoji-popup';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Agent } from '@atproto/api';
 import { PostRenderer } from '../bsky/PostRenderer';
@@ -38,12 +37,14 @@ export interface BskyChatProps {
   groupId: string;
   refreshInterval?: number; // Auto-refresh interval in ms
   onPressAvatar?: (id: string) => void;
+  onPressLink?: (link: string) => void;
 }
 
 export const BskyChat: React.FC<BskyChatProps> = ({
   agent,
   groupId,
   onPressAvatar,
+  onPressLink,
 }) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [text, setText] = useState('');
@@ -380,6 +381,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
       convoMembers={convoMembers}
       onSend={onSend}
       loading={loading}
+      onPressLink={onPressLink}
     />
   );
 };

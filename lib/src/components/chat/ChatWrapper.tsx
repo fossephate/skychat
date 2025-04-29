@@ -43,6 +43,7 @@ export interface ChatWrapperProps {
   onSend: (messages: IMessage[]) => void;
   loading: boolean;
   convoMembers: any[];
+  onPressLink?: (link: string) => void;
 }
 
 export const ChatWrapper: React.FC<ChatWrapperProps> = ({
@@ -53,6 +54,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
   convoMembers,
   onSend,
   loading,
+  onPressLink,
 }) => {
   const s = useStrings();
   const [text, setText] = useState('');
@@ -269,7 +271,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
           }
           let videoUrl = props.currentMessage.video;
           return <PostRenderer url={videoUrl} agent={agent} />;
-          //   return (
+          // return (
           //   <EmojiPopup
           //     onEmojiSelected={setEmoji}
           //     // style={styles.buttonText}

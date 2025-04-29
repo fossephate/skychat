@@ -52,7 +52,7 @@
           "image": "./assets/images/app-icon-android-adaptive-foreground.png",
           "imageWidth": 300,
           "resizeMode": "contain",
-          "backgroundColor": "#243143"
+          "backgroundColor": "#4A9BEE"
         }
       ],
       "expo-router",
