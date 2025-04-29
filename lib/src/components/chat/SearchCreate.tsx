@@ -443,13 +443,6 @@ export const SearchCreate = ({
         )}
 
         <View style={themed($availableUsersContainer)}>
-          {/* {state.selectedUsers.length > 0 && (
-            <Text
-              text="Available Users"
-              style={themed($sectionHeader)}
-              accessibilityRole="header"
-            />
-          )} */}
           {unselectedUsers.length > 0 || state.loading ? (
             <ListView
               data={unselectedUsers}
@@ -482,18 +475,22 @@ const $searchButtonContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => 
 
 
 const $searchContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
-  backgroundColor: colors.palette.neutral200,
+  // backgroundColor: colors.palette.neutral200,
+  backgroundColor: 'green',
   color: colors.text,
+  borderRadius: 20,
 });
 
 const $searchInputWrapper: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
-  backgroundColor: colors.palette.neutral200,
+  backgroundColor: colors.palette.neutral300,
   color: colors.text,
+  // borderRadius: 20,
+  // backgroundColor: 'red',
 });
 
 const $searchInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   height: 24,
-  backgroundColor: colors.palette.neutral200,
+  backgroundColor: colors.palette.neutral300,
   borderRadius: 20,
   paddingHorizontal: spacing.md,
   fontSize: 16,

@@ -16,6 +16,10 @@ ___
       <img src="/.screenshots/search1.png" width="200">
       <img src="/.screenshots/search2.png" width="200">
    </div>
+      <div style="display: flex; flex-direction: row; gap: 10px;">
+      <img src="/.screenshots/chat1.png" width="200">
+      <img src="/.screenshots/chat2.png" width="200">
+   </div>
 </div>
 
 ___
@@ -213,7 +217,7 @@ function SearchScreen() {
 ```
 
 ### ChatRequestsList Component
-Displays incoming chat requests/invites:
+Displays incoming chat requests/invites
 ```tsx
 import { ChatRequestsList } from "skychat-lib"
 
@@ -222,17 +226,12 @@ function InvitesScreen() {
     <ChatRequestsList
       agent={agent}
       onChatPress={(chat) => {
-        // Navigate to chat after accepting
         if (chat.isBsky) {
           router.push(`/bskychats/${chat.id}`)
         } else {
           router.push(`/chats/${chat.id}`)
         }
       }}
-      onInvitesPress={() => {
-        // Usually not needed on the invites screen itself
-      }}
-      showInvitesBanner={false} // Hide the banner on the invites screen
       onProfilePress={(id) => {
         // Navigate to profile
         router.push(`/profile/${id}`)

@@ -250,6 +250,8 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
                 {...props}
                 containerStyle={{
                   justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
                 }}
               >
                 <Ionicons
