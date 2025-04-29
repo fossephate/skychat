@@ -37,11 +37,11 @@ export const blueCheck = () => {
 
 
 export const isVerified = (verification: VerificationState | undefined) => {
-  return verification?.trustedVerifierStatus === "valid" ;
+  return verification?.verifiedStatus === "valid";
 };
 
 export const isVerifier = (verification: VerificationState | undefined) => {
-  return verification?.trustedVerifierStatus === "valid" ;
+  return verification?.trustedVerifierStatus === "valid";
 };
 
 

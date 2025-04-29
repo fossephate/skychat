@@ -66,7 +66,7 @@ const renderChatAvatar = (
   const convoContext = useConvo();
   const client = convoContext?.client;
   const ownId = client?.id;
-  const isDM = (chat.members.length = 2);
+  const isDM = chat.members.length === 2;
 
   var selfMember = null;
   var otherMember = null;
@@ -98,7 +98,7 @@ const renderChatAvatar = (
         </View> */}
         <Image
           source={{
-            uri: selfMember?.avatar || 'https://i.pravatar.cc/150?u=self',
+            uri: selfMember?.avatar,
           }}
           style={themed($avatar)}
         />
