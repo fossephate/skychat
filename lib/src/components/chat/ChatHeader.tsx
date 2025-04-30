@@ -1,7 +1,7 @@
 import React from "react"
 import { View, ViewStyle, TextStyle } from "react-native"
-import { Text } from "@/components"
-import { colors, spacing } from "@/theme"
+import { Text } from "../../components"
+import { colors, spacing } from "../../theme"
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 
 interface ChatHeaderProps {
