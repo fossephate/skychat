@@ -372,12 +372,38 @@ export const BskyChat: React.FC<BskyChatProps> = ({
     }
   };
 
+  const addReaction = async (messageId: string, value: string) => {
+    const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+    await proxy.chat.bsky.convo.addReaction({
+      convoId: groupId as string,
+      messageId: messageId,
+      value: value,
+    });
+  };
+
+  const removeReaction = async (messageId: string) => {
+    const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+    await proxy.chat.bsky.convo.removeReaction({
+      convoId: groupId as string,
+      messageId: messageId,
+    });
+  };
+
+  const onLongPressMessage = async (message: IMessage) => {
+    try {
+      await addReaction(message._id, '👍');
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+    }
+  };
+
   return (
     <ChatWrapper
       agent={agent}
       groupId={groupId}
       onPressAvatar={onPressAvatar}
       messages={messages}
+      onLongPressMessage={onLongPressMessage}
       convoMembers={convoMembers}
       onSend={onSend}
       loading={loading}

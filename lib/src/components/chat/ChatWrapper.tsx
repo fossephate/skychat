@@ -44,6 +44,7 @@ export interface ChatWrapperProps {
   loading: boolean;
   convoMembers: any[];
   onPressLink?: (link: string) => void;
+  onLongPressMessage?: (message: IMessage) => void;
 }
 
 export const ChatWrapper: React.FC<ChatWrapperProps> = ({
@@ -55,6 +56,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
   onSend,
   loading,
   onPressLink,
+  onLongPressMessage,
 }) => {
   const s = useStrings();
   const [text, setText] = useState('');
@@ -342,6 +344,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
         // onLongPress={(context, message) => setReplyMessage(message)}
         onLongPress={(context, message) => {
           console.log('onLongPress', context, message);
+          onLongPressMessage(message);
           // context.actionSheet().showActionSheetWithOptions({
           //   options: ["Reply", "Copy", "Cancel"],
           //   cancelButtonIndex: 2,
