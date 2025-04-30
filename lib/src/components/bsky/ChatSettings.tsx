@@ -9,7 +9,7 @@ import {
 import { Text, ListItem } from '../../components';
 import { Agent } from '@atproto/api';
 import { useAppTheme } from '@/utils/useAppTheme';
-import type { ThemedStyle } from '@/theme';
+import type { ThemedStyle } from '../../theme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useStrings } from '../../contexts/strings';
 
