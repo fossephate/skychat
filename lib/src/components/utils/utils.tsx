@@ -18,6 +18,17 @@ export const LoadingView = () => {
 };
 
 
+export const check = (isVerified: boolean, isVerifier: boolean) => {
+  if (isVerifier) {
+    // return scallopedCheck();
+    return blueCheck();
+  }
+  if (isVerified) {
+    return blueCheck();
+  }
+  return null;
+};
+
 export const blueCheck = () => {
   return (
     <View
@@ -37,7 +48,7 @@ export const blueCheck = () => {
 
 
 export const isVerified = (verification: VerificationState | undefined) => {
-  return verification?.verifiedStatus === "valid";
+  return verification?.verifiedStatus === "valid" || isVerifier(verification);
 };
 
 export const isVerifier = (verification: VerificationState | undefined) => {

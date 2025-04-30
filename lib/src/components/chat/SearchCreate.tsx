@@ -32,8 +32,8 @@ import {
   $userStatusError,
 } from './styles';
 import {
-  blueCheck,
   canBeMessaged,
+  check,
   isVerified,
   isVerifier,
 } from '../utils/utils';
@@ -45,7 +45,7 @@ interface User {
   displayName: string;
   avatar?: string;
   verified: boolean;
-  verfier: boolean;
+  verifier: boolean;
   online: boolean;
   description?: string;
   canBeMessaged: boolean;
@@ -108,7 +108,7 @@ export const SearchCreate = ({
       description: 'X',
       verified: true,
       online: true,
-      verfier: true,
+      verifier: true,
       canBeMessaged: true,
     };
 
@@ -170,7 +170,7 @@ export const SearchCreate = ({
         description: profile.description,
         avatar: profile.avatar,
         verified: isVerified(profile.verification),
-        verfier: isVerifier(profile.verification),
+        verifier: isVerifier(profile.verification),
         online: false,
         canBeMessaged: canBeMessaged(profile),
       }));
@@ -227,7 +227,7 @@ export const SearchCreate = ({
               displayName: profile.displayName || profile.handle,
               avatar: profile.avatar,
               verified: isVerified(profile.verification),
-              verfier: isVerifier(profile.verification),
+              verifier: isVerifier(profile.verification),
               online: false,
               canBeMessaged: canBeMessaged(profile),
             })
@@ -379,7 +379,7 @@ export const SearchCreate = ({
                 numberOfLines={1}
                 accessibilityRole="header"
               />
-              {user.verified && blueCheck()}
+              {check(user.verified, user.verifier)}
             </View>
             {user.handle && (
               <Text

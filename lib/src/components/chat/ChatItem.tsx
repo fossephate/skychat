@@ -29,7 +29,7 @@ import {
   $userHandle,
   $userStatus,
 } from './styles';
-import { blueCheck } from '../utils/utils';
+import { blueCheck, check } from '../utils/utils';
 
 export interface User {
   id: string;
@@ -207,7 +207,7 @@ const ChatDescription = ({ chat }: { chat: Chat }) => {
     <View style={themed($userInfo)}>
       <View style={{ flexDirection: 'row' }}>
         <Text text={chat.name} style={themed($userName)} size="xs" />
-        {chat.verified && blueCheck()}
+        {check(chat.verified, chat.verifier)}
       </View>
       {chat.handle && (
         <Text text={`@${chat.handle}`} size="xxs" style={themed($userHandle)} />
