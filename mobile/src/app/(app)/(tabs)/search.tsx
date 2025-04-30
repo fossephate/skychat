@@ -37,9 +37,9 @@ export default function UsersScreen() {
     <>
       <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
 
-        <View style={themed($header)}>
+        {/* <View style={themed($header)}>
           <Text tx="searchScreen:title" preset="heading" style={themed($headerText)} />
-        </View>
+        </View> */}
 
         <SearchCreate agent={agent} onChatPress={handleChatPress} onProfilePress={handleProfilePress} />
 

@@ -422,11 +422,12 @@ const $invitesBanner: ThemedStyle<ViewStyle> = ({
   spacing,
   isDark,
 }) => ({
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.md,
   paddingVertical: 1,
   marginBottom: spacing.md,
   border: 0,
   borderRadius: 0,
+  borderWidth: 0,
   backgroundColor: isDark
     ? colors.palette.secondary500
     : colors.palette.secondary100,
@@ -471,30 +472,10 @@ const $sectionHeaderText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.text,
 });
 
-const $headerText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  fontSize: 32,
-  color: colors.text,
-});
-
-const $searchContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingBottom: spacing.sm,
-});
-
-const $searchInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  height: 40,
-  backgroundColor: colors.palette.neutral200,
-  borderRadius: 20,
-  paddingHorizontal: spacing.md,
-  fontSize: 16,
-  color: colors.text,
-  textAlignVertical: 'center',
-});
-
 const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.md,
+  // paddingHorizontal: spacing.sm,
   paddingBottom: spacing.lg,
-  flexGrow: 1, // Ensure it fills the space for proper pull to refresh
+  flexGrow: 1,
 });
 
 const $fabButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({

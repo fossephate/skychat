@@ -7,7 +7,7 @@ import {
   RefreshControl,
   SectionList,
 } from "react-native"
-import { Screen, Text, Button } from "src/components"
+import { Screen, Text, Button, Header } from "src/components"
 import { router } from "expo-router"
 import { ChatList, Chat, User, useConvo } from "skychat-lib"
 import { colors, spacing, ThemedStyle } from "src/theme"
@@ -34,12 +34,9 @@ export default function chatsScreen() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={themed($screenContainer)}>
-      <View style={themed($header)}>
-        <Text tx="chatsScreen:title" preset="heading" style={themed($headerText)} />
-        {/* <TouchableOpacity style={themed($composeButton)} onPress={() => setComposeDrawerOpen(true)}>
-          <Text style={themed($composeIcon)}>✏️</Text>
-        </TouchableOpacity> */}
-      </View>
+      <Header titleTx="chatsScreen:title" safeAreaEdges={[]} rightIcon="more" onRightPress={() => {
+        router.push("/settings")
+      }}/>
       <ChatList
         agent={agent}
         onChatPress={(chat) => {
