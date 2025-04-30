@@ -15,8 +15,7 @@ import { AtpAgent } from '@atproto/api';
 import { useEvent } from 'expo';
 import { useAppTheme } from '../../utils/useAppTheme';
 import { ThemedStyle } from '../../theme';
-import Lightbox from 'react-native-lightbox-v2';
-import styles from 'react-native-gifted-chat/src/styles';
+import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 
 interface ParsedBskyPost {
   did: string;
@@ -187,19 +186,31 @@ const AspectRatioImage = ({
   // );
 
   return (
-    // @ts-ignore
-    <Lightbox>
+    // TODO: make lightbox:
+    // <ReactNativeZoomableView
+    //   maxZoom={2}
+    //   minZoom={0.5}
+    //   zoomStep={0.5}
+    //   initialZoom={1}
+    //   bindToBorders={true}
+    //   // style={{
+    //   //   padding: 10,
+    //   //   backgroundColor: 'green',
+    //   // }}
+    //   contentHeight={imageSize.height}
+    //   contentWidth={imageSize.width}
+    // >
       <Image
         source={{ uri }}
         style={{
           width: imageSize.width,
           height: imageSize.height,
-          resizeMode: "contain",
+          resizeMode: 'contain',
           borderRadius: 8,
         }}
       />
-    </Lightbox>
-  )
+    // </ReactNativeZoomableView>
+  );
 };
 
 interface Post {

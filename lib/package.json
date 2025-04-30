@@ -73,6 +73,7 @@
     "@atproto/api": "^0.15.1",
     "@expo-google-fonts/space-grotesk": "^0.2.3",
     "@expo/vector-icons": "^14.0.0",
+    "@openspacelabs/react-native-zoomable-view": "^2.4.2",
     "@shopify/flash-list": "1.7.3",
     "date-fns": "^4.1.0",
     "expo-secure-store": "~14.0.1",
@@ -120,8 +121,8 @@
   },
   "peerDependencies": {
     "expo": "*",
-    "expo-video": "*",
     "expo-secure-store": "*",
+    "expo-video": "*",
     "react": "*",
     "react-dom": "*",
     "react-native": "*"
