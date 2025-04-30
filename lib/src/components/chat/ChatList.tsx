@@ -337,8 +337,8 @@ export const ChatList: React.FC<ChatListProps> = ({
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={themed($invitesEnvelope)}>
                 <FontAwesome
-                  name="envelope"
-                  size={14}
+                  name="envelope-o"
+                  size={16}
                   style={themed($invitesBannerIcon)}
                 />
                 {hasUnreadChatRequests && (
@@ -350,7 +350,7 @@ export const ChatList: React.FC<ChatListProps> = ({
             <View style={{ alignItems: 'center' }}>
               <FontAwesome
                 name="chevron-right"
-                size={14}
+                size={16}
                 style={{ ...themed($invitesBannerIcon), marginTop: 6 }}
               />
             </View>
@@ -447,10 +447,10 @@ const $invitesBannerIcon: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
 const $notificationDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
   position: 'absolute',
   top: -2,
-  right: 2,
-  width: 8,
-  height: 8,
-  borderRadius: 4,
+  right: 6,
+  width: 10,
+  height: 10,
+  borderRadius: 5,
   backgroundColor: colors.error,
 });
 
