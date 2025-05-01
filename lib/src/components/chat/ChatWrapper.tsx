@@ -24,6 +24,7 @@ import {
   Send,
   InputToolbar,
   MessageImage,
+  Composer,
 } from 'react-native-gifted-chat';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // import { EmojiPopup } from 'react-native-emoji-popup';
@@ -140,17 +141,22 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
     );
   }
 
+  const primaryColor = theme.colors.palette.primary500;
+
   const pickerDarkTheme = {
     backdrop: '#16161888',
-    knob: '#766dfc',
+    // knob: '#766dfc',
+    knob: theme.colors.border,
     container: '#282829',
     header: '#fff',
     skinTonesContainer: '#252427',
     category: {
-      icon: '#766dfc',
+      // icon: '#766dfc',
+      icon: primaryColor,
       iconActive: '#fff',
       container: '#252427',
-      containerActive: '#766dfc',
+      // containerActive: '#766dfc',
+      containerActive: primaryColor,
     },
     search: {
       text: '#fff',
@@ -172,6 +178,12 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
         }}
       />
       <GiftedChat
+        isTyping={false}
+        infiniteScroll
+        isScrollToBottomEnabled={true}
+        maxComposerHeight={100}
+        isKeyboardInternallyHandled={false}
+
         messages={messages}
         onSend={(messages: any) => onSend(messages)}
         onInputTextChanged={setText}
@@ -190,10 +202,6 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
             style={{ width: 32, height: 32, borderRadius: 16 }}
           />
         )}
-        maxComposerHeight={100}
-        // minComposerHeight={10}
-        // bottomOffset={insets.bottom}
-        isKeyboardInternallyHandled={false}
         textInputProps={{ style: themed($textInput) }}
         renderBubble={(props: any) => {
           let reactions = props.currentMessage.reactions ?? [];
@@ -239,9 +247,12 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
                     ]}
                   >
                     {reactions.map((reaction: string) => (
-                      <TouchableOpacity key={reaction} onPress={() => {
-                        onEmojiSelected(props.currentMessage, reaction);
-                      }}>
+                      <TouchableOpacity
+                        key={reaction}
+                        onPress={() => {
+                          onEmojiSelected(props.currentMessage, reaction);
+                        }}
+                      >
                         <Text key={reaction}>{reaction}</Text>
                       </TouchableOpacity>
                     ))}
@@ -258,29 +269,18 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
             </Text>
           );
         }}
-        placeholder={s('inputPlaceholder')}
-        // renderComposer={(props) => {
-        //   return (
-        //     <View>
-        //       <TextField
-        //         style={{
-        //           backgroundColor: 'red',
-        //         }}
-        //       />
-        //     </View>
-        //   )
-        // }}
-        isTyping={false}
-        infiniteScroll
+        renderComposer={(props) => {
+          return (
+            <Composer
+              {...props}
+              placeholder={s('inputPlaceholder')}
+              placeholderTextColor={theme.colors.textDim}
+            />
+          );
+        }}
         onPressActionButton={() => {
           console.log('action button pressed');
         }}
-        isScrollToBottomEnabled={true}
-        // renderComposer={() => (
-        //   <View>
-        //     <Text>Composer</Text>
-        //   </View>
-        // )}
         onPressAvatar={(user) => {
           onPressAvatar(user._id);
         }}
@@ -347,6 +347,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
               borderTopWidth: 0,
               borderTopColor: 'transparent',
               backgroundColor: 'transparent',
+              color: 'green',
             }}
             // renderActions={() => (
             //   <View
@@ -378,7 +379,6 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
         // onLongPress={(context, message) => setReplyMessage(message)}
         onLongPress={(context, message) => {
           setReactionMessage(message);
-          console.log('message', message);
           setPickerOpen(true);
 
           // SheetManager.show('messageActionsSheet', {
@@ -386,8 +386,6 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
           //     agent: agent,
           //   },
           // });
-
-
 
           // console.log('onLongPress', context, message);
           // onLongPressMessage(message);
