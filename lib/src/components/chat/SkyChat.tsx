@@ -25,7 +25,6 @@ import {
   InputToolbar,
 } from 'react-native-gifted-chat';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmojiPopup } from 'react-native-emoji-popup';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Agent } from '@atproto/api';
 import { PostRenderer } from '../bsky/PostRenderer';

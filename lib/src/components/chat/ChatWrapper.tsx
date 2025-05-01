@@ -26,13 +26,20 @@ import {
   MessageImage,
 } from 'react-native-gifted-chat';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmojiPopup } from 'react-native-emoji-popup';
+// import { EmojiPopup } from 'react-native-emoji-popup';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Agent } from '@atproto/api';
 import { PostRenderer } from '../bsky/PostRenderer';
 import { Button } from '../Button';
 import { FontAwesome } from '@expo/vector-icons';
 import { useStrings } from '../../contexts/strings';
+import EmojiPicker, { type EmojiType } from 'rn-emoji-keyboard';
+import ActionSheet, {
+  ActionSheetRef,
+  SheetManager,
+} from 'react-native-actions-sheet';
+
+import { TouchableOpacity } from 'react-native';
 
 export interface ChatWrapperProps {
   agent: Agent;
@@ -45,6 +52,7 @@ export interface ChatWrapperProps {
   convoMembers: any[];
   onPressLink?: (link: string) => void;
   onLongPressMessage?: (message: IMessage) => void;
+  onEmojiSelected?: (message: IMessage, emoji: string) => void;
 }
 
 export const ChatWrapper: React.FC<ChatWrapperProps> = ({
@@ -57,6 +65,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
   loading,
   onPressLink,
   onLongPressMessage,
+  onEmojiSelected,
 }) => {
   const s = useStrings();
   const [text, setText] = useState('');
@@ -64,14 +73,15 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
   const insets = useSafeAreaInsets();
 
   const [replyMessage, setReplyMessage] = useState<IMessage | null>(null);
+  const [reactionMessage, setReactionMessage] = useState<IMessage | null>(null);
+
   const swipeableRowRef = useRef<Swipeable | null>(null);
 
   const userDid = agent.assertDid;
 
   const { themed, theme } = useAppTheme();
 
-  const [emoji, setEmoji] = useState('👍');
-
+  const [pickerOpen, setPickerOpen] = React.useState<boolean>(false);
 
   const updateRowRef = useCallback(
     (ref: any) => {
@@ -130,7 +140,37 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
     );
   }
 
+  const pickerDarkTheme = {
+    backdrop: '#16161888',
+    knob: '#766dfc',
+    container: '#282829',
+    header: '#fff',
+    skinTonesContainer: '#252427',
+    category: {
+      icon: '#766dfc',
+      iconActive: '#fff',
+      container: '#252427',
+      containerActive: '#766dfc',
+    },
+    search: {
+      text: '#fff',
+      placeholder: '#ffffff2c',
+      icon: '#fff',
+      background: '#00000011',
+    },
+  };
+
   return (
+    <>
+      <EmojiPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        theme={theme.isDark ? pickerDarkTheme : undefined}
+        enableSearchBar
+        onEmojiSelected={(emoji: string) => {
+          onEmojiSelected(reactionMessage, emoji.emoji);
+        }}
+      />
       <GiftedChat
         messages={messages}
         onSend={(messages: any) => onSend(messages)}
@@ -199,7 +239,11 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
                     ]}
                   >
                     {reactions.map((reaction: string) => (
-                      <Text key={reaction}>{reaction}</Text>
+                      <TouchableOpacity key={reaction} onPress={() => {
+                        onEmojiSelected(props.currentMessage, reaction);
+                      }}>
+                        <Text key={reaction}>{reaction}</Text>
+                      </TouchableOpacity>
                     ))}
                   </View>
                 </View>
@@ -214,8 +258,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
             </Text>
           );
         }}
-        placeholder={s("inputPlaceholder")}
-
+        placeholder={s('inputPlaceholder')}
         // renderComposer={(props) => {
         //   return (
         //     <View>
@@ -273,20 +316,11 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
           }
           let videoUrl = props.currentMessage.video;
           return <PostRenderer url={videoUrl} agent={agent} />;
-          // return (
-          //   <EmojiPopup
-          //     onEmojiSelected={setEmoji}
-          //     // style={styles.buttonText}
-          //   >
-          //     <Text>Open Emoji Picker</Text>
-          //   </EmojiPopup>
-          // );
         }}
         renderMessageImage={(props) => {
           if (!props.currentMessage.image) {
             return null;
           }
-          console.log('renderMessageImage', props);
           return (
             <View>
               <Text>{props.currentMessage.image}</Text>
@@ -331,7 +365,7 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
             //   </View>
             // )}
             renderActions={() => {
-              return (<></>)
+              return <></>;
             }}
           />
         )}
@@ -343,8 +377,20 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
         )}
         // onLongPress={(context, message) => setReplyMessage(message)}
         onLongPress={(context, message) => {
-          console.log('onLongPress', context, message);
-          onLongPressMessage(message);
+          setReactionMessage(message);
+          console.log('message', message);
+          setPickerOpen(true);
+
+          // SheetManager.show('messageActionsSheet', {
+          //   payload: {
+          //     agent: agent,
+          //   },
+          // });
+
+
+
+          // console.log('onLongPress', context, message);
+          // onLongPressMessage(message);
           // context.actionSheet().showActionSheetWithOptions({
           //   options: ["Reply", "Copy", "Cancel"],
           //   cancelButtonIndex: 2,
@@ -381,13 +427,13 @@ export const ChatWrapper: React.FC<ChatWrapperProps> = ({
           // )
           return <></>;
         }}
-
         scrollToBottomComponent={() => (
           <View style={themed($fabButton)}>
             <FontAwesome name="chevron-down" color="white" size={20} />
           </View>
         )}
       />
+    </>
   );
 };
 
@@ -436,7 +482,7 @@ const $reactionText: ThemedStyle<TextStyle> = ({ colors }) => ({
   paddingVertical: 4,
   borderRadius: 16,
   flexDirection: 'row',
-  gap: 2,
+  gap: 8,
   borderWidth: 1,
   borderColor: colors.border,
 });

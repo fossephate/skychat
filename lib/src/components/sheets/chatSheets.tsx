@@ -106,3 +106,37 @@ export function SearchCreateSheet(props: SheetProps<'searchCreateSheet'>) {
     </ActionSheet>
   );
 }
+
+
+
+export function MessageActionsSheet(props: SheetProps<'messageActionsSheet'>) {
+  const ref = useSheetRef();
+  const { theme } = useAppTheme();
+  if (!props.payload?.agent) {
+    return (
+      <View style={{ height: 650 }}>
+        <Text>No agent</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ActionSheet
+      id={props.sheetId}
+      useBottomSafeAreaPadding
+      keyboardHandlerEnabled={false}
+      gestureEnabled={false}
+      containerStyle={{ backgroundColor: theme.colors.background }}
+    >
+      <View style={{ height: 650 }}>
+        <Text>Message Actions</Text>
+        <Button onPress={() => {}}>
+          <Text>React</Text>
+        </Button>
+        <Button onPress={() => ref.current?.hide()}>
+          <Text>Cancel</Text>
+        </Button>
+      </View>
+    </ActionSheet>
+  );
+}

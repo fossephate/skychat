@@ -45,6 +45,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
   groupId,
   onPressAvatar,
   onPressLink,
+  refreshInterval = 5000,
 }) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [text, setText] = useState('');
@@ -140,7 +141,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
     return transformedMessages;
   };
 
-  const fetchMessages = async () => {
+  const fetchInitialMessages = async () => {
     if (!agent || !userDid || !groupId) {
       console.error('No agent, userDid, or groupId found');
       setLoading(false);
@@ -164,7 +165,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
         const otherMembers =
           convoData.members?.filter((member) => member.did !== userDid) || [];
 
-        console.log(convoData);
+        // console.log(convoData);
 
         if (convoData.name) {
           setConvoName(convoData.name);
@@ -180,28 +181,26 @@ export const BskyChat: React.FC<BskyChatProps> = ({
       // Fetch messages
       const messagesData = await getConvoMessages();
 
+      if (messagesData.length == 0) {
+        setLoading(false);
+        return;
+      }
+
       // Transform messages to GiftedChat format
       const transformedMessages: IMessage[] =
         await transformMessages(messagesData);
 
-      // console.log("transformedMessages", transformedMessages)
-
       setMessages(transformedMessages);
+
+      // mark these messages as read:
+      await proxy.chat.bsky.convo.updateRead({
+        convoId: groupId as string,
+        messageId: messagesData[0].id,
+      });
     } catch (error) {
       console.error('Error fetching messages:', error);
       // Fallback to sample data for demo/testing
       setMessages([
-        ...messageData.map((message: any) => {
-          return {
-            _id: message.id,
-            text: message.msg,
-            createdAt: new Date(message.date),
-            user: {
-              _id: message.from,
-              name: message.from ? 'You' : 'Bob',
-            },
-          };
-        }),
         {
           _id: 0,
           system: true,
@@ -219,7 +218,7 @@ export const BskyChat: React.FC<BskyChatProps> = ({
   };
 
   useEffect(() => {
-    fetchMessages();
+    fetchInitialMessages();
     startMessageListener();
   }, [groupId, agent, userDid]);
 
@@ -245,29 +244,38 @@ export const BskyChat: React.FC<BskyChatProps> = ({
 
       // Implement real-time message subscription
       messageListenerRef.current = setInterval(async () => {
-        // Only check for new messages if we're not already loading
-        if (loading) return;
-
         try {
-          // Get latest messages (assume API supports getting messages since a specific timestamp)
-          // @ts-ignore
-          // const latestMessage = messagesRef.current[0]
-          // if (!latestMessage) return
-
           const newMessagesData = await getConvoMessages();
 
           if (newMessagesData.length > 0) {
             // Transform new messages
             const transformedMessages =
               await transformMessages(newMessagesData);
-            setMessages((prevMessages) =>
-              GiftedChat.append(prevMessages, transformedNewMessages)
-            );
+            // TODO: this can definitely be optimized!:
+            const replacements = transformedMessages;
+            const oldMessages = messages;
+            for (const msg of oldMessages) {
+              if (replacements.some((m) => m._id !== msg._id)) {
+                replacements.push(msg);
+              }
+            }
+            setMessages(replacements);
+
+            // const logResponse = await proxy.chat.bsky.convo.getLog({
+            //   cursor: cursor,
+            // });
+            // console.log('logResponse', logResponse);
+
+            // mark these messages as read:
+            await proxy.chat.bsky.convo.updateRead({
+              convoId: groupId as string,
+              messageId: newMessagesData[0].id,
+            });
           }
         } catch (error) {
           console.error('Error in message listener:', error);
         }
-      }, 5000); // Check every 5 seconds - adjust as needed
+      }, refreshInterval);
     } catch (error) {
       console.error('Error setting up message listener:', error);
     }
@@ -381,17 +389,46 @@ export const BskyChat: React.FC<BskyChatProps> = ({
     });
   };
 
-  const removeReaction = async (messageId: string) => {
+  const removeReaction = async (messageId: string, value: string) => {
     const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
     await proxy.chat.bsky.convo.removeReaction({
       convoId: groupId as string,
       messageId: messageId,
+      value: value,
     });
   };
 
-  const onLongPressMessage = async (message: IMessage) => {
+  // const onLongPressMessage = async (message: IMessage) => {
+  //   try {
+  //     await addReaction(message._id, '👍');
+  //   } catch (error) {
+  //     console.error('Error adding reaction:', error);
+  //   }
+  // };
+
+  const reloadRecentMessages = async () => {
+    const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+    const messagesResponse = await proxy.chat.bsky.convo.getMessages({
+      convoId: groupId as string,
+      cursor: undefined,
+      limit: 30,
+    });
+    setCursor(messagesResponse.data.cursor ?? undefined);
+    const transformedMessages: IMessage[] = await transformMessages(
+      messagesResponse.data.messages
+    );
+
+    setMessages(transformedMessages);
+  };
+
+  const onEmojiSelected = async (message: IMessage, emoji: string) => {
     try {
-      await addReaction(message._id, '👍');
+      if (message.reactions.includes(emoji)) {
+        await removeReaction(message._id, emoji);
+      } else {
+        await addReaction(message._id, emoji);
+      }
+      await reloadRecentMessages();
     } catch (error) {
       console.error('Error adding reaction:', error);
     }
@@ -403,11 +440,12 @@ export const BskyChat: React.FC<BskyChatProps> = ({
       groupId={groupId}
       onPressAvatar={onPressAvatar}
       messages={messages}
-      onLongPressMessage={onLongPressMessage}
+      // onLongPressMessage={onLongPressMessage}
       convoMembers={convoMembers}
       onSend={onSend}
       loading={loading}
       onPressLink={onPressLink}
+      onEmojiSelected={onEmojiSelected}
     />
   );
 };
