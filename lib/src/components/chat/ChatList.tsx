@@ -234,8 +234,6 @@ export const ChatList: React.FC<ChatListProps> = ({
       console.error("Error creating new chat!");
     }
 
-
-
     // if (groupName === "") {
     //   // random group name
     //   groupName = "Group " + Math.floor(Math.random() * 1000000)
@@ -243,6 +241,13 @@ export const ChatList: React.FC<ChatListProps> = ({
     // console.log("Group name:", groupName)
     // console.log("getting groups with users: ", selectedUsers)
   };
+
+  const handleChatLongPress = useCallback((chat: Chat) => {
+    console.log('handleChatLongPress', chat);
+    SheetManager.show('chatActionsSheet', {
+      payload: { agent, chat },
+    });
+  }, [agent]);
 
   const confirmLeaveChat = useCallback(async () => {
     try {
@@ -373,6 +378,7 @@ export const ChatList: React.FC<ChatListProps> = ({
             <ChatItem
               item={item}
               onChatPress={onChatPress}
+              onChatLongPress={handleChatLongPress}
               onProfilePress={onProfilePress}
               onLeaveChat={onLeaveChat}
             />

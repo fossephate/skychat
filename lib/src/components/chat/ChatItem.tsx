@@ -229,6 +229,7 @@ interface ChatItemProps {
   onChatPress?: (chat: Chat) => void;
   onProfilePress?: (id: string) => void;
   onLeaveChat?: (chat: Chat) => void;
+  onChatLongPress?: (chat: Chat) => void;
 }
 
 // Convert to a proper React component
@@ -237,6 +238,7 @@ export const ChatItem = ({
   onChatPress,
   onProfilePress,
   onLeaveChat,
+  onChatLongPress,
 }: ChatItemProps) => {
   const { themed } = useAppTheme();
   const swipeableRef = useRef<SwipeableRef>(null);
@@ -287,9 +289,13 @@ export const ChatItem = ({
           !chat.lastMessage?.read && themed($unreadChatName),
         ]}
         onPress={() => onChatPress?.(chat)}
+        onLongPress={() => onChatLongPress?.(chat)}
         RightComponent={
           <View style={themed($rightContainer)}>
-            <TouchableOpacity onPress={() => onChatPress?.(chat)}>
+            <TouchableOpacity
+              onPress={() => onChatPress?.(chat)}
+              onLongPress={() => onChatLongPress?.(chat)}
+            >
               <Text style={[themed($timestamp)]}>
                 {chat.lastMessage?.timestamp}
               </Text>

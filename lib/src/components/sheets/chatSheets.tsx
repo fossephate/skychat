@@ -8,7 +8,6 @@ import { ThemedStyle } from '../../theme';
 import { Button, Text } from '../../components/';
 import { SearchCreate } from '../chat/SearchCreate';
 import { useStrings } from '../../contexts/strings';
-import { useEffect } from 'react';
 
 export function LeaveChatSheet(props: SheetProps<'leaveChatSheet'>) {
   const s = useStrings();
@@ -107,7 +106,93 @@ export function SearchCreateSheet(props: SheetProps<'searchCreateSheet'>) {
   );
 }
 
+export function ChatActionsSheet(props: SheetProps<'chatActionsSheet'>) {
+  const s = useStrings();
+  const ref = useSheetRef();
+  const { themed, theme } = useAppTheme();
 
+  if (!props.payload?.agent) {
+    return (
+      <View style={{ height: 650 }}>
+        <Text>No agent</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ActionSheet
+      id={props.sheetId}
+      useBottomSafeAreaPadding
+      keyboardHandlerEnabled={false}
+      gestureEnabled={false}
+      containerStyle={{ backgroundColor: theme.colors.background }}
+    >
+      <View style={{ height: 400 }}>
+        <Text>Chat Actions</Text>
+
+        <View style={themed($btnsContainer)}>
+          <View style={themed($btnGroup)}>
+            <Button style={themed($btn)} onPress={() => {}}>
+              <Text>Go to profile</Text>
+            </Button>
+            <Button style={themed($btn)} onPress={() => ref.current?.hide()}>
+              <Text>Mute conversation</Text>
+            </Button>
+          </View>
+
+          <View style={themed($btnGroup)}>
+            <Button style={themed($btn)} onPress={() => {}}>
+              <Text>Block account</Text>
+            </Button>
+            <Button style={themed($btn)} onPress={() => ref.current?.hide()}>
+              <Text>Report conversation</Text>
+            </Button>
+          </View>
+
+          <View style={themed($btnGroup)}>
+            <Button style={themed($btn)} onPress={() => ref.current?.hide()}
+              LeftAccessory={() => (
+                <Text>Leave chat</Text>
+              )}
+              // RightAccessory={() => (
+              // )}
+            >
+            </Button>
+          </View>
+        </View>
+      </View>
+    </ActionSheet>
+  );
+}
+
+const $btn: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  // padding: spacing.sm,
+  borderRadius: spacing.xl,
+  // borderWidth: 1,
+  // borderColor: colors.border,
+});
+
+const $btnGroup: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  gap: 0,
+  // padding: spacing.sm,
+  // width: '80%',
+  backgroundColor: colors.palette.neutral300,
+  borderRadius: spacing.md,
+  borderWidth: 1,
+  borderColor: colors.border,
+});
+
+const $btnsContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  gap: spacing.sm,
+  width: '80%',
+  marginHorizontal: 'auto',
+  alignSelf: 'center',
+  marginTop: spacing.sm,
+});
 
 export function MessageActionsSheet(props: SheetProps<'messageActionsSheet'>) {
   const ref = useSheetRef();
