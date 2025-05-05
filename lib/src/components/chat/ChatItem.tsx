@@ -309,7 +309,7 @@ export const ChatItem = ({
                   <Text style={themed($unreadText)}>{chat.unreadCount}</Text>
                 </View>
               )}
-              {/* {chat.muted && <Text style={themed($mutedIcon)}>🔇</Text>} */}
+              {chat.muted && <Text>🔇</Text>}
               {/* {chat.pinned && <Text style={themed($pinnedIcon)}>📌</Text>} */}
             </TouchableOpacity>
           </View>

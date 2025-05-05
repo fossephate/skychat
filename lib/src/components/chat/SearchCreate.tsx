@@ -38,6 +38,7 @@ import {
   isVerifier,
 } from '../utils/utils';
 import { useStrings } from '../../contexts/strings';
+import { SheetManager } from 'react-native-actions-sheet';
 
 interface User {
   id: string;
@@ -55,6 +56,7 @@ interface SearchCreateProps {
   agent: Agent;
   onChatPress?: (groupId: string) => void;
   onProfilePress?: (did: string) => void;
+  profileLongPressOverride?: (did: string) => void;
   onSubmit?: (ids: string[]) => void;
   themedOverride?: <T>(
     styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>
@@ -67,6 +69,7 @@ export const SearchCreate = ({
   onProfilePress,
   themedOverride,
   onSubmit,
+  profileLongPressOverride,
 }: SearchCreateProps) => {
   const s = useStrings();
   const [state, setState] = useState({
@@ -345,11 +348,23 @@ export const SearchCreate = ({
     [themed, toggleUserSelection]
   );
 
+  const handleProfileLongPress = (did: string) => {
+    if (profileLongPressOverride) {
+      profileLongPressOverride(did);
+      return;
+    }
+
+    // SheetManager.show('profileActionsSheet', {
+    //   payload: { agent, did },
+    // });
+  }
+
   const renderUnselectedUser = useCallback(
     ({ item: user }: { item: User }) => {
       return (
         <ListItem
           style={!user.canBeMessaged && { opacity: 0.8 }}
+          onLongPress={() => handleProfileLongPress?.(user.id)}
           LeftComponent={
             <View style={themed($avatarContainer)}>
               <TouchableOpacity onPress={() => onProfilePress?.(user.id)}>

@@ -54,7 +54,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false);
   const userDid = agent.assertDid;
 
-  const [chatToLeave, setChatToLeave] = useState<Chat | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
   const { themed, themeContext } = useAppTheme();
 
@@ -119,6 +119,7 @@ export const ChatList: React.FC<ChatListProps> = ({
             isBsky: true,
             verified: verified,
             verifier: verifier,
+            muted: convo.muted,
           };
         })
       );
@@ -169,6 +170,7 @@ export const ChatList: React.FC<ChatListProps> = ({
             isBsky: true,
             verified: verified,
             verifier: verifier,
+            muted: convo.muted,
           };
         })
       );
@@ -194,7 +196,7 @@ export const ChatList: React.FC<ChatListProps> = ({
 
   const onLeaveChat = useCallback(
     async (chat: Chat) => {
-      setChatToLeave(chat);
+      setSelectedChat(chat);
       SheetManager.show('leaveChatSheet', {
         payload: {
           onLeave: confirmLeaveChat,
@@ -208,7 +210,6 @@ export const ChatList: React.FC<ChatListProps> = ({
     SheetManager.hide('searchCreateSheet');
 
     try {
-
       const chat = await createNewChat({ agent, ids: selectedUsers });
 
       onChatPress?.({
@@ -229,9 +230,8 @@ export const ChatList: React.FC<ChatListProps> = ({
         verified: false,
         verifier: false,
       });
-
-    } catch(e) {
-      console.error("Error creating new chat!");
+    } catch (e) {
+      console.error('Error creating new chat!');
     }
 
     // if (groupName === "") {
@@ -242,26 +242,36 @@ export const ChatList: React.FC<ChatListProps> = ({
     // console.log("getting groups with users: ", selectedUsers)
   };
 
-  const handleChatLongPress = useCallback((chat: Chat) => {
-    console.log('handleChatLongPress', chat);
-    SheetManager.show('chatActionsSheet', {
-      payload: { agent, chat },
-    });
-  }, [agent]);
+  const handleChatLongPress = useCallback(
+    (chat: Chat) => {
+      setSelectedChat(chat);
+      SheetManager.show('chatActionsSheet', {
+        payload: {
+          agent,
+          chat,
+          onProfile: chat.isBsky
+            ? () => {
+                onProfilePress?.(chat.members[0]!.id);
+              }
+            : undefined,
+        },
+      });
+    },
+    [agent]
+  );
 
   const confirmLeaveChat = useCallback(async () => {
     try {
-      console.log('leaving chat: ', chatToLeave);
-      if (!chatToLeave) {
+      if (!selectedChat) {
         return;
       }
       const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
-      await proxy.chat.bsky.convo.leaveConvo({ convoId: chatToLeave?.id });
+      await proxy.chat.bsky.convo.leaveConvo({ convoId: selectedChat?.id });
     } catch (error) {
       console.error('Error leaving chat:', error);
     }
     onRefresh();
-  }, [agent, chatToLeave]);
+  }, [agent, selectedChat]);
 
   // Initial loading
   useEffect(() => {
@@ -285,11 +295,15 @@ export const ChatList: React.FC<ChatListProps> = ({
   const sections = [];
 
   if (skyChats.length > 0) {
-    sections.push({ title: s("skyListHeader"), data: skyChats, type: 'sky' });
+    sections.push({ title: s('skyListHeader'), data: skyChats, type: 'sky' });
   }
 
   if (bskyChats.length > 0) {
-    sections.push({ title: s("bskyListHeader"), data: bskyChats, type: 'bsky' });
+    sections.push({
+      title: s('bskyListHeader'),
+      data: bskyChats,
+      type: 'bsky',
+    });
   }
 
   // Render section header
@@ -395,13 +409,6 @@ export const ChatList: React.FC<ChatListProps> = ({
       ) : (
         <EmptyListComponent />
       )}
-
-      {/* <NewChatModal
-        isVisible={isNewChatModalVisible}
-        onClose={() => setIsNewChatModalVisible(false)}
-        onSubmit={handleNewChat}
-        agent={agent}
-      /> */}
 
       {showCreateChatButton && (
         <Button

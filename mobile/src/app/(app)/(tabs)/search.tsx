@@ -41,7 +41,11 @@ export default function UsersScreen() {
           <Text tx="searchScreen:title" preset="heading" style={themed($headerText)} />
         </View> */}
 
-        <SearchCreate agent={agent} onChatPress={handleChatPress} onProfilePress={handleProfilePress} />
+        <SearchCreate
+          agent={agent}
+          onChatPress={handleChatPress}
+          onProfilePress={handleProfilePress}
+        />
 
       </Screen>
     </>
