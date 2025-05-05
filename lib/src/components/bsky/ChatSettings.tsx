@@ -13,9 +13,10 @@ import type { ThemedStyle } from '../../theme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useStrings } from '../../contexts/strings';
 
-// Types for the AT Protocol preferences
+type ChatDeclaration = 'all' | 'following' | 'none';
+
 interface ChatPreferences {
-  allowMessagesFrom: 'all' | 'following' | 'none';
+  allowMessagesFrom: ChatDeclaration;
 }
 
 interface ChatSettingsProps {
@@ -46,11 +47,9 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
       // Fetch the user's chat preferences
       // First, get user declaration for message permissions
       const profile = await agent.getProfile({ actor: userDid });
-      const declaration =
-        profile?.data.associated?.chat?.allowIncoming ?? 'following';
-
+      const declaration = profile?.data.associated?.chat?.allowIncoming;
       setPreferences({
-        allowMessagesFrom: declaration as 'all' | 'following' | 'none',
+        allowMessagesFrom: declaration as ChatDeclaration,
       });
     } catch (error) {
       console.error('Error fetching chat preferences:', error);
@@ -88,9 +87,9 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
     }
   };
 
-  useEffect(() => {
-    savePreferences();
-  }, [preferences]);
+  // useEffect(() => {
+  //   savePreferences();
+  // }, [preferences]);
 
   // Handle message permission change
   const handleMessagePermissionChange = (
@@ -100,6 +99,10 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
       ...prev,
       allowMessagesFrom: value,
     }));
+    // a hack but should prevent overwriting the declaration record by accident with the useEffect
+    setTimeout(() => {
+      savePreferences();
+    }, 1000);
   };
 
   // Radio option renderer
@@ -110,9 +113,9 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({ agent }) => {
     onSelect,
   }: {
     label: string;
-    value: 'all' | 'following' | 'none';
-    currentValue: string;
-    onSelect: (value: 'all' | 'following' | 'none') => void;
+    value: ChatDeclaration;
+    currentValue: ChatDeclaration;
+    onSelect: (value: ChatDeclaration) => void;
   }) => (
     <ListItem
       text={label}

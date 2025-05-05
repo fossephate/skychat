@@ -251,6 +251,7 @@ export const ChatList: React.FC<ChatListProps> = ({
           chat,
           onProfile: chat.isBsky
             ? () => {
+                SheetManager.hide('chatActionsSheet');
                 onProfilePress?.(chat.members[0]!.id);
               }
             : undefined,

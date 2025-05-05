@@ -40,7 +40,6 @@ export default function chatsScreen() {
       <ChatList
         agent={agent}
         onChatPress={(chat) => {
-          console.log('chat: ', chat);
           if (chat.isBsky) {
             router.push(`/bskychats/${chat.id}` as any)
           } else {

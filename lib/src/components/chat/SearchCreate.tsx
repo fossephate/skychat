@@ -6,10 +6,11 @@ import {
   Image,
   TouchableOpacity,
   StyleProp,
+  Alert,
 } from 'react-native';
 import { ListView } from '../ListView';
 import { ListItem } from '../ListItem';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useState } from 'react';
 import { Agent } from '@atproto/api';
 import { useAppTheme } from '../../utils/useAppTheme';
@@ -31,12 +32,7 @@ import {
   $userStatus,
   $userStatusError,
 } from './styles';
-import {
-  canBeMessaged,
-  check,
-  isVerified,
-  isVerifier,
-} from '../utils/utils';
+import { canBeMessaged, check, isVerified, isVerifier } from '../utils/utils';
 import { useStrings } from '../../contexts/strings';
 import { SheetManager } from 'react-native-actions-sheet';
 
@@ -80,6 +76,8 @@ export const SearchCreate = ({
     loading: false,
     error: '',
   });
+
+  const selectedUsersListRef = useRef<ScrollView>(null);
 
   const userDid = agent.assertDid;
 
@@ -146,6 +144,10 @@ export const SearchCreate = ({
           XUser,
         ],
       }));
+      setTimeout(() => {
+        // scroll to the end of the list
+        selectedUsersListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
       return;
     }
   }, [state.selectedUsers]);
@@ -272,7 +274,6 @@ export const SearchCreate = ({
     }
 
     const userToAdd = state.users.find((user) => user.id === did);
-    console.log('userToAdd', userToAdd);
     if (userToAdd) {
       setState((prev) => ({
         ...prev,
@@ -292,9 +293,13 @@ export const SearchCreate = ({
   };
 
   const handleSubmit = useCallback(() => {
-    onSubmit?.(
-      state.selectedUsers.map((user) => user.id).filter((id) => id !== 'X')
-    );
+    const userIds = state.selectedUsers.map((user) => user.id).filter((id) => id !== 'X');
+    if (userIds.length > 1) {
+      // show alert: group chats are not supported yet
+      Alert.alert('Group chats coming soon!');
+      return;
+    }
+    onSubmit?.(userIds);
   }, [state.selectedUsers, state.groupName]);
 
   const renderSmallUsers = useCallback(
@@ -357,7 +362,7 @@ export const SearchCreate = ({
     // SheetManager.show('profileActionsSheet', {
     //   payload: { agent, did },
     // });
-  }
+  };
 
   const renderUnselectedUser = useCallback(
     ({ item: user }: { item: User }) => {
@@ -469,6 +474,7 @@ export const SearchCreate = ({
               horizontal={false}
               contentContainerStyle={themed($selectedUsersListContainer)}
               showsVerticalScrollIndicator={false}
+              ref={selectedUsersListRef}
             >
               <View style={themed($selectedUsersGrid)}>
                 {state.selectedUsers.map((user) => (
@@ -577,6 +583,7 @@ const $submitButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   minHeight: 44,
   // marginBottom: 20,
   color: colors.text,
+  borderRadius: spacing.xl,
 });
 
 const $submitButtonText: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
@@ -590,8 +597,12 @@ const $selectedUsersContainer: ThemedStyle<ViewStyle> = ({
   spacing,
 }) => ({
   paddingHorizontal: spacing.md,
-  height: 120,
+  // height: 120,
+  // flex: 1,
+  flexShrink: 1,
+  maxHeight: 120,
   // maxWidth: 240,
+  backgroundColor: colors.palette.neutral300,
 });
 
 const $selectedUsersListContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -605,15 +616,16 @@ const $selectedUsersGrid: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 });
 
 const $smallAvatar: ThemedStyle<ImageStyle> = ({ colors, spacing }) => ({
-  width: 20,
-  height: 20,
+  width: 24,
+  height: 24,
   marginTop: 'auto',
   marginBottom: 'auto',
   marginRight: spacing.xs,
+  borderRadius: spacing.md,
 });
 
 const $smallUserListItem: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.palette.neutral500,
+  backgroundColor: colors.palette.neutral400,
   borderRadius: 20,
   paddingHorizontal: spacing.xs,
   // height: 16,
@@ -623,7 +635,7 @@ const $smallUserClearButton: ThemedStyle<ViewStyle> = ({
   colors,
   spacing,
 }) => ({
-  backgroundColor: colors.palette.neutral300,
+  backgroundColor: colors.palette.neutral500,
   borderRadius: 20,
   paddingHorizontal: spacing.xs,
   // height: 16,

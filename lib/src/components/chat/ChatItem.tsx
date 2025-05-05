@@ -169,9 +169,9 @@ export const ChatRequestItem = ({
         ]}
         RightComponent={
           <View style={themed($rightContainer)}>
-            <Text style={[themed($timestamp)]}>
+            {/* <Text style={[themed($timestamp)]}>
               {chat.lastMessage?.timestamp}
-            </Text>
+            </Text> */}
           </View>
         }
         style={themed($listItem)}
@@ -240,7 +240,7 @@ export const ChatItem = ({
   onLeaveChat,
   onChatLongPress,
 }: ChatItemProps) => {
-  const { themed } = useAppTheme();
+  const { themed, theme } = useAppTheme();
   const swipeableRef = useRef<SwipeableRef>(null);
 
   function renderRightActions(
@@ -292,26 +292,27 @@ export const ChatItem = ({
         onLongPress={() => onChatLongPress?.(chat)}
         RightComponent={
           <View style={themed($rightContainer)}>
-            <TouchableOpacity
-              onPress={() => onChatPress?.(chat)}
-              onLongPress={() => onChatLongPress?.(chat)}
-            >
-              <Text style={[themed($timestamp)]}>
-                {chat.lastMessage?.timestamp}
-              </Text>
-              {chat.unreadCount > 0 && (
-                <View
-                  style={[
-                    themed($unreadBadge),
-                    chat.muted && themed($mutedBadge),
-                  ]}
-                >
-                  <Text style={themed($unreadText)}>{chat.unreadCount}</Text>
-                </View>
-              )}
-              {chat.muted && <Text>🔇</Text>}
-              {/* {chat.pinned && <Text style={themed($pinnedIcon)}>📌</Text>} */}
-            </TouchableOpacity>
+            {/* <Text style={[themed($timestamp)]}>
+              {chat.lastMessage?.timestamp}
+            </Text> */}
+            {chat.unreadCount > 0 && (
+              <View
+                style={[
+                  themed($unreadBadge),
+                  chat.muted && themed($mutedBadge),
+                ]}
+              >
+                <Text style={themed($unreadText)}>{chat.unreadCount}</Text>
+              </View>
+            )}
+            {chat.muted && (
+              <FontAwesome
+                name="volume-off"
+                size={24}
+                color={theme.colors.text}
+              />
+            )}
+            {/* {chat.pinned && <Text style={themed($pinnedIcon)}>📌</Text>} */}
           </View>
         }
         style={themed($listItem)}
@@ -418,8 +419,13 @@ const $unreadChatName: ThemedStyle<TextStyle> = () => ({
   fontWeight: 'bold',
 });
 
-const $rightContainer: ThemedStyle<ViewStyle> = () => ({
+const $rightContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: 'flex-end',
+  // backgroundColor: 'red',
+  flexDirection: 'row',
+  gap: 6,
+  paddingRight: spacing.xs,
+  paddingTop: spacing.md,
 });
 
 const $timestamp: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
