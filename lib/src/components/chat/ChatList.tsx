@@ -51,14 +51,14 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [memberProfiles, setMemberProfiles] = useState<Map<string, User>>(
     new Map()
   );
-  const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false);
+
   const userDid = agent.assertDid;
 
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
-  const { themed, themeContext } = useAppTheme();
+  const { themed } = useAppTheme();
 
-  const fetchBskyChats = async () => {
+  const fetchBskyChats = useCallback(async () => {
     try {
       const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
       // @ts-ignore
@@ -180,7 +180,7 @@ export const ChatList: React.FC<ChatListProps> = ({
     } catch (error) {
       console.error('Error fetching Bsky conversations:', error);
     }
-  };
+  }, [agent, memberProfiles, userDid]);
 
   // Refresh function
   const onRefresh = useCallback(async () => {
@@ -192,7 +192,20 @@ export const ChatList: React.FC<ChatListProps> = ({
       console.error('Error refreshing:', error);
       setRefreshing(false);
     }
-  }, [agent, userDid]);
+  }, [fetchBskyChats]);
+
+  const confirmLeaveChat = useCallback(async () => {
+    try {
+      if (!selectedChat) {
+        return;
+      }
+      const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
+      await proxy.chat.bsky.convo.leaveConvo({ convoId: selectedChat?.id });
+    } catch (error) {
+      console.error('Error leaving chat:', error);
+    }
+    onRefresh();
+  }, [agent, selectedChat, onRefresh]);
 
   const onLeaveChat = useCallback(
     async (chat: Chat) => {
@@ -203,7 +216,7 @@ export const ChatList: React.FC<ChatListProps> = ({
         },
       });
     },
-    [agent]
+    [confirmLeaveChat]
   );
 
   const handleNewChat = async (selectedUsers: string[]) => {
@@ -258,27 +271,14 @@ export const ChatList: React.FC<ChatListProps> = ({
         },
       });
     },
-    [agent]
+    [agent, onProfilePress]
   );
-
-  const confirmLeaveChat = useCallback(async () => {
-    try {
-      if (!selectedChat) {
-        return;
-      }
-      const proxy = agent.withProxy('bsky_chat', 'did:web:api.bsky.chat');
-      await proxy.chat.bsky.convo.leaveConvo({ convoId: selectedChat?.id });
-    } catch (error) {
-      console.error('Error leaving chat:', error);
-    }
-    onRefresh();
-  }, [agent, selectedChat]);
 
   // Initial loading
   useEffect(() => {
     setIsLoading(true);
     fetchBskyChats().then(() => setIsLoading(false));
-  }, [agent, userDid]);
+  }, [agent, userDid, fetchBskyChats]);
 
   // Setup auto-refresh if interval provided
   useEffect(() => {
@@ -290,7 +290,7 @@ export const ChatList: React.FC<ChatListProps> = ({
       return () => clearInterval(intervalId);
     }
     return () => {};
-  }, [refreshInterval, agent, userDid]);
+  }, [refreshInterval, agent, userDid, fetchBskyChats]);
 
   // Create sections for the SectionList
   const sections = [];
