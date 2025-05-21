@@ -41,11 +41,17 @@ export function LeaveChatSheet(props: SheetProps<'leaveChatSheet'>) {
         />
         <Button
           onPress={props.payload?.onLeave}
-          style={themed($leaveChatSheetButton)}
+          style={[
+            themed($leaveChatSheetButton),
+            { backgroundColor: theme.colors.error },
+          ]}
         >
           <Text text={s('leave')} />
         </Button>
-        <Button onPress={() => ref.current?.hide()} style={{ marginTop: 6 }}>
+        <Button
+          onPress={() => ref.current?.hide()}
+          style={[themed($leaveChatSheetButton)]}
+        >
           <Text text={s('cancel')} />
         </Button>
       </View>
@@ -83,7 +89,7 @@ const $leaveChatSheetButton: ThemedStyle<ViewStyle> = ({
   spacing,
 }) => ({
   marginTop: spacing.md,
-  backgroundColor: colors.error,
+  borderRadius: spacing.lg,
 });
 
 export function SearchCreateSheet(props: SheetProps<'searchCreateSheet'>) {
@@ -109,7 +115,7 @@ export function SearchCreateSheet(props: SheetProps<'searchCreateSheet'>) {
     >
       <View style={{ height: 650 }}>
         <SearchCreate
-          agent={props.payload?.agent}
+          agent={agent}
           onSubmit={props.payload?.onSubmit}
         />
       </View>
@@ -121,7 +127,7 @@ export function ProfileActionsSheet(props: SheetProps<'profileActionsSheet'>) {
   const s = useStrings();
   const ref = useSheetRef();
   const { themed, theme } = useAppTheme();
-  // const { agent, did, onProfile } = props.payload!;
+  const { agent, did } = props.payload!;
 
   if (!agent) {
     return (

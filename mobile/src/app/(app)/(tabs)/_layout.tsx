@@ -23,7 +23,7 @@ export default observer(function Layout() {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarStyle: [themed($tabBar), {
-          paddingBottom: bottom + 32,
+          paddingBottom: bottom + 40,
         }],
         // tabBarActiveTintColor: themed(({ colors }) => colors.text),
         // tabBarInactiveTintColor: themed(({ colors }) => "#000"),
